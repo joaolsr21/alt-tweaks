@@ -1,34 +1,117 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="WinRepair &amp; Tweaks Pro"
-        Height="840" Width="1280"
-        MinHeight="680" MinWidth="1060"
+        Title="WinRepair &amp; Tweaks Pro v3.1"
+        Height="860" Width="1300"
+        MinHeight="700" MinWidth="1080"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource BrushBgApp}"
         Foreground="{DynamicResource BrushTextPrimary}"
         FontFamily="Segoe UI, Segoe UI Emoji"
-        FontSize="13">
+        FontSize="13"
+        ToolTipService.InitialShowDelay="150"
+        ToolTipService.BetweenShowDelay="50"
+        ToolTipService.ShowDuration="15000">
 
     <Window.Resources>
-        <!-- Paleta Dinâmica Inicial (Midnight Dark) -->
-        <SolidColorBrush x:Key="BrushBgApp" Color="#11111B"/>
-        <SolidColorBrush x:Key="BrushBgSidebar" Color="#161624"/>
-        <SolidColorBrush x:Key="BrushBgSurface" Color="#1E1E2E"/>
-        <SolidColorBrush x:Key="BrushBgCard" Color="#24273A"/>
-        <SolidColorBrush x:Key="BrushBgCardAlt" Color="#2A2D42"/>
-        <SolidColorBrush x:Key="BrushBgInput" Color="#181825"/>
-        <SolidColorBrush x:Key="BrushBorder" Color="#363A4F"/>
-        <SolidColorBrush x:Key="BrushBorderHover" Color="#89B4FA"/>
-        <SolidColorBrush x:Key="BrushTextPrimary" Color="#CDD6F4"/>
-        <SolidColorBrush x:Key="BrushTextMuted" Color="#9399B2"/>
-        <SolidColorBrush x:Key="BrushAccent" Color="#89B4FA"/>
-        <SolidColorBrush x:Key="BrushAccentHover" Color="#B4BEFE"/>
-        <SolidColorBrush x:Key="BrushAccentText" Color="#11111B"/>
-        <SolidColorBrush x:Key="BrushSuccess" Color="#A6E3A1"/>
+        <!-- Paleta Verde Água Nocturne (Dinâmica) -->
+        <SolidColorBrush x:Key="BrushBgApp" Color="#07110D"/>
+        <SolidColorBrush x:Key="BrushBgSidebar" Color="#0A1712"/>
+        <SolidColorBrush x:Key="BrushBgSurface" Color="#0E2019"/>
+        <SolidColorBrush x:Key="BrushBgCard" Color="#12281F"/>
+        <SolidColorBrush x:Key="BrushBgCardAlt" Color="#173428"/>
+        <SolidColorBrush x:Key="BrushBgCardHover" Color="#1D4233"/>
+        <SolidColorBrush x:Key="BrushBgInput" Color="#091510"/>
+        <SolidColorBrush x:Key="BrushBrandStart" Color="#005227"/>
+        <SolidColorBrush x:Key="BrushBrandEnd" Color="#038554"/>
+        <SolidColorBrush x:Key="BrushBorder" Color="#1F4636"/>
+        <SolidColorBrush x:Key="BrushBorderStrong" Color="#038554"/>
+        <SolidColorBrush x:Key="BrushBorderHover" Color="#68DDBD"/>
+        <SolidColorBrush x:Key="BrushTextPrimary" Color="#E9FBF5"/>
+        <SolidColorBrush x:Key="BrushTextSecondary" Color="#A4FFF7"/>
+        <SolidColorBrush x:Key="BrushTextMuted" Color="#83B8A6"/>
+        <SolidColorBrush x:Key="BrushAccent" Color="#03BB85"/>
+        <SolidColorBrush x:Key="BrushAccentHover" Color="#68DDBD"/>
+        <SolidColorBrush x:Key="BrushAccentDeep" Color="#005227"/>
+        <SolidColorBrush x:Key="BrushAccentText" Color="#031A10"/>
+        <SolidColorBrush x:Key="BrushSuccess" Color="#68DDBD"/>
         <SolidColorBrush x:Key="BrushWarning" Color="#F9E2AF"/>
         <SolidColorBrush x:Key="BrushDanger" Color="#F38BA8"/>
-        <SolidColorBrush x:Key="BrushConsoleBg" Color="#0D0D14"/>
-        <SolidColorBrush x:Key="BrushConsoleFg" Color="#A6E3A1"/>
+        <SolidColorBrush x:Key="BrushConsoleBg" Color="#050C09"/>
+        <SolidColorBrush x:Key="BrushConsoleFg" Color="#A4FFF7"/>
+
+        <!-- ToolTip Global Estilizado -->
+        <Style TargetType="ToolTip">
+            <Setter Property="HasDropShadow" Value="True"/>
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Placement" Value="Mouse"/>
+            <Setter Property="VerticalOffset" Value="14"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToolTip">
+                        <Border Background="{DynamicResource BrushBgSurface}"
+                                BorderBrush="{DynamicResource BrushAccent}"
+                                BorderThickness="1.5"
+                                CornerRadius="8"
+                                Padding="12,9"
+                                MaxWidth="360">
+                            <Border.Effect>
+                                <DropShadowEffect Color="#000000" BlurRadius="14" ShadowDepth="4" Opacity="0.55"/>
+                            </Border.Effect>
+                            <ContentPresenter>
+                                <ContentPresenter.Resources>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
+                                        <Setter Property="FontSize" Value="12"/>
+                                        <Setter Property="TextWrapping" Value="Wrap"/>
+                                    </Style>
+                                </ContentPresenter.Resources>
+                            </ContentPresenter>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ScrollBar Slim Verde Água -->
+        <Style TargetType="ScrollBar">
+            <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Width" Value="8"/>
+            <Setter Property="MinWidth" Value="8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Background="Transparent">
+                            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                <Track.Thumb>
+                                    <Thumb Margin="1,0">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border x:Name="ThumbBd"
+                                                        Background="{DynamicResource BrushBorder}"
+                                                        CornerRadius="4"/>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="ThumbBd" Property="Background" Value="{DynamicResource BrushAccent}"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Orientation" Value="Horizontal">
+                                <Setter Property="Height" Value="8"/>
+                                <Setter Property="MinHeight" Value="8"/>
+                                <Setter Property="Width" Value="Auto"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
         <!-- Botão Padrão -->
         <Style TargetType="Button">
@@ -48,17 +131,17 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6"
+                                CornerRadius="7"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
-                                <Setter TargetName="Bd" Property="Opacity" Value="0.92"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushAccentHover}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushBgCardHover}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bd" Property="Opacity" Value="0.78"/>
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.82"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="Bd" Property="Opacity" Value="0.45"/>
@@ -69,31 +152,89 @@
             </Setter>
         </Style>
 
-        <!-- Botão Primário Destaque -->
+        <!-- Botão Primário Verde Água -->
         <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Background" Value="{DynamicResource BrushAccent}"/>
             <Setter Property="Foreground" Value="{DynamicResource BrushAccentText}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushAccentHover}"/>
             <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="7"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushAccentHover}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushTextSecondary}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
-        <!-- Botão Sucesso -->
+        <!-- Botão Secundário Destaque Esmeralda Escuro -->
         <Style x:Key="SuccessButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Background" Value="#25382B"/>
-            <Setter Property="Foreground" Value="{DynamicResource BrushSuccess}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource BrushSuccess}"/>
+            <Setter Property="Background" Value="{DynamicResource BrushAccentDeep}"/>
+            <Setter Property="Foreground" Value="{DynamicResource BrushTextSecondary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
         </Style>
 
         <!-- Botão Perigo -->
         <Style x:Key="DangerButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Background" Value="#3A222B"/>
+            <Setter Property="Background" Value="#3B1A24"/>
             <Setter Property="Foreground" Value="{DynamicResource BrushDanger}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource BrushDanger}"/>
         </Style>
 
+        <!-- Botão Card para os 3 Perfis (Desktop / Notebook / All) -->
+        <Style x:Key="PresetCardButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource BrushBgCardAlt}"/>
+            <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushBorderStrong}"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
+            <Setter Property="Padding" Value="14,9"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="9"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushTextSecondary}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushBgCardHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.84"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Chip / Pílula de Filtro -->
         <Style x:Key="PillButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Padding" Value="11,4"/>
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="Margin" Value="2"/>
             <Setter Property="Template">
@@ -103,13 +244,14 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="1"
-                                CornerRadius="13"
+                                CornerRadius="14"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushAccentHover}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushBgCardHover}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -121,21 +263,22 @@
         <Style x:Key="NavRadioButtonStyle" TargetType="RadioButton">
             <Setter Property="Foreground" Value="{DynamicResource BrushTextMuted}"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontSize" Value="12.5"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="12,10"/>
-            <Setter Property="Margin" Value="6,2"/>
+            <Setter Property="Padding" Value="11,9"/>
+            <Setter Property="Margin" Value="2,2"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
                         <Border x:Name="Bd"
                                 Background="{TemplateBinding Background}"
-                                CornerRadius="7"
+                                CornerRadius="8"
                                 BorderThickness="3,0,0,0"
                                 BorderBrush="Transparent"
                                 Padding="{TemplateBinding Padding}">
-                            <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -143,9 +286,9 @@
                                 <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushBgCardAlt}"/>
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
-                                <Setter Property="Foreground" Value="{DynamicResource BrushAccent}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushAccentDeep}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushTextSecondary}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource BrushTextSecondary}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -161,7 +304,7 @@
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="9,6"/>
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="CaretBrush" Value="{DynamicResource BrushAccent}"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource BrushAccentHover}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
@@ -169,7 +312,7 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6">
+                                CornerRadius="7">
                             <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -182,42 +325,65 @@
             </Setter>
         </Style>
 
-        <!-- CheckBox Moderno com Vetor Check -->
+        <!-- CheckBox Interativo com Linha de Destaque no Hover + Indicador (?) -->
         <Style TargetType="CheckBox">
             <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
-            <Setter Property="FontSize" Value="12.5"/>
-            <Setter Property="Margin" Value="2,4"/>
+            <Setter Property="FontSize" Value="12.2"/>
+            <Setter Property="Margin" Value="0,1"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="CheckBox">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <Border x:Name="Box"
-                                    Width="17" Height="17"
-                                    CornerRadius="4"
-                                    Background="{DynamicResource BrushBgInput}"
-                                    BorderBrush="{DynamicResource BrushBorder}"
-                                    BorderThickness="1.5"
-                                    Margin="0,0,8,0"
-                                    VerticalAlignment="Center">
-                                <Path x:Name="CheckMark"
-                                      Data="M 3 8 L 6.5 11.5 L 13 4.5"
-                                      Stroke="{DynamicResource BrushAccentText}"
-                                      StrokeThickness="2.2"
-                                      StrokeStartLineCap="Round"
-                                      StrokeEndLineCap="Round"
-                                      Visibility="Collapsed"/>
-                            </Border>
-                            <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True"/>
-                        </StackPanel>
+                        <Border x:Name="RowBd"
+                                Background="Transparent"
+                                CornerRadius="6"
+                                Padding="7,5">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Border x:Name="Box"
+                                        Grid.Column="0"
+                                        Width="18" Height="18"
+                                        CornerRadius="4"
+                                        Background="{DynamicResource BrushBgInput}"
+                                        BorderBrush="{DynamicResource BrushBorder}"
+                                        BorderThickness="1.5"
+                                        Margin="0,0,9,0"
+                                        VerticalAlignment="Center">
+                                    <Path x:Name="CheckMark"
+                                          Data="M 3.5 8.5 L 7 12 L 13.5 4.5"
+                                          Stroke="{DynamicResource BrushAccentText}"
+                                          StrokeThickness="2.4"
+                                          StrokeStartLineCap="Round"
+                                          StrokeEndLineCap="Round"
+                                          Visibility="Collapsed"/>
+                                </Border>
+                                <ContentPresenter Grid.Column="1" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                                <TextBlock x:Name="HintBadge"
+                                           Grid.Column="2"
+                                           Text="?"
+                                           FontSize="10.5"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource BrushAccentHover}"
+                                           VerticalAlignment="Center"
+                                           Margin="8,0,2,0"
+                                           Opacity="0"/>
+                            </Grid>
+                        </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="Box" Property="Background" Value="{DynamicResource BrushAccent}"/>
-                                <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                                <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource BrushAccentHover}"/>
                                 <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                                <Setter TargetName="RowBd" Property="Background" Value="{DynamicResource BrushBgCardHover}"/>
+                                <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource BrushAccentHover}"/>
+                                <Setter TargetName="HintBadge" Property="Opacity" Value="0.85"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -225,45 +391,48 @@
             </Setter>
         </Style>
 
-        <!-- Toggle Switch Deslizante -->
+        <!-- Toggle Switch Deslizante com Linha de Destaque no Hover -->
         <Style x:Key="ToggleSwitchStyle" TargetType="CheckBox">
             <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Margin" Value="0,4"/>
+            <Setter Property="Margin" Value="0,1"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="CheckBox">
-                        <Grid Margin="0,1">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <ContentPresenter Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <Border x:Name="Track"
-                                    Grid.Column="1"
-                                    Width="40" Height="20"
-                                    CornerRadius="10"
-                                    Background="{DynamicResource BrushBgInput}"
-                                    BorderBrush="{DynamicResource BrushBorder}"
-                                    BorderThickness="1"
-                                    Padding="2">
-                                <Border x:Name="Thumb"
-                                        Width="14" Height="14"
-                                        CornerRadius="7"
-                                        Background="{DynamicResource BrushTextMuted}"
-                                        HorizontalAlignment="Left"/>
-                            </Border>
-                        </Grid>
+                        <Border x:Name="RowBd" Background="Transparent" CornerRadius="6" Padding="7,5">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <Border x:Name="Track"
+                                        Grid.Column="1"
+                                        Width="42" Height="22"
+                                        CornerRadius="11"
+                                        Background="{DynamicResource BrushBgInput}"
+                                        BorderBrush="{DynamicResource BrushBorder}"
+                                        BorderThickness="1.2"
+                                        Padding="2.5">
+                                    <Border x:Name="Thumb"
+                                            Width="15" Height="15"
+                                            CornerRadius="7.5"
+                                            Background="{DynamicResource BrushTextMuted}"
+                                            HorizontalAlignment="Left"/>
+                                </Border>
+                            </Grid>
+                        </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="Track" Property="Background" Value="{DynamicResource BrushAccent}"/>
-                                <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                                <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource BrushAccentHover}"/>
                                 <Setter TargetName="Thumb" Property="Background" Value="{DynamicResource BrushAccentText}"/>
                                 <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                                <Setter TargetName="RowBd" Property="Background" Value="{DynamicResource BrushBgCardHover}"/>
+                                <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource BrushAccentHover}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -271,11 +440,11 @@
             </Setter>
         </Style>
 
-        <!-- ComboBox Moderno Dark/Light -->
+        <!-- ComboBox Estilizado -->
         <Style TargetType="ComboBoxItem">
             <Setter Property="Background" Value="{DynamicResource BrushBgCard}"/>
             <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
-            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Padding" Value="9,6"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Style.Triggers>
                 <Trigger Property="IsHighlighted" Value="True">
@@ -291,7 +460,7 @@
             <Setter Property="BorderBrush" Value="{DynamicResource BrushBorder}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="8,5"/>
-            <Setter Property="Height" Value="32"/>
+            <Setter Property="Height" Value="34"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -307,14 +476,14 @@
                                                 Background="{DynamicResource BrushBgInput}"
                                                 BorderBrush="{DynamicResource BrushBorder}"
                                                 BorderThickness="1"
-                                                CornerRadius="6">
+                                                CornerRadius="7">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="26"/>
+                                                    <ColumnDefinition Width="28"/>
                                                 </Grid.ColumnDefinitions>
-                                                <Path Grid.Column="1" Data="M 0 0 L 4 4 L 8 0 Z"
-                                                      Fill="{DynamicResource BrushTextMuted}"
+                                                <Path Grid.Column="1" Data="M 0 0 L 4.5 4.5 L 9 0 Z"
+                                                      Fill="{DynamicResource BrushAccentHover}"
                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </Grid>
                                         </Border>
@@ -330,7 +499,7 @@
                                               IsHitTestVisible="False"
                                               Content="{TemplateBinding SelectionBoxItem}"
                                               ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
-                                              Margin="10,4,28,4"
+                                              Margin="10,4,30,4"
                                               VerticalAlignment="Center"
                                               HorizontalAlignment="Left"/>
                             <Popup x:Name="Popup"
@@ -345,9 +514,9 @@
                                       MaxHeight="{TemplateBinding MaxDropDownHeight}">
                                     <Border x:Name="DropDownBorder"
                                             Background="{DynamicResource BrushBgCard}"
-                                            BorderThickness="1"
-                                            CornerRadius="6"
-                                            BorderBrush="{DynamicResource BrushBorder}">
+                                            BorderThickness="1.5"
+                                            CornerRadius="7"
+                                            BorderBrush="{DynamicResource BrushAccent}">
                                         <ScrollViewer Margin="2" SnapsToDevicePixels="True">
                                             <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
                                         </ScrollViewer>
@@ -360,7 +529,7 @@
             </Setter>
         </Style>
 
-        <!-- Expander Estilizado -->
+        <!-- Expander Limpo Verde Água -->
         <Style TargetType="Expander">
             <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
             <Setter Property="Background" Value="{DynamicResource BrushBgCard}"/>
@@ -368,6 +537,61 @@
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Margin" Value="0,0,0,8"/>
             <Setter Property="IsExpanded" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Expander">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="9">
+                            <DockPanel>
+                                <ToggleButton x:Name="HeaderToggle"
+                                              DockPanel.Dock="Top"
+                                              IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                              Cursor="Hand">
+                                    <ToggleButton.Template>
+                                        <ControlTemplate TargetType="ToggleButton">
+                                            <Border x:Name="HdrBd" Background="{DynamicResource BrushBgCardAlt}" CornerRadius="8,8,0,0" Padding="10,7">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <ContentPresenter Grid.Column="0"
+                                                                      Content="{Binding Header, RelativeSource={RelativeSource AncestorType=Expander}}"
+                                                                      VerticalAlignment="Center"/>
+                                                    <Path x:Name="Arrow"
+                                                          Grid.Column="1"
+                                                          Data="M 0 0 L 5 5 L 10 0"
+                                                          Stroke="{DynamicResource BrushAccentHover}"
+                                                          StrokeThickness="2"
+                                                          StrokeStartLineCap="Round"
+                                                          StrokeEndLineCap="Round"
+                                                          VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="HdrBd" Property="Background" Value="{DynamicResource BrushBgCardHover}"/>
+                                                </Trigger>
+                                                <Trigger Property="IsChecked" Value="False">
+                                                    <Setter TargetName="HdrBd" Property="CornerRadius" Value="8"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </ToggleButton.Template>
+                                </ToggleButton>
+                                <ContentPresenter x:Name="ExpandSite" Visibility="Collapsed"/>
+                            </DockPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="True">
+                                <Setter TargetName="ExpandSite" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <!-- Card Base -->
@@ -383,7 +607,7 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="232"/>
+            <ColumnDefinition Width="244"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
@@ -391,62 +615,110 @@
         <!-- SIDEBAR FIXA                                                     -->
         <!-- ================================================================ -->
         <Border Grid.Column="0" Background="{DynamicResource BrushBgSidebar}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="0,0,1,0">
-            <Grid Margin="10,14">
+            <Grid Margin="10,12">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Logo & Badges -->
-                <StackPanel Grid.Row="0" Margin="6,2,6,16">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="&#x26A1; WinRepair Pro" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}"/>
-                        <Border Background="{DynamicResource BrushBgCardAlt}" CornerRadius="5" Padding="6,2" Margin="8,0,0,0" VerticalAlignment="Center">
-                            <TextBlock Text="v3.0" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrushSuccess}"/>
+                <!-- Cartão da Marca com Gradiente Verde Água -->
+                <Border Grid.Row="0" CornerRadius="10" Padding="12,11" Margin="2,0,2,14" BorderBrush="{DynamicResource BrushAccent}" BorderThickness="1">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#005227" Offset="0"/>
+                            <GradientStop Color="#038554" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="&#x26A1; WinRepair Pro" FontSize="17" FontWeight="Bold" Foreground="#A4FFF7"/>
+                            <Border Grid.Column="1" Background="#005227" BorderBrush="#68DDBD" BorderThickness="1" CornerRadius="5" Padding="6,1" VerticalAlignment="Center">
+                                <TextBlock Text="v3.1" FontSize="10" FontWeight="Bold" Foreground="#A4FFF7"/>
+                            </Border>
+                        </Grid>
+                        <TextBlock Text="Otimização, Rede &amp; Diagnóstico" FontSize="11" Foreground="#E9FBF5" Opacity="0.9" Margin="0,3,0,7"/>
+                        <Border Background="#07110D" Opacity="0.9" CornerRadius="5" Padding="7,3" HorizontalAlignment="Left">
+                            <TextBlock Text="&#x1F6E1; Administrador Ativo" FontSize="10.5" FontWeight="SemiBold" Foreground="#68DDBD"/>
                         </Border>
                     </StackPanel>
-                    <TextBlock Text="Suíte Completa de Sistema" FontSize="11" Foreground="{DynamicResource BrushTextMuted}" Margin="0,3,0,8"/>
-                    <Border Background="#1B2E25" BorderBrush="{DynamicResource BrushSuccess}" BorderThickness="1" CornerRadius="5" Padding="7,3" HorizontalAlignment="Left">
-                        <TextBlock Text="&#x1F6E1; Modo Administrador" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource BrushSuccess}"/>
-                    </Border>
-                </StackPanel>
+                </Border>
 
-                <!-- Menu de Navegação -->
-                <StackPanel Grid.Row="1">
-                    <TextBlock Text="FERRAMENTAS" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrushTextMuted}" Margin="12,0,0,6"/>
-                    <RadioButton x:Name="navInstall" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x1F4E6;  Softwares (239)"/>
-                    <RadioButton x:Name="navTweaks" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x26A1;  Tweaks &amp; Perfis" IsChecked="True"/>
-                    <RadioButton x:Name="navAppx" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x1F9F9;  AppX &amp; Bloatware"/>
-                    <RadioButton x:Name="navNetwork" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x1F310;  Rede &amp; Diagnóstico"/>
-                    <RadioButton x:Name="navConfig" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x2699;  Recursos &amp; Reparos"/>
-                    <RadioButton x:Name="navUpdates" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x1F504;  Windows Update"/>
-                    <RadioButton x:Name="navIso" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x1F4BF;  Criador de ISO &amp; USB"/>
-                </StackPanel>
+                <!-- Menu de Navegação Agrupado -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="OTIMIZAÇÃO &amp; APPS" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrushTextMuted}" Margin="10,2,0,4"/>
+                        <RadioButton x:Name="navTweaks" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" IsChecked="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="&#x26A1;  Tweaks &amp; Perfis"/>
+                                <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" CornerRadius="8" Padding="6,1"><TextBlock Text="73" FontSize="10" Foreground="{DynamicResource BrushAccentHover}"/></Border>
+                            </Grid>
+                        </RadioButton>
+                        <RadioButton x:Name="navInstall" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="&#x1F4E6;  Softwares"/>
+                                <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" CornerRadius="8" Padding="6,1"><TextBlock Text="239" FontSize="10" Foreground="{DynamicResource BrushAccentHover}"/></Border>
+                            </Grid>
+                        </RadioButton>
+                        <RadioButton x:Name="navAppx" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="&#x1F9F9;  AppX &amp; Bloatware"/>
+                                <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" CornerRadius="8" Padding="6,1"><TextBlock Text="34" FontSize="10" Foreground="{DynamicResource BrushAccentHover}"/></Border>
+                            </Grid>
+                        </RadioButton>
+
+                        <TextBlock Text="REDE &amp; MANUTENÇÃO" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrushTextMuted}" Margin="10,12,0,4"/>
+                        <RadioButton x:Name="navNetwork" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="&#x1F310;  Rede &amp; Diagnóstico"/>
+                                <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" CornerRadius="8" Padding="6,1"><TextBlock Text="14+" FontSize="10" Foreground="{DynamicResource BrushAccentHover}"/></Border>
+                            </Grid>
+                        </RadioButton>
+                        <RadioButton x:Name="navConfig" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}">
+                            <TextBlock Text="&#x2699;  Recursos &amp; Reparos"/>
+                        </RadioButton>
+                        <RadioButton x:Name="navUpdates" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}">
+                            <TextBlock Text="&#x1F504;  Windows Update"/>
+                        </RadioButton>
+
+                        <TextBlock Text="IMAGEM DO WINDOWS" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrushTextMuted}" Margin="10,12,0,4"/>
+                        <RadioButton x:Name="navIso" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}">
+                            <TextBlock Text="&#x1F4BF;  Criador de ISO &amp; USB"/>
+                        </RadioButton>
+                    </StackPanel>
+                </ScrollViewer>
 
                 <!-- Rodapé da Sidebar -->
                 <StackPanel Grid.Row="2" Margin="2,8,2,0">
-                    <Border Background="{DynamicResource BrushBgCard}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="8">
+                    <Border Background="{DynamicResource BrushBgCard}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1" CornerRadius="9" Padding="8">
                         <StackPanel>
-                            <TextBlock Text="CONFIGURAÇÕES &amp; VISUAL" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrushTextMuted}" Margin="2,0,0,6"/>
+                            <TextBlock Text="PERFIL &amp; APARÊNCIA" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrushTextMuted}" Margin="3,0,0,5"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <Button x:Name="btnImportConfig" Grid.Column="0" Content="&#x1F4E5; Importar" FontSize="11" Padding="6,5" ToolTip="Importa seleção (.json) sem executar"/>
-                                <Button x:Name="btnExportConfig" Grid.Column="1" Content="&#x1F4E4; Exportar" FontSize="11" Padding="6,5" ToolTip="Exporta seleções atuais para .json"/>
+                                <Button x:Name="btnImportConfig" Grid.Column="0" Content="&#x1F4E5; Importar" FontSize="11" Padding="6,5"/>
+                                <Button x:Name="btnExportConfig" Grid.Column="1" Content="&#x1F4E4; Exportar" FontSize="11" Padding="6,5"/>
                             </Grid>
                             <Button x:Name="btnEnvReport" Content="&#x1F4CB; Relatório do Ambiente" FontSize="11" Padding="6,5"/>
-                            <Grid Margin="0,4,0,0">
+                            <Grid Margin="0,2,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <Button x:Name="btnToggleTheme" Grid.Column="0" Content="&#x1F317; Tema Claro/Escuro" FontSize="11" Padding="6,5"/>
-                                <Button x:Name="btnFontDown" Grid.Column="1" Content="A-" FontSize="11" Padding="8,5" ToolTip="Diminuir Fonte"/>
-                                <Button x:Name="btnFontUp" Grid.Column="2" Content="A+" FontSize="11" Padding="8,5" ToolTip="Aumentar Fonte"/>
+                                <Button x:Name="btnToggleTheme" Grid.Column="0" Content="&#x1F317; Alternar Tema" FontSize="11" Padding="6,5"/>
+                                <Button x:Name="btnFontDown" Grid.Column="1" Content="A-" FontSize="11" Padding="8,5"/>
+                                <Button x:Name="btnFontUp" Grid.Column="2" Content="A+" FontSize="11" Padding="8,5"/>
                             </Grid>
                         </StackPanel>
                     </Border>
@@ -455,14 +727,15 @@
         </Border>
 
         <!-- ================================================================ -->
-        <!-- ÁREA PRINCIPAL (HEADER + CONTEÚDO + SPLITTER + CONSOLE)          -->
+        <!-- ÁREA PRINCIPAL (HEADER + VIEWS + HOVER BAR + SPLITTER + CONSOLE) -->
         <!-- ================================================================ -->
         <Grid Grid.Column="1" Background="{DynamicResource BrushBgApp}">
             <Grid.RowDefinitions>
-                <RowDefinition Height="64"/>
+                <RowDefinition Height="66"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="5"/>
-                <RowDefinition x:Name="rowConsole" Height="175" MinHeight="38"/>
+                <RowDefinition x:Name="rowConsole" Height="155" MinHeight="38"/>
             </Grid.RowDefinitions>
 
             <!-- HEADER TOPBAR -->
@@ -470,44 +743,45 @@
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="260"/>
+                        <ColumnDefinition Width="270"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                        <TextBlock x:Name="txtSectionTitle" Text="Tweaks &amp; Perfis Recomendados" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource BrushTextPrimary}"/>
-                        <TextBlock x:Name="txtSectionSubtitle" Text="Selecione um perfil para marcar as opções ou ajuste manualmente antes de aplicar" FontSize="11.5" Foreground="{DynamicResource BrushTextMuted}"/>
+                        <TextBlock x:Name="txtSectionTitle" Text="Tweaks &amp; Perfis Recomendados" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}"/>
+                        <TextBlock x:Name="txtSectionSubtitle" Text="Passe o mouse em qualquer opção para ler o que ela faz ou escolha um perfil abaixo" FontSize="11.5" Foreground="{DynamicResource BrushTextMuted}"/>
                     </StackPanel>
 
-                    <!-- Busca Contextual -->
-                    <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1" CornerRadius="6" Margin="10,4" Padding="8,0">
+                    <!-- Busca Contextual com Placeholder -->
+                    <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1" CornerRadius="7" Margin="10,4" Padding="9,0">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="&#x1F50D;" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="12"/>
-                            <TextBox x:Name="txtGlobalSearch" Grid.Column="1" BorderThickness="0" Background="Transparent" Padding="0,6" VerticalAlignment="Center" ToolTip="Filtrar itens da aba atual..."/>
+                            <TextBlock Grid.Column="0" Text="&#x1F50D;" VerticalAlignment="Center" Margin="0,0,7,0" FontSize="12"/>
+                            <TextBlock x:Name="txtSearchPlaceholder" Grid.Column="1" Text="Filtrar opções desta aba..." VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource BrushTextMuted}" Opacity="0.7" IsHitTestVisible="False"/>
+                            <TextBox x:Name="txtGlobalSearch" Grid.Column="1" BorderThickness="0" Background="Transparent" Padding="0,6" VerticalAlignment="Center"/>
                             <Button x:Name="btnClearSearch" Grid.Column="2" Content="&#x2715;" Padding="4,1" Margin="0" FontSize="10" Background="Transparent" BorderThickness="0"/>
                         </Grid>
                     </Border>
 
                     <!-- Info Hardware -->
-                    <Border Grid.Column="2" Background="{DynamicResource BrushBgCard}" CornerRadius="6" Padding="10,5" Margin="6,4" VerticalAlignment="Center" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1">
+                    <Border Grid.Column="2" Background="{DynamicResource BrushBgCard}" CornerRadius="7" Padding="10,5" Margin="6,4" VerticalAlignment="Center" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1">
                         <TextBlock x:Name="txtSystemInfo" Text="Carregando hardware..." FontSize="11" Foreground="{DynamicResource BrushTextMuted}"/>
                     </Border>
 
                     <!-- Pílula de Status -->
-                    <Border x:Name="borderStatusPill" Grid.Column="3" Background="{DynamicResource BrushBgCard}" CornerRadius="6" Padding="10,5" Margin="4,4,0,4" VerticalAlignment="Center" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1">
+                    <Border x:Name="borderStatusPill" Grid.Column="3" Background="{DynamicResource BrushBgCard}" CornerRadius="7" Padding="10,5" Margin="4,4,0,4" VerticalAlignment="Center" BorderBrush="{DynamicResource BrushBorderStrong}" BorderThickness="1">
                         <TextBlock x:Name="txtTaskStatus" Text="&#x25CF; Pronto" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource BrushSuccess}"/>
                     </Border>
                 </Grid>
             </Border>
 
             <!-- CONTAINER DE PÁGINAS -->
-            <Grid Grid.Row="1" Margin="16,12,16,6">
+            <Grid Grid.Row="1" Margin="16,12,16,4">
 
                 <!-- ==================================================== -->
                 <!-- VIEW 1: SOFTWARES (WINGET / CHOCO - 239 APPS)         -->
@@ -519,7 +793,6 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Barra de Ações -->
                     <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}" Padding="10,8">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -543,16 +816,14 @@
                                 <Button x:Name="btnCollapseAllApps" Content="Recolher Tudo"/>
                             </WrapPanel>
 
-                            <Border Grid.Column="2" Background="{DynamicResource BrushBgInput}" CornerRadius="6" Padding="10,5" VerticalAlignment="Center">
-                                <TextBlock x:Name="txtAppsSelectedCount" Text="Selecionados: 0" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" FontSize="12"/>
+                            <Border Grid.Column="2" Background="{DynamicResource BrushBgInput}" BorderBrush="{DynamicResource BrushBorderStrong}" BorderThickness="1" CornerRadius="7" Padding="10,5" VerticalAlignment="Center">
+                                <TextBlock x:Name="txtAppsSelectedCount" Text="Selecionados: 0" FontWeight="Bold" Foreground="{DynamicResource BrushAccentHover}" FontSize="12"/>
                             </Border>
                         </Grid>
                     </Border>
 
-                    <!-- Filter Chips -->
                     <WrapPanel x:Name="panelAppCategoryChips" Grid.Row="1" Margin="0,0,0,8"/>
 
-                    <!-- Grade de Apps -->
                     <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -579,7 +850,7 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Barra de Perfis (Apenas Desktop, Notebook, All) -->
+                    <!-- Card de Perfis Cards-Botão (Desktop, Notebook, All) -->
                     <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}" Padding="12,10">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -587,21 +858,36 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
-                                <TextBlock Text="Perfis Recomendados (Pré-Seleção)" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}"/>
-                                <TextBlock Text="Clique para marcar as opções recomendadas e revisar antes de aplicar" FontSize="11" Foreground="{DynamicResource BrushTextMuted}"/>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,14,0">
+                                <TextBlock Text="Perfis Recomendados" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}"/>
+                                <TextBlock Text="Clique para pré-selecionar e revisar" FontSize="11" Foreground="{DynamicResource BrushTextMuted}"/>
                             </StackPanel>
                             <WrapPanel Grid.Column="1" VerticalAlignment="Center">
-                                <Button x:Name="btnPresetDesktop" Content="&#x1F5A5;  Desktop" Padding="16,8" Foreground="{DynamicResource BrushSuccess}"/>
-                                <Button x:Name="btnPresetNotebook" Content="&#x1F4BB;  Notebook" Padding="16,8" Foreground="{DynamicResource BrushAccent}"/>
-                                <Button x:Name="btnPresetAll" Content="&#x1F31F;  All (Marcar Todos)" Padding="16,8" Foreground="{DynamicResource BrushWarning}"/>
+                                <Button x:Name="btnPresetDesktop" Style="{StaticResource PresetCardButtonStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="&#x1F5A5;  Desktop" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}"/>
+                                        <TextBlock Text="PC de Mesa &#x2022; Sem hibernação" FontSize="10.5" Foreground="{DynamicResource BrushTextMuted}"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="btnPresetNotebook" Style="{StaticResource PresetCardButtonStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="&#x1F4BB;  Notebook" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource BrushAccentHover}"/>
+                                        <TextBlock Text="Bateria segura &#x2022; Equilibrado" FontSize="10.5" Foreground="{DynamicResource BrushTextMuted}"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="btnPresetAll" Style="{StaticResource PresetCardButtonStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="&#x1F31F;  All (Marcar Tudo)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource BrushWarning}"/>
+                                        <TextBlock Text="Seleciona todas as 48 opções" FontSize="10.5" Foreground="{DynamicResource BrushTextMuted}"/>
+                                    </StackPanel>
+                                </Button>
                             </WrapPanel>
-                            <Button x:Name="btnCreateRestorePoint" Grid.Column="2" Content="&#x1F6E1; Criar Ponto de Restauração"/>
+                            <Button x:Name="btnCreateRestorePoint" Grid.Column="2" Style="{StaticResource SuccessButtonStyle}" Content="&#x1F6E1; Criar Ponto de Restauração" VerticalAlignment="Center"/>
                         </Grid>
                     </Border>
 
-                    <!-- Card de Resumo em Tempo Real das Opções Selecionadas -->
-                    <Border x:Name="borderSelectionPreview" Grid.Row="1" Style="{StaticResource CardBorderStyle}" Background="{DynamicResource BrushBgSurface}" Padding="12,10">
+                    <!-- Painel de Resumo e Confirmação antes de Executar -->
+                    <Border x:Name="borderSelectionPreview" Grid.Row="1" Style="{StaticResource CardBorderStyle}" Background="{DynamicResource BrushBgSurface}" BorderBrush="{DynamicResource BrushBorderStrong}" Padding="12,10">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -614,24 +900,24 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Border Background="{DynamicResource BrushBgCardAlt}" CornerRadius="5" Padding="8,3" Margin="0,0,10,0">
-                                        <TextBlock x:Name="txtActivePresetBadge" Text="Perfil: Nenhum" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}"/>
+                                    <Border Background="{DynamicResource BrushAccentDeep}" BorderBrush="{DynamicResource BrushAccent}" BorderThickness="1" CornerRadius="6" Padding="9,3" Margin="0,0,10,0">
+                                        <TextBlock x:Name="txtActivePresetBadge" Text="Perfil: Nenhum" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}"/>
                                     </Border>
-                                    <TextBlock x:Name="txtTweaksSelectedCount" Text="0 opções selecionadas" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource BrushTextPrimary}" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="txtTweaksSelectedCount" Text="0 opções selecionadas" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource BrushTextPrimary}" VerticalAlignment="Center"/>
                                 </StackPanel>
                                 <WrapPanel Grid.Column="2" VerticalAlignment="Center">
-                                    <Button x:Name="btnApplyTweaks" Style="{StaticResource PrimaryButtonStyle}" Content="&#x1F680; Aplicar Tweaks Selecionados" Padding="14,7"/>
+                                    <Button x:Name="btnApplyTweaks" Style="{StaticResource PrimaryButtonStyle}" Content="&#x1F680; Aplicar Tweaks Selecionados" Padding="15,7"/>
                                     <Button x:Name="btnUndoTweaks" Content="&#x21A9; Desfazer Selecionados" Padding="12,7"/>
-                                    <Button x:Name="btnClearTweaks" Content="&#x2715; Limpar Seleção" Padding="10,7"/>
+                                    <Button x:Name="btnClearTweaks" Content="&#x2715; Limpar" Padding="10,7"/>
                                 </WrapPanel>
                             </Grid>
-                            <ScrollViewer Grid.Row="1" MaxHeight="76" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+                            <ScrollViewer Grid.Row="1" MaxHeight="74" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
                                 <WrapPanel x:Name="panelSelectedTweaksChips"/>
                             </ScrollViewer>
                         </Grid>
                     </Border>
 
-                    <!-- Grade de 3 Colunas: Essenciais | Avançados | Preferências Instantâneas -->
+                    <!-- Grade de 3 Colunas -->
                     <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -645,20 +931,28 @@
                             <!-- Coluna 1: Essenciais -->
                             <Border Grid.Column="0" Style="{StaticResource CardBorderStyle}">
                                 <StackPanel>
-                                    <TextBlock Text="Tweaks Essenciais" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Tweaks Essenciais" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}"/>
+                                        <Border Grid.Column="1" Background="{DynamicResource BrushAccentDeep}" CornerRadius="5" Padding="6,2"><TextBlock Text="Seguro" FontSize="10" Foreground="{DynamicResource BrushSuccess}"/></Border>
+                                    </Grid>
                                     <StackPanel x:Name="panelTweaksEssential"/>
                                 </StackPanel>
                             </Border>
 
-                            <!-- Coluna 2: Avançados + Energia + O&O -->
+                            <!-- Coluna 2: Avançados -->
                             <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
                                 <StackPanel>
-                                    <TextBlock Text="Tweaks Avançados (Cuidado)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushWarning}" Margin="0,0,0,8"/>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Tweaks Avançados" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushWarning}"/>
+                                        <Border Grid.Column="1" Background="#3B2F1A" CornerRadius="5" Padding="6,2"><TextBlock Text="Cuidado" FontSize="10" Foreground="{DynamicResource BrushWarning}"/></Border>
+                                    </Grid>
                                     <StackPanel x:Name="panelTweaksAdvanced"/>
-                                    <Border Background="{DynamicResource BrushBgSurface}" CornerRadius="8" Padding="10" Margin="0,10,0,0" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1">
+                                    <Border Background="{DynamicResource BrushBgSurface}" CornerRadius="8" Padding="10" Margin="0,10,0,0" BorderBrush="{DynamicResource BrushBorderStrong}" BorderThickness="1">
                                         <StackPanel>
-                                            <TextBlock Text="Energia &amp; Privacidade Extra" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,6"/>
-                                            <Button x:Name="btnEnableUltPerf" Content="&#x26A1; Ativar Plano Desempenho Máximo"/>
+                                            <TextBlock Text="Energia &amp; Privacidade Extra" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,6"/>
+                                            <Button x:Name="btnEnableUltPerf" Style="{StaticResource SuccessButtonStyle}" Content="&#x26A1; Ativar Plano Desempenho Máximo"/>
                                             <Button x:Name="btnDisableUltPerf" Content="&#x21A9; Restaurar Planos de Energia Padrão"/>
                                             <Button x:Name="btnRunOOSU" Content="&#x1F6E1; Executar O&amp;O ShutUp10++"/>
                                         </StackPanel>
@@ -669,7 +963,11 @@
                             <!-- Coluna 3: Preferências Instantâneas -->
                             <Border Grid.Column="4" Style="{StaticResource CardBorderStyle}">
                                 <StackPanel>
-                                    <TextBlock Text="Preferências (Aplicação Instantânea)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushSuccess}" Margin="0,0,0,8"/>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Preferências Rápidas" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushSuccess}"/>
+                                        <Border Grid.Column="1" Background="{DynamicResource BrushBgCardAlt}" CornerRadius="5" Padding="6,2"><TextBlock Text="Instantâneo" FontSize="10" Foreground="{DynamicResource BrushAccentHover}"/></Border>
+                                    </Grid>
                                     <StackPanel x:Name="panelTweaksPrefs"/>
                                 </StackPanel>
                             </Border>
@@ -693,15 +991,15 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <WrapPanel Grid.Column="0" VerticalAlignment="Center">
-                                <Button x:Name="btnAppxDefault" Content="&#x2B50; Marcar Bloatwares Padrão (18)"/>
+                                <Button x:Name="btnAppxDefault" Style="{StaticResource SuccessButtonStyle}" Content="&#x2B50; Marcar Bloatwares Padrão (18)"/>
                                 <Button x:Name="btnAppxSelectAll" Content="&#x2611; Marcar Todos"/>
                                 <Button x:Name="btnAppxClear" Content="&#x2715; Limpar"/>
                                 <Button x:Name="btnAppxDetectInstalled" Content="&#x1F50D; Destacar Instalados"/>
                                 <Button x:Name="btnAppxRemove" Style="{StaticResource DangerButtonStyle}" Content="&#x1F5D1; Remover Selecionados"/>
-                                <Button x:Name="btnAppxInstall" Style="{StaticResource SuccessButtonStyle}" Content="&#x1F4E5; Reinstalar Selecionados (Store)"/>
+                                <Button x:Name="btnAppxInstall" Style="{StaticResource PrimaryButtonStyle}" Content="&#x1F4E5; Reinstalar Selecionados (Store)"/>
                             </WrapPanel>
-                            <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" CornerRadius="6" Padding="10,5" VerticalAlignment="Center">
-                                <TextBlock x:Name="txtAppxSelectedCount" Text="Selecionados: 0" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" FontSize="12"/>
+                            <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" BorderBrush="{DynamicResource BrushBorderStrong}" BorderThickness="1" CornerRadius="7" Padding="10,5" VerticalAlignment="Center">
+                                <TextBlock x:Name="txtAppxSelectedCount" Text="Selecionados: 0" FontWeight="Bold" Foreground="{DynamicResource BrushAccentHover}" FontSize="12"/>
                             </Border>
                         </Grid>
                     </Border>
@@ -723,7 +1021,7 @@
                 </Grid>
 
                 <!-- ==================================================== -->
-                <!-- VIEW 4: REDE, 14 FERRAMENTAS .BAT, DNS BENCHMARK      -->
+                <!-- VIEW 4: REDE, DIAGNÓSTICO COMPLETO & DNS              -->
                 <!-- ==================================================== -->
                 <ScrollViewer x:Name="viewNetwork" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
@@ -744,7 +1042,7 @@
 
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Diagnóstico &amp; Testes de Conectividade (Opções 1 a 8)" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="Diagnóstico &amp; Testes de Conectividade (Opções 1 a 8)" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <WrapPanel>
                                     <Button x:Name="btnNetQuickDiag" Style="{StaticResource PrimaryButtonStyle}" Content="[1] Diagnóstico Rápido Integrado" Width="230"/>
                                     <Button x:Name="btnNetDetailed" Content="[2] Teste Detalhado (Ping + HTTPS + DNS)" Width="260"/>
@@ -761,7 +1059,7 @@
 
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Monitoramento, Varredura &amp; Dispositivos Locais (Opções 9 a 11)" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="Monitoramento, Varredura &amp; Dispositivos Locais (Opções 9 a 11)" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <WrapPanel>
                                     <Button x:Name="btnNetstatEst" Content="[9a] Netstat: Conexões Ativas" Width="210"/>
                                     <Button x:Name="btnNetstatList" Content="[9b] Netstat: Portas Escutando" Width="210"/>
@@ -774,7 +1072,7 @@
 
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Reparo, Reset de Pilha, TCP Gaming &amp; Relatório Forense (Opções 12 a 14)" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="Reparo, Reset de Pilha, TCP Gaming &amp; Relatório Forense (Opções 12 a 14)" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <WrapPanel>
                                     <Button x:Name="btnNetSimpleRepair" Content="[12] Reparar Conexão (DNS/DHCP/NetBIOS)" Width="270"/>
                                     <Button x:Name="btnNetResetDeep" Style="{StaticResource DangerButtonStyle}" Content="[13] Reset Completo Pilha (Winsock/TCP/FW)" Width="280"/>
@@ -787,7 +1085,7 @@
 
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Servidores DNS (IPv4 + IPv6 + DoH) &amp; Benchmark de Latência" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="Servidores DNS (IPv4 + IPv6 + DoH) &amp; Benchmark de Latência" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <Grid Margin="0,0,0,8">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
@@ -813,7 +1111,7 @@
                 </ScrollViewer>
 
                 <!-- ==================================================== -->
-                <!-- VIEW 5: RECURSOS, FIXES, PAINÉIS & REPARO DO SO       -->
+                <!-- VIEW 5: RECURSOS, CORREÇÕES & PAINÉIS DO SISTEMA      -->
                 <!-- ==================================================== -->
                 <ScrollViewer x:Name="viewConfig" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
                     <Grid>
@@ -827,19 +1125,17 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <!-- Recursos Opcionais -->
                         <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Recursos Opcionais do Windows" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="Recursos Opcionais do Windows" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <StackPanel x:Name="panelFeaturesContainer"/>
                                 <Button x:Name="btnInstallFeatures" Style="{StaticResource PrimaryButtonStyle}" Content="&#x2699; Instalar / Aplicar Recursos Selecionados" Margin="0,10,0,0"/>
                             </StackPanel>
                         </Border>
 
-                        <!-- Correções & Reparos -->
                         <Border Grid.Row="0" Grid.Column="2" Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Correções &amp; Reparos do Sistema" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="Correções &amp; Reparos do Sistema" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <WrapPanel>
                                     <Button x:Name="btnFixFullCorruption" Style="{StaticResource PrimaryButtonStyle}" Content="&#x1F6E0; Verificação Completa (DISM + SFC)" Width="265"/>
                                     <Button x:Name="btnSfcScan" Content="SFC /scannow" Width="125"/>
@@ -857,18 +1153,16 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Painéis Clássicos do Windows -->
                         <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Painéis Clássicos do Windows (14)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="Painéis Clássicos do Windows (14)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <WrapPanel x:Name="panelLegacyPanelsContainer"/>
                             </StackPanel>
                         </Border>
 
-                        <!-- Acesso Remoto & Terminal -->
                         <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Acesso Remoto &amp; Perfil PowerShell 7+" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="Acesso Remoto &amp; Perfil PowerShell 7+" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <TextBlock Text="Habilite o servidor SSH nativo no Windows (porta 22) ou instale o perfil aprimorado para PowerShell 7 com histórico preditivo." TextWrapping="Wrap" FontSize="11.5" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,10"/>
                                 <WrapPanel>
                                     <Button x:Name="btnEnableSshServer" Style="{StaticResource SuccessButtonStyle}" Content="&#x1F510; Habilitar Servidor OpenSSH"/>
@@ -881,7 +1175,7 @@
                 </ScrollViewer>
 
                 <!-- ==================================================== -->
-                <!-- VIEW 6: WINDOWS UPDATE (4 POLÍTICAS)                  -->
+                <!-- VIEW 6: WINDOWS UPDATE                                -->
                 <!-- ==================================================== -->
                 <ScrollViewer x:Name="viewUpdates" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
                     <Grid>
@@ -897,8 +1191,8 @@
 
                         <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="&#x1F504; Padrão Original (Microsoft)" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,6"/>
-                                <TextBlock Text="Remove todas as políticas personalizadas, libera ACLs bloqueadas e restaura as configurações originais de fábrica do Windows Update." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
+                                <TextBlock Text="&#x1F504; Padrão Original (Microsoft)" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,6"/>
+                                <TextBlock Text="Remove políticas personalizadas, libera permissões bloqueadas e restaura as configurações originais de fábrica do Windows Update." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
                                 <Button x:Name="btnWuDefault" Content="Restaurar Configurações Padrão"/>
                             </StackPanel>
                         </Border>
@@ -906,7 +1200,7 @@
                         <Border Grid.Row="0" Grid.Column="2" Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
                                 <TextBlock Text="&#x1F6E1; Modo Recomendado (Segurança Estável)" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BrushSuccess}" Margin="0,0,0,6"/>
-                                <TextBlock Text="Desativa atualização automática de drivers via Update, adia atualizações de recursos por 365 dias e qualidade por 4 dias para máxima estabilidade." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
+                                <TextBlock Text="Bloqueia atualização automática de drivers via Update, adia atualizações de recursos por 365 dias e qualidade por 4 dias." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
                                 <Button x:Name="btnWuRecommended" Style="{StaticResource SuccessButtonStyle}" Content="Aplicar Modo Recomendado"/>
                             </StackPanel>
                         </Border>
@@ -914,7 +1208,7 @@
                         <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
                                 <TextBlock Text="&#x23F8; Pausar Atualizações (Até 2042)" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BrushWarning}" Margin="0,0,0,6"/>
-                                <TextBlock Text="Estende a pausa oficial da interface do Windows Update até 2042 sem desativar serviços críticos do sistema ou da Microsoft Store." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
+                                <TextBlock Text="Estende a pausa oficial do Windows Update até 2042 sem desativar serviços críticos do sistema ou da Microsoft Store." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
                                 <Button x:Name="btnWuPause" Content="Pausar Atualizações até 2042"/>
                             </StackPanel>
                         </Border>
@@ -922,7 +1216,7 @@
                         <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
                                 <TextBlock Text="&#x26A0; Desativar Todas as Atualizações (Avançado)" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BrushDanger}" Margin="0,0,0,6"/>
-                                <TextBlock Text="Para e desabilita BITS, wuauserv, UsoSvc e tarefas agendadas do Windows Update. Recomendado apenas para máquinas dedicadas/isoladas." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
+                                <TextBlock Text="Para e desabilita BITS, wuauserv, UsoSvc e tarefas agendadas de update. Recomendado apenas para ambientes isolados." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
                                 <Button x:Name="btnWuDisable" Style="{StaticResource DangerButtonStyle}" Content="Desativar Windows Update"/>
                             </StackPanel>
                         </Border>
@@ -936,7 +1230,7 @@
                     <StackPanel>
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="1. Imagem ISO Oficial &amp; Seleção de Edição" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="1. Imagem ISO Oficial &amp; Seleção de Edição" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <Grid Margin="0,0,0,8">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="135"/>
@@ -962,7 +1256,7 @@
 
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="2. Destino, Drivers &amp; Customizações" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="2. Destino, Drivers &amp; Customizações" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <Grid Margin="0,0,0,8">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="135"/>
@@ -1013,11 +1307,32 @@
                 </ScrollViewer>
             </Grid>
 
+            <!-- BARRA DE INSPEÇÃO AO VIVO (HOVER INFO INSTANTÂNEO) -->
+            <Border x:Name="borderHoverInfo" Grid.Row="2" Background="{DynamicResource BrushBgSurface}" BorderBrush="{DynamicResource BrushBorderStrong}" BorderThickness="1" CornerRadius="8" Margin="16,2,16,4">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="4"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Background="{DynamicResource BrushAccent}" CornerRadius="6,0,0,6"/>
+                    <TextBlock Grid.Column="1" Text="&#x1F4A1;" FontSize="14" VerticalAlignment="Center" Margin="10,0,8,0"/>
+                    <Border x:Name="borderHoverBadge" Grid.Column="2" Background="{DynamicResource BrushAccentDeep}" BorderBrush="{DynamicResource BrushAccent}" BorderThickness="1" CornerRadius="6" Padding="8,2" VerticalAlignment="Center" Margin="0,0,10,0">
+                        <TextBlock x:Name="txtHoverBadge" Text="Dica" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}"/>
+                    </Border>
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,6,12,6">
+                        <TextBlock x:Name="txtHoverTitle" Text="Inspeção Rápida" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtHoverDesc" Text="Passe o mouse sobre qualquer opção ou botão para ver o que ele faz antes de clicar." FontSize="12" Foreground="{DynamicResource BrushTextPrimary}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
             <!-- SPLITTER REDIMENSIONÁVEL DO CONSOLE -->
-            <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" Background="{DynamicResource BrushBorder}" Cursor="SizeNS"/>
+            <GridSplitter Grid.Row="3" Height="5" HorizontalAlignment="Stretch" Background="{DynamicResource BrushBorder}" Cursor="SizeNS"/>
 
             <!-- CONSOLE DRAWER INFERIOR -->
-            <Border Grid.Row="3" Background="{DynamicResource BrushConsoleBg}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="0,1,0,0" Padding="14,6">
+            <Border Grid.Row="4" Background="{DynamicResource BrushConsoleBg}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="0,1,0,0" Padding="14,6">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -1030,7 +1345,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="&#x1F4DC; Console de Execução &amp; Logs" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" VerticalAlignment="Center" Margin="0,0,14,0"/>
+                        <TextBlock Grid.Column="0" Text="&#x1F4DC; Console de Execução &amp; Logs" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccentHover}" VerticalAlignment="Center" Margin="0,0,14,0"/>
                         <ProgressBar x:Name="pbTaskProgress" Grid.Column="1" Height="6" IsIndeterminate="True" Visibility="Collapsed" VerticalAlignment="Center" Foreground="{DynamicResource BrushAccent}" Background="{DynamicResource BrushBgCard}"/>
                         <StackPanel Grid.Column="3" Orientation="Horizontal">
                             <Button x:Name="btnToggleConsole" Content="&#x25BC; Minimizar" Padding="8,3" FontSize="11"/>

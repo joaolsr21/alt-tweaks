@@ -3096,7 +3096,7 @@ function Install-SelectedAppxPackages {
 
 
 # ==============================================================================
-# Módulo de Interface: Controlador Unificado WPF + Runspaces Assíncronos
+# Módulo de Interface: Controlador Unificado WPF + Hover Info + Runspaces
 # ==============================================================================
 
 function Start-AsyncAction {
@@ -3139,6 +3139,56 @@ $($Action.ToString())
     })
 }
 
+function Register-HoverHelp {
+    param(
+        [Parameter(Mandatory=$true)]$Control,
+        [Parameter(Mandatory=$true)][string]$Title,
+        [Parameter(Mandatory=$true)][string]$Description,
+        [string]$Badge = "Dica",
+        [switch]$NoToolTip
+    )
+
+    if ($null -eq $Control) { return }
+
+    $Control.Resources["HoverHelpInfo"] = [pscustomobject]@{
+        Title       = $Title
+        Description = $Description
+        Badge       = $Badge
+    }
+
+    if (-not $NoToolTip) {
+        $tipPanel = New-Object System.Windows.Controls.StackPanel
+        $tTitle = New-Object System.Windows.Controls.TextBlock
+        $tTitle.Text = $Title
+        $tTitle.FontWeight = [System.Windows.FontWeights]::Bold
+        $tTitle.FontSize = 12
+        $tTitle.Margin = New-Object System.Windows.Thickness(0, 0, 0, 3)
+        $tTitle.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, "BrushTextSecondary")
+        [void]$tipPanel.Children.Add($tTitle)
+
+        $tDesc = New-Object System.Windows.Controls.TextBlock
+        $tDesc.Text = $Description
+        $tDesc.FontSize = 11.5
+        $tDesc.TextWrapping = [System.Windows.TextWrapping]::Wrap
+        $tDesc.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, "BrushTextPrimary")
+        [void]$tipPanel.Children.Add($tDesc)
+
+        $Control.ToolTip = $tipPanel
+    }
+
+    $Control.Add_MouseEnter({
+        param($sender, $e)
+        $ui = $global:WinRepairUi
+        if (-not $ui -or -not $ui.Window) { return }
+        $info = $sender.Resources["HoverHelpInfo"]
+        if ($null -eq $info) { return }
+
+        $ui.Window.FindName("txtHoverBadge").Text = $info.Badge
+        $ui.Window.FindName("txtHoverTitle").Text = "$($info.Title):"
+        $ui.Window.FindName("txtHoverDesc").Text  = $info.Description
+    })
+}
+
 function Set-HudTheme {
     param([ValidateSet("Dark", "Light", "Auto")][string]$Mode = "Dark")
 
@@ -3154,47 +3204,60 @@ function Set-HudTheme {
         $target = $Mode
     }
 
+    # Paleta Verde Agua (#A4FFF7, #68DDBD, #03BB85, #038554, #005227)
     $palette = if ($target -eq "Light") {
         @{
-            BrushBgApp       = "#EFF1F5"
-            BrushBgSidebar   = "#E6E9EF"
-            BrushBgSurface   = "#F7F8FC"
-            BrushBgCard      = "#FFFFFF"
-            BrushBgCardAlt   = "#DCE0E8"
-            BrushBgInput     = "#EFF1F5"
-            BrushBorder      = "#BCC0CC"
-            BrushBorderHover = "#1E66F5"
-            BrushTextPrimary = "#4C4F69"
-            BrushTextMuted   = "#6C6F85"
-            BrushAccent      = "#1E66F5"
-            BrushAccentHover = "#209FB5"
-            BrushAccentText  = "#FFFFFF"
-            BrushSuccess     = "#40A02B"
-            BrushWarning     = "#DF8E1D"
-            BrushDanger      = "#D20F39"
-            BrushConsoleBg   = "#1E2030"
-            BrushConsoleFg   = "#A6E3A1"
+            BrushBgApp         = "#F0FBF7"
+            BrushBgSidebar     = "#E2F5EE"
+            BrushBgSurface     = "#FFFFFF"
+            BrushBgCard        = "#FFFFFF"
+            BrushBgCardAlt     = "#D7EFE6"
+            BrushBgCardHover   = "#C2E8DA"
+            BrushBgInput       = "#F6FCFA"
+            BrushBrandStart    = "#005227"
+            BrushBrandEnd      = "#038554"
+            BrushBorder        = "#9FD4C1"
+            BrushBorderStrong  = "#038554"
+            BrushBorderHover   = "#03BB85"
+            BrushTextPrimary   = "#042919"
+            BrushTextSecondary = "#005227"
+            BrushTextMuted     = "#2C6B53"
+            BrushAccent        = "#038554"
+            BrushAccentHover   = "#03BB85"
+            BrushAccentDeep    = "#005227"
+            BrushAccentText    = "#FFFFFF"
+            BrushSuccess       = "#038554"
+            BrushWarning       = "#B45309"
+            BrushDanger        = "#BE123C"
+            BrushConsoleBg     = "#050C09"
+            BrushConsoleFg     = "#A4FFF7"
         }
     } else {
         @{
-            BrushBgApp       = "#11111B"
-            BrushBgSidebar   = "#161624"
-            BrushBgSurface   = "#1E1E2E"
-            BrushBgCard      = "#24273A"
-            BrushBgCardAlt   = "#2A2D42"
-            BrushBgInput     = "#181825"
-            BrushBorder      = "#363A4F"
-            BrushBorderHover = "#89B4FA"
-            BrushTextPrimary = "#CDD6F4"
-            BrushTextMuted   = "#9399B2"
-            BrushAccent      = "#89B4FA"
-            BrushAccentHover = "#B4BEFE"
-            BrushAccentText  = "#11111B"
-            BrushSuccess     = "#A6E3A1"
-            BrushWarning     = "#F9E2AF"
-            BrushDanger      = "#F38BA8"
-            BrushConsoleBg   = "#0D0D14"
-            BrushConsoleFg   = "#A6E3A1"
+            BrushBgApp         = "#07110D"
+            BrushBgSidebar     = "#0A1712"
+            BrushBgSurface     = "#0E2019"
+            BrushBgCard        = "#12281F"
+            BrushBgCardAlt     = "#173428"
+            BrushBgCardHover   = "#1D4233"
+            BrushBgInput       = "#091510"
+            BrushBrandStart    = "#005227"
+            BrushBrandEnd      = "#038554"
+            BrushBorder        = "#1F4636"
+            BrushBorderStrong  = "#038554"
+            BrushBorderHover   = "#68DDBD"
+            BrushTextPrimary   = "#E9FBF5"
+            BrushTextSecondary = "#A4FFF7"
+            BrushTextMuted     = "#83B8A6"
+            BrushAccent        = "#03BB85"
+            BrushAccentHover   = "#68DDBD"
+            BrushAccentDeep    = "#005227"
+            BrushAccentText    = "#031A10"
+            BrushSuccess       = "#68DDBD"
+            BrushWarning       = "#F9E2AF"
+            BrushDanger        = "#F38BA8"
+            BrushConsoleBg     = "#050C09"
+            BrushConsoleFg     = "#A4FFF7"
         }
     }
 
@@ -3208,11 +3271,37 @@ function Set-HudTheme {
     if ($global:WinRepairSync) { $global:WinRepairSync.ThemeMode = $Mode }
 }
 
+function Update-PresetCardVisuals {
+    param([string]$ActivePreset = "Nenhum")
+
+    $ui = $global:WinRepairUi
+    if (-not $ui -or -not $ui.Window) { return }
+
+    $map = @{
+        Desktop  = $ui.Window.FindName("btnPresetDesktop")
+        Notebook = $ui.Window.FindName("btnPresetNotebook")
+        All      = $ui.Window.FindName("btnPresetAll")
+    }
+
+    foreach ($k in $map.Keys) {
+        $btn = $map[$k]
+        if (-not $btn) { continue }
+        if ($k -eq $ActivePreset) {
+            $btn.SetResourceReference([System.Windows.Controls.Control]::BackgroundProperty, "BrushAccentDeep")
+            $btn.SetResourceReference([System.Windows.Controls.Control]::BorderBrushProperty, "BrushTextSecondary")
+        } else {
+            $btn.SetResourceReference([System.Windows.Controls.Control]::BackgroundProperty, "BrushBgCardAlt")
+            $btn.SetResourceReference([System.Windows.Controls.Control]::BorderBrushProperty, "BrushBorderStrong")
+        }
+    }
+}
+
 function Update-TweaksSelectionPreview {
     $ui = $global:WinRepairUi
     if (-not $ui) { return }
 
     $ui.Window.FindName("txtActivePresetBadge").Text = "Perfil: $($ui.ActivePreset)"
+    Update-PresetCardVisuals -ActivePreset $ui.ActivePreset
 
     $selected = New-Object System.Collections.Generic.List[object]
     foreach ($k in $ui.TweakCheckBoxes.Keys) {
@@ -3277,7 +3366,7 @@ function Select-TweakPreset {
     Update-TweaksSelectionPreview
 
     $checkedCount = @($ui.TweakCheckBoxes.Values | Where-Object { $_.IsChecked }).Count
-    Write-ToolLog "Perfil [$PresetName] selecionado ($checkedCount opções marcadas). Revise no painel superior e clique em 'Aplicar Tweaks Selecionados' quando estiver pronto." "INFO"
+    Write-ToolLog "Perfil [$PresetName] selecionado ($checkedCount opções marcadas). Revise no painel superior e clique em 'Aplicar Tweaks Selecionados' para executar." "INFO"
 }
 
 function Update-AppsSelectionCounter {
@@ -3297,14 +3386,21 @@ function Update-AppxSelectionCounter {
 function Apply-GlobalSearchFilter {
     $ui = $global:WinRepairUi
     if (-not $ui) { return }
-    $q = $ui.Window.FindName("txtGlobalSearch").Text.Trim().ToLowerInvariant()
+    $rawText = $ui.Window.FindName("txtGlobalSearch").Text
+    $ui.Window.FindName("txtSearchPlaceholder").Visibility = if ([string]::IsNullOrEmpty($rawText)) {
+        [System.Windows.Visibility]::Visible
+    } else {
+        [System.Windows.Visibility]::Collapsed
+    }
 
-    # Apps tab
+    $q = $rawText.Trim().ToLowerInvariant()
+
     foreach ($catInfo in $ui.AppCategoryExpanders) {
         $anyVisible = $false
         $catMatchesFilter = ($ui.SelectedAppCategory -eq "Todas" -or $catInfo.Category -eq $ui.SelectedAppCategory)
         foreach ($cb in $catInfo.CheckBoxes) {
-            $match = ([string]::IsNullOrEmpty($q)) -or (([string]$cb.Content).ToLowerInvariant().Contains($q)) -or (([string]$cb.ToolTip).ToLowerInvariant().Contains($q))
+            $descTxt = if ($cb.Resources["HoverHelpInfo"]) { $cb.Resources["HoverHelpInfo"].Description } else { "" }
+            $match = ([string]::IsNullOrEmpty($q)) -or (([string]$cb.Content).ToLowerInvariant().Contains($q)) -or ($descTxt.ToLowerInvariant().Contains($q))
             if ($catMatchesFilter -and $match) {
                 $cb.Visibility = [System.Windows.Visibility]::Visible
                 $anyVisible = $true
@@ -3315,26 +3411,12 @@ function Apply-GlobalSearchFilter {
         $catInfo.Expander.Visibility = if ($catMatchesFilter -and $anyVisible) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
     }
 
-    # Tweaks
-    foreach ($cb in $ui.TweakCheckBoxes.Values) {
-        $match = ([string]::IsNullOrEmpty($q)) -or (([string]$cb.Content).ToLowerInvariant().Contains($q)) -or (([string]$cb.ToolTip).ToLowerInvariant().Contains($q))
-        $cb.Visibility = if ($match) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
-    }
-    foreach ($cb in $ui.ToggleBoxes.Values) {
-        $match = ([string]::IsNullOrEmpty($q)) -or (([string]$cb.Content).ToLowerInvariant().Contains($q)) -or (([string]$cb.ToolTip).ToLowerInvariant().Contains($q))
-        $cb.Visibility = if ($match) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
-    }
-
-    # AppX
-    foreach ($cb in $ui.AppxCheckBoxes.Values) {
-        $match = ([string]::IsNullOrEmpty($q)) -or (([string]$cb.Content).ToLowerInvariant().Contains($q)) -or (([string]$cb.ToolTip).ToLowerInvariant().Contains($q))
-        $cb.Visibility = if ($match) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
-    }
-
-    # Features
-    foreach ($cb in $ui.FeatureCheckBoxes.Values) {
-        $match = ([string]::IsNullOrEmpty($q)) -or (([string]$cb.Content).ToLowerInvariant().Contains($q)) -or (([string]$cb.ToolTip).ToLowerInvariant().Contains($q))
-        $cb.Visibility = if ($match) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+    foreach ($map in @($ui.TweakCheckBoxes, $ui.ToggleBoxes, $ui.AppxCheckBoxes, $ui.FeatureCheckBoxes)) {
+        foreach ($cb in $map.Values) {
+            $descTxt = if ($cb.Resources["HoverHelpInfo"]) { $cb.Resources["HoverHelpInfo"].Description } else { "" }
+            $match = ([string]::IsNullOrEmpty($q)) -or (([string]$cb.Content).ToLowerInvariant().Contains($q)) -or ($descTxt.ToLowerInvariant().Contains($q))
+            $cb.Visibility = if ($match) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+        }
     }
 }
 
@@ -3345,10 +3427,10 @@ function Set-ActiveHudView {
     if (-not $ui) { return }
 
     $meta = @{
-        Install = @{ Title = "Catálogo de Softwares"; Sub = "Instale, atualize ou desinstale mais de 230 aplicativos via WinGet ou Chocolatey" }
-        Tweaks  = @{ Title = "Tweaks & Perfis Recomendados"; Sub = "Escolha Desktop, Notebook ou All para pré-selecionar e revisar antes de executar" }
-        Appx    = @{ Title = "Gerenciador de AppX & Bloatware"; Sub = "Remova bloatwares pré-instalados ou reinstale aplicativos originais pela Store" }
-        Network = @{ Title = "Rede, Diagnóstico & DNS"; Sub = "Todas as 14 ferramentas completas de rede, varredura de sub-rede, TCP e Benchmark DNS" }
+        Install = @{ Title = "Catálogo de Softwares"; Sub = "Passe o mouse em qualquer software para ver descrição e instale via WinGet ou Chocolatey" }
+        Tweaks  = @{ Title = "Tweaks & Perfis Recomendados"; Sub = "Escolha Desktop, Notebook ou All para pré-selecionar e revisar antes de aplicar" }
+        Appx    = @{ Title = "Gerenciador de AppX & Bloatware"; Sub = "Remova aplicativos pré-instalados do Windows ou reinstale via Microsoft Store" }
+        Network = @{ Title = "Rede, Diagnóstico & DNS"; Sub = "14 ferramentas integradas de diagnóstico, varredura de rede local, TCP e Benchmark DNS" }
         Config  = @{ Title = "Recursos, Correções & Painéis do Sistema"; Sub = "Recursos opcionais, reparo DISM/SFC/Update, 14 painéis clássicos e OpenSSH" }
         Updates = @{ Title = "Políticas do Windows Update"; Sub = "Controle completo sobre atualizações automáticas, drivers e adiamento" }
         Iso     = @{ Title = "Criador de ISO Customizada & Pendrive USB"; Sub = "Injete bypasses, autounattend, drivers locais e grave direto no pendrive" }
@@ -3363,6 +3445,110 @@ function Set-ActiveHudView {
         $ui.Window.FindName("txtSectionSubtitle").Text = $meta[$ViewKey].Sub
     }
     $ui.ActiveView = $ViewKey
+}
+
+function Initialize-StaticHoverHelp {
+    $ui = $global:WinRepairUi
+    $w = $ui.Window
+
+    $entries = @(
+        @("navTweaks", "Tweaks & Perfis", "Abre os perfis recomendados (Desktop, Notebook, All), otimizações do sistema e preferências instantâneas.", "Navegação"),
+        @("navInstall", "Catálogo de Softwares", "Instale, desinstale ou atualize 239 programas populares silenciosamente via WinGet ou Chocolatey.", "Navegação"),
+        @("navAppx", "AppX & Bloatware", "Remova ou reinstale aplicativos universais pré-instalados da Microsoft Store.", "Navegação"),
+        @("navNetwork", "Rede & Diagnóstico", "Diagnóstico de rede em 14 ferramentas, varredura de IPs locais, otimização TCP e Benchmark DNS.", "Navegação"),
+        @("navConfig", "Recursos & Reparos", "Recursos opcionais (WSL 2, Sandbox, Hyper-V), SFC/DISM, OpenSSH e 14 painéis clássicos.", "Navegação"),
+        @("navUpdates", "Windows Update", "Escolha entre Padrão Microsoft, Recomendado (Estável), Pausa até 2042 ou Desativar.", "Navegação"),
+        @("navIso", "Criador de ISO & USB", "Gere ISOs do Windows 10/11 sem TPM/Conta Microsoft e grave em pendrive FAT32 bootável.", "Navegação"),
+
+        @("btnImportConfig", "Importar Seleção (.json)", "Carrega um arquivo .json e apenas marca os itens correspondentes para você revisar.", "Arquivo"),
+        @("btnExportConfig", "Exportar Seleção (.json)", "Salva todas as opções marcadas atualmente em um arquivo .json reutilizável.", "Arquivo"),
+        @("btnEnvReport", "Relatório do Ambiente", "Gera arquivo .txt na Área de Trabalho com hardware, versões de gerenciadores e status atual.", "Relatório"),
+        @("btnToggleTheme", "Alternar Tema", "Alterna entre a paleta Verde Água Nocturne (Escuro) e Verde Água Breeze (Claro).", "Aparência"),
+        @("btnFontDown", "Diminuir Fonte", "Reduz o tamanho do texto da interface para exibir mais itens por tela.", "Aparência"),
+        @("btnFontUp", "Aumentar Fonte", "Amplia o tamanho do texto da interface para facilitar a leitura.", "Aparência"),
+
+        @("btnPresetDesktop", "Perfil Desktop (Pré-Seleção)", "Marca 21 otimizações ideais para PCs de mesa (inclui desativar hibernação, TCP Gaming e TRIM). Não executa sozinho.", "Perfil"),
+        @("btnPresetNotebook", "Perfil Notebook (Pré-Seleção)", "Marca 19 otimizações seguras para laptops, preservando hibernação e economia de energia Wi-Fi. Não executa sozinho.", "Perfil"),
+        @("btnPresetAll", "Perfil All (Marcar Tudo)", "Marca todas as 48 opções de Tweaks Essenciais e Avançados no painel para revisão antes de executar.", "Perfil"),
+        @("btnCreateRestorePoint", "Criar Ponto de Restauração", "Cria um ponto de segurança nativo do Windows para reverter alterações caso precise.", "Segurança"),
+        @("btnApplyTweaks", "Aplicar Tweaks Selecionados", "Executa em segundo plano apenas as opções marcadas na lista abaixo.", "Execução"),
+        @("btnUndoTweaks", "Desfazer Selecionados", "Reverte as modificações de registro/serviços das opções marcadas atualmente.", "Reverter"),
+        @("btnClearTweaks", "Limpar Seleção", "Desmarca todas as caixas de Tweaks e limpa a lista de pré-visualização.", "Seleção"),
+        @("btnEnableUltPerf", "Plano Desempenho Máximo", "Desbloqueia e ativa o esquema oculto Ultimate Performance (maior resposta de CPU).", "Energia"),
+        @("btnDisableUltPerf", "Restaurar Planos de Energia", "Restaura os esquemas de energia padrão de fábrica do Windows.", "Energia"),
+        @("btnRunOOSU", "Executar O&O ShutUp10++", "Baixa e abre a ferramenta portátil oficial O&O ShutUp10++ para ajustes extras de privacidade.", "Privacidade"),
+
+        @("btnInstallApps", "Instalar / Atualizar Selecionados", "Instala ou atualiza todos os programas marcados usando WinGet ou Chocolatey.", "Softwares"),
+        @("btnUninstallApps", "Desinstalar Selecionados", "Remove silenciosamente do sistema todos os programas marcados no catálogo.", "Softwares"),
+        @("btnUpgradeAllApps", "Atualizar Todos os Apps", "Executa atualização geral de todos os programas instalados no computador.", "Softwares"),
+        @("btnDetectInstalledApps", "Mostrar Instalados", "Destaca em verde Água os softwares do catálogo que já estão instalados neste PC.", "Softwares"),
+        @("btnClearApps", "Limpar Seleção de Apps", "Desmarca todos os checkboxes da lista de softwares.", "Seleção"),
+
+        @("btnAppxDefault", "Marcar Bloatwares Padrão", "Marca automaticamente os 18 aplicativos pré-instalados mais comuns para remoção (apenas seleciona).", "AppX"),
+        @("btnAppxSelectAll", "Marcar Todos AppX", "Marca todos os 34 pacotes AppX listados abaixo.", "AppX"),
+        @("btnAppxClear", "Limpar Seleção AppX", "Desmarca todos os checkboxes de AppX.", "AppX"),
+        @("btnAppxDetectInstalled", "Destacar AppX Instalados", "Verifica no sistema e destaca em destaque os AppX atualmente instalados.", "AppX"),
+        @("btnAppxRemove", "Remover Selecionados", "Remove os pacotes AppX selecionados para todos os usuários e da imagem provisionada.", "Cuidado"),
+        @("btnAppxInstall", "Reinstalar Selecionados (Store)", "Baixa e reinstala os pacotes selecionados diretamente da Microsoft Store via WinGet.", "Restaurar"),
+
+        @("btnNetQuickDiag", "[1] Diagnóstico Rápido Integrado", "Testa placa local (127.0.0.1), Gateway/roteador, saída IP direta e resolução DNS em sequência.", "Rede"),
+        @("btnNetDetailed", "[2] Teste Detalhado (Ping + HTTPS + DNS)", "Mede latência média/perda ICMP, valida acesso Web HTTPS porta 443 e resolução de domínios.", "Rede"),
+        @("btnNetSpeedtest", "[3] Teste Velocidade Download", "Baixa bloco de 5 MB via CDN Cloudflare para medir a taxa real de download em Mbps.", "Rede"),
+        @("btnNetWifi", "[4] Diagnóstico Wi-Fi", "Exibe interface sem fio atual, força do sinal em %, canal, SSID e redes próximas.", "Rede"),
+        @("btnNetWifiReport", "[4b] Gerar Relatório Wi-Fi (HTML)", "Gera relatório oficial netsh wlanreport detalhado com histórico de quedas de Wi-Fi.", "Rede"),
+        @("btnNetTestPort", "[5] Testar Porta TCP Alvo", "Verifica se o Host/IP e Porta informados acima estão acessíveis e abertos.", "Rede"),
+        @("btnNetPathping", "[6] Perda de Pacotes (Pathping)", "Analisa perda de pacotes em cada salto até o destino informado.", "Rede"),
+        @("btnNetTracert", "[7] Rastrear Rota (Tracert)", "Lista todos os roteadores (hops) entre seu PC e o destino para achar gargalos.", "Rede"),
+        @("btnNetPingCont", "[8] Ping Contínuo (-t)", "Abre janela separada executando ping -t contínuo no alvo para monitorar estabilidade.", "Rede"),
+        @("btnNetstatEst", "[9a] Netstat: Conexões Ativas", "Lista conexões TCP ativas (ESTABLISHED) com portas e PID do processo.", "Monitor"),
+        @("btnNetstatList", "[9b] Netstat: Portas Escutando", "Lista serviços e portas abertas aguardando conexões (LISTENING) no sistema.", "Monitor"),
+        @("btnNetstatAll", "[9c] Netstat: Tudo Detalhado", "Exibe todas as conexões e sockets ativos com PIDs.", "Monitor"),
+        @("btnNetSubnetScan", "[10] Varredura Rede Local", "Escaneia IPs ativos na sub-rede local, coleta MAC/ARP, lista blocos de IPs livres e salva no Desktop.", "Rede Local"),
+        @("btnNetIpConfig", "[11] Exibir ipconfig /all", "Mostra detalhes completos de IPv4, IPv6, DHCP, Gateway e servidores DNS atuais.", "Rede"),
+        @("btnNetSimpleRepair", "[12] Reparar Conexão", "Executa Flush DNS, renova IP via DHCP (release/renew) e recarrega tabela NetBIOS.", "Reparo"),
+        @("btnNetResetDeep", "[13] Reset Completo Pilha TCP/IP", "Reseta Winsock, IPv4, IPv6, WinHTTP Proxy, cache ARP e regras do Firewall do Windows.", "Cuidado"),
+        @("btnNetForensicReport", "[14] Relatório Forense Completo (.TXT)", "Coleta 8 diagnósticos completos de rede e salva arquivo .txt na Área de Trabalho.", "Relatório"),
+        @("btnRestartAdapters", "Reiniciar Placas de Rede", "Desativa e reativa adaptadores físicos Ethernet/Wi-Fi conectados.", "Rede"),
+        @("btnOptimizeTcpTab", "Otimizar TCP Baixa Latência", "Ativa AutoTuning normal, RSS, ECN e remove limite multimídia NetworkThrottlingIndex.", "Gaming"),
+        @("btnDnsBenchmark", "Benchmark DNS (Latência)", "Testa tempo de resposta TCP/53 em todos os provedores DNS para encontrar o mais rápido na sua rede.", "DNS"),
+        @("btnApplyDns", "Aplicar DNS Selecionado", "Aplica IPv4, IPv6 e DNS-over-HTTPS (DoH) do provedor escolhido no ComboBox.", "DNS"),
+
+        @("btnInstallFeatures", "Instalar Recursos Selecionados", "Habilita os recursos opcionais marcados acima usando DISM / Recursos do Windows.", "Sistema"),
+        @("btnFixFullCorruption", "Verificação Completa (DISM + SFC)", "Executa DISM /RestoreHealth seguido de SFC /scannow para reparar arquivos corrompidos do Windows.", "Reparo"),
+        @("btnSfcScan", "SFC /scannow", "Verifica e corrige arquivos protegidos do Windows corrompidos.", "Reparo"),
+        @("btnDismRepair", "DISM /RestoreHealth", "Repara a imagem base do sistema Windows via Windows Update.", "Reparo"),
+        @("btnDismCleanup", "Limpar WinSxS", "Remove versões antigas obsoletas de componentes da pasta WinSxS (/ResetBase).", "Limpeza"),
+        @("btnFixWuReset", "Resetar Windows Update", "Limpa cache SoftwareDistribution, re-registra DLLs e reinicia serviços de atualização.", "Update"),
+        @("btnFixWuResetAggressive", "Resetar WU (Agressivo)", "Além do reset padrão, executa DISM+SFC e redefine permissões SDSET de segurança dos serviços.", "Cuidado"),
+        @("btnFixNetwork", "Resetar Rede Completa", "Reseta Winsock, TCP/IP, Proxy e Firewall para corrigir internet sem conexão.", "Rede"),
+        @("btnFixWinget", "Reinstalar / Reparar WinGet", "Usa Microsoft.WinGet.Client para instalar ou consertar o gerenciador WinGet.", "Reparo"),
+        @("btnFixNtpPool", "Sincronizar NTP (pool.ntp.org)", "Substitui o servidor de horário padrão por pool.ntp.org para maior precisão.", "Sistema"),
+        @("btnFixAutologon", "Executar Autologon (Sysinternals)", "Baixa e abre o utilitário oficial Sysinternals para configurar login automático seguro.", "Sistema"),
+        @("btnRestartSpooler", "Destravar Spooler Impressão", "Limpa documentos travados da fila de impressão e reinicia o serviço Spooler.", "Reparo"),
+        @("btnScheduleChkdsk", "Agendar CHKDSK (Disco C:)", "Agenda verificação e reparo de erros no sistema de arquivos do disco C: na próxima reinicialização.", "Disco"),
+        @("btnEnableSshServer", "Habilitar Servidor OpenSSH", "Instala OpenSSH Server, libera porta TCP 22 no Firewall e configura chaves administrativas.", "Remoto"),
+        @("btnInstallPsProfile", "Instalar Perfil PowerShell 7", "Configura histórico preditivo PSReadLine e atalhos úteis no perfil do PowerShell 7.", "Terminal"),
+        @("btnUninstallPsProfile", "Remover Perfil PowerShell 7", "Remove o perfil personalizado e restaura o backup anterior (.bak) se existir.", "Terminal"),
+
+        @("btnWuDefault", "Restaurar Windows Update Padrão", "Remove todas as políticas de adiamento e devolve o controle automático padrão da Microsoft.", "Update"),
+        @("btnWuRecommended", "Aplicar Modo Recomendado", "Evita drivers automáticos e adia recursos grandes por 365 dias mantendo segurança em dia.", "Recomendado"),
+        @("btnWuPause", "Pausar Atualizações até 2042", "Estende o limite oficial de pausa do Windows Update até o ano de 2042.", "Update"),
+        @("btnWuDisable", "Desativar Windows Update", "Para e desativa serviços/tarefas de atualização. Requer confirmação explícita.", "Cuidado"),
+
+        @("btnBrowseIso", "Procurar ISO", "Seleciona o arquivo .iso oficial do Windows 10 ou Windows 11 no computador.", "ISO"),
+        @("btnInspectIso", "Analisar Edições", "Monta a ISO temporariamente para listar todas as edições disponíveis (Home, Pro, etc.).", "ISO"),
+        @("btnBuildCustomIso", "Preparar e Gerar ISO Otimizada", "Injeta bypasses, debloat, autounattend.xml, drivers locais e prepara a ISO/mídia.", "ISO"),
+        @("btnRefreshUsb", "Atualizar USBs", "Lista pendrives USB removíveis conectados prontos para receber a instalação bootável.", "USB"),
+        @("btnWriteUsb", "Formatar e Gravar Pendrive", "Formata o pendrive em FAT32 UEFI (dividindo install.wim >4GB se necessário) e grava os arquivos.", "Cuidado")
+    )
+
+    foreach ($item in $entries) {
+        $ctrl = $w.FindName($item[0])
+        if ($ctrl) {
+            $noTip = ($item[0] -like "nav*")
+            Register-HoverHelp -Control $ctrl -Title $item[1] -Description $item[2] -Badge $item[3] -NoToolTip:$noTip
+        }
+    }
 }
 
 function Start-WinRepairUI {
@@ -3442,18 +3628,33 @@ function Start-WinRepairUI {
         $window.FindName("txtSystemInfo").Text = "Windows | $($env:COMPUTERNAME)"
     }
 
+    # Tradução PT-BR das categorias de Softwares
+    $appCatNames = @{
+        "Browsers"         = "Navegadores"
+        "Communications"   = "Comunicação"
+        "Development"      = "Desenvolvimento"
+        "Document"         = "Documentos & PDF"
+        "Games"            = "Jogos & Launchers"
+        "Microsoft Tools"  = "Ferramentas Microsoft"
+        "Multimedia Tools" = "Multimídia & Vídeo"
+        "Pro Tools"        = "Ferramentas Pro"
+        "Selfhosted Tools" = "Selfhosted & Rede"
+        "Utilities"        = "Utilitários Essenciais"
+    }
+
     # ==========================================================================
-    # POPULAR CONTROLES DINÂMICOS A PARTIR DOS JSONS
+    # POPULAR CONTROLES DINÂMICOS + HOVER HELP INSTANTÂNEO
     # ==========================================================================
 
     # 1. SOFTWARES (239 Apps)
     $appsByCategory = [ordered]@{}
     foreach ($p in $Configs.Applications.PSObject.Properties) {
-        $cat = if ($p.Value.category) { $p.Value.category } else { "Outros" }
+        $rawCat = if ($p.Value.category) { $p.Value.category } else { "Utilities" }
+        $cat = if ($appCatNames.ContainsKey($rawCat)) { $appCatNames[$rawCat] } else { $rawCat }
         if (-not $appsByCategory.Contains($cat)) {
             $appsByCategory[$cat] = New-Object System.Collections.Generic.List[object]
         }
-        [void]$appsByCategory[$cat].Add([pscustomobject]@{ Key = $p.Name; Data = $p.Value })
+        [void]$appsByCategory[$cat].Add([pscustomobject]@{ Key = $p.Name; Data = $p.Value; CatLabel = $cat })
     }
 
     $chipsWrap = $window.FindName("panelAppCategoryChips")
@@ -3464,6 +3665,7 @@ function Start-WinRepairUI {
         $global:WinRepairUi.SelectedAppCategory = "Todas"
         Apply-GlobalSearchFilter
     })
+    Register-HoverHelp -Control $allChip -Title "Mostrar Todas" -Description "Exibe todas as categorias do catálogo de softwares." -Badge "Filtro" -NoToolTip
     [void]$chipsWrap.Children.Add($allChip)
 
     $appCols = @($window.FindName("panelAppsCol0"), $window.FindName("panelAppsCol1"), $window.FindName("panelAppsCol2"))
@@ -3480,6 +3682,7 @@ function Start-WinRepairUI {
             $global:WinRepairUi.SelectedAppCategory = [string]$s.Tag
             Apply-GlobalSearchFilter
         })
+        Register-HoverHelp -Control $chip -Title "Categoria: $catName" -Description "Filtra apenas os $($items.Count) aplicativo(s) de $catName." -Badge "Filtro" -NoToolTip
         [void]$chipsWrap.Children.Add($chip)
 
         $exp = New-Object System.Windows.Controls.Expander
@@ -3488,7 +3691,7 @@ function Start-WinRepairUI {
         $exp.FontWeight = [System.Windows.FontWeights]::Bold
 
         $stack = New-Object System.Windows.Controls.StackPanel
-        $stack.Margin = New-Object System.Windows.Thickness(8, 4, 8, 8)
+        $stack.Margin = New-Object System.Windows.Thickness(6, 6, 6, 8)
         $catCheckBoxes = New-Object System.Collections.Generic.List[object]
 
         foreach ($appEntry in $items) {
@@ -3497,7 +3700,12 @@ function Start-WinRepairUI {
             $cb.Content = "$($appEntry.Data.content)$fossTag"
             $cb.Tag = $appEntry.Key
             $cb.FontWeight = [System.Windows.FontWeights]::Normal
-            if ($appEntry.Data.description) { $cb.ToolTip = $appEntry.Data.description }
+
+            $wgTxt = if ($appEntry.Data.winget -and $appEntry.Data.winget -ne "na") { $appEntry.Data.winget } else { "-" }
+            $desc = if ($appEntry.Data.description) { "$($appEntry.Data.description) (WinGet: $wgTxt)" } else { "WinGet: $wgTxt" }
+            $badge = if ($appEntry.Data.foss -eq $true) { "FOSS • $catName" } else { $catName }
+            Register-HoverHelp -Control $cb -Title $appEntry.Data.content -Description $desc -Badge $badge
+
             $cb.Add_Checked({ Update-AppsSelectionCounter })
             $cb.Add_Unchecked({ Update-AppsSelectionCounter })
             [void]$stack.Children.Add($cb)
@@ -3528,13 +3736,16 @@ function Start-WinRepairUI {
 
         if ($key -in @("WPFOOSUbutton", "WPFchangedns", "WPFAddUltPerf", "WPFRemoveUltPerf")) { continue }
 
+        $descText = if ($item.Description) { $item.Description } else { $item.Content }
+
         if ($typ -eq "Toggle") {
             $tg = New-Object System.Windows.Controls.CheckBox
             $tg.Content = $item.Content
             $tg.Tag = $key
             $tg.Style = $window.FindResource("ToggleSwitchStyle")
-            if ($item.Description) { $tg.ToolTip = $item.Description }
             try { $tg.IsChecked = (Get-ToggleCurrentState -TweakObj $item) } catch { $tg.IsChecked = $false }
+
+            Register-HoverHelp -Control $tg -Title $item.Content -Description $descText -Badge "Instantâneo"
 
             $tg.Add_Click({
                 param($sender, $e)
@@ -3552,13 +3763,15 @@ function Start-WinRepairUI {
             $lbl.Text = "$($item.Content):"
             $lbl.FontSize = 11.5
             $lbl.FontWeight = [System.Windows.FontWeights]::SemiBold
-            $lbl.Margin = New-Object System.Windows.Thickness(0, 8, 0, 3)
+            $lbl.Margin = New-Object System.Windows.Thickness(7, 10, 0, 3)
             $lbl.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, "BrushTextMuted")
             [void]$pPrefs.Children.Add($lbl)
 
             $cmb = New-Object System.Windows.Controls.ComboBox
             $cmb.Tag = $key
-            if ($item.Description) { $cmb.ToolTip = $item.Description }
+            $cmb.Margin = New-Object System.Windows.Thickness(7, 0, 7, 4)
+            Register-HoverHelp -Control $cmb -Title $item.Content -Description $descText -Badge "GPU / Vídeo"
+
             $comboOpts = @($item.ComboItems -split '\|')
             foreach ($opt in $comboOpts) { [void]$cmb.Items.Add($opt) }
             try {
@@ -3585,7 +3798,9 @@ function Start-WinRepairUI {
             $cb = New-Object System.Windows.Controls.CheckBox
             $cb.Content = $item.Content
             $cb.Tag = $key
-            if ($item.Description) { $cb.ToolTip = $item.Description }
+            $badgeLbl = if ($cat -eq "Avancados") { "Avançado (Cuidado)" } else { "Essencial" }
+            Register-HoverHelp -Control $cb -Title $item.Content -Description $descText -Badge $badgeLbl
+
             $cb.Add_Checked({
                 if (-not $global:WinRepairUi.SuppressPresetReset) { $global:WinRepairUi.ActivePreset = "Personalizado" }
                 Update-TweaksSelectionPreview
@@ -3626,14 +3841,17 @@ function Start-WinRepairUI {
         $hdrTxt.FontSize = 13.5
         $hdrTxt.FontWeight = [System.Windows.FontWeights]::Bold
         $hdrTxt.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
-        $hdrTxt.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, "BrushAccent")
+        $hdrTxt.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, "BrushTextSecondary")
         [void]$sp.Children.Add($hdrTxt)
 
         foreach ($ax in ($appxByCat[$catName] | Sort-Object { $_.Data.Content })) {
             $cb = New-Object System.Windows.Controls.CheckBox
             $cb.Content = $ax.Data.Content
             $cb.Tag = $ax.Key
-            if ($ax.Data.Description) { $cb.ToolTip = $ax.Data.Description }
+            $axDesc = if ($ax.Data.Description) { $ax.Data.Description } else { $ax.Data.PackageId }
+            $axBadge = if ($ax.Data.DefaultDebloat -eq $true) { "Bloatware Padrão" } else { $catName }
+            Register-HoverHelp -Control $cb -Title $ax.Data.Content -Description $axDesc -Badge $axBadge
+
             $cb.Add_Checked({ Update-AppxSelectionCounter })
             $cb.Add_Unchecked({ Update-AppxSelectionCounter })
             [void]$sp.Children.Add($cb)
@@ -3653,6 +3871,7 @@ function Start-WinRepairUI {
     }
     [void]$cmbDns.Items.Add("Automático (DHCP)")
     $cmbDns.SelectedIndex = 0
+    Register-HoverHelp -Control $cmbDns -Title "Seletor de Provedor DNS" -Description "Escolha Cloudflare, Google, Quad9, OpenDNS, AdGuard ou deixe no modo Benchmark automático." -Badge "DNS"
 
     # 5. RECURSOS OPCIONAIS & 14 PAINÉIS CLÁSSICOS
     $pFeat = $window.FindName("panelFeaturesContainer")
@@ -3661,18 +3880,20 @@ function Start-WinRepairUI {
     foreach ($p in $Configs.Features.PSObject.Properties) {
         $key = $p.Name
         $f = $p.Value
+        $fDesc = if ($f.Description) { $f.Description } else { $f.Content }
         if ($f.category -eq "Features" -and $key -ne "WPFFeatureInstall") {
             $cb = New-Object System.Windows.Controls.CheckBox
             $cb.Content = $f.Content
             $cb.Tag = $key
-            if ($f.Description) { $cb.ToolTip = $f.Description }
+            Register-HoverHelp -Control $cb -Title $f.Content -Description $fDesc -Badge "Recurso Windows"
             [void]$pFeat.Children.Add($cb)
             $global:WinRepairUi.FeatureCheckBoxes[$key] = $cb
         } elseif ($f.category -eq "Legacy Windows Panels") {
             $btn = New-Object System.Windows.Controls.Button
             $btn.Content = $f.Content
             $btn.Tag = $key
-            $btn.MinWidth = 175
+            $btn.MinWidth = 178
+            Register-HoverHelp -Control $btn -Title $f.Content -Description $fDesc -Badge "Painel Clássico"
             $btn.Add_Click({
                 param($sender, $e)
                 $lKey = [string]$sender.Tag
@@ -3687,11 +3908,13 @@ function Start-WinRepairUI {
         }
     }
 
+    # Hover help em todos os botões e elementos estáticos
+    Initialize-StaticHoverHelp
+
     # ==========================================================================
     # VINCULAÇÃO DE EVENTOS PRINCIPAIS
     # ==========================================================================
 
-    # Navegação Sidebar
     $window.FindName("navInstall").Add_Checked({ Set-ActiveHudView "Install" })
     $window.FindName("navTweaks").Add_Checked({ Set-ActiveHudView "Tweaks" })
     $window.FindName("navAppx").Add_Checked({ Set-ActiveHudView "Appx" })
@@ -3700,13 +3923,11 @@ function Start-WinRepairUI {
     $window.FindName("navUpdates").Add_Checked({ Set-ActiveHudView "Updates" })
     $window.FindName("navIso").Add_Checked({ Set-ActiveHudView "Iso" })
 
-    # Busca Global
     $window.FindName("txtGlobalSearch").Add_TextChanged({ Apply-GlobalSearchFilter })
     $window.FindName("btnClearSearch").Add_Click({
         $global:WinRepairUi.Window.FindName("txtGlobalSearch").Text = ""
     })
 
-    # Tema & Escala de Fonte
     $window.FindName("btnToggleTheme").Add_Click({
         $next = if ($global:WinRepairUi.CurrentTheme -eq "Dark") { "Light" } else { "Dark" }
         Set-HudTheme -Mode $next
@@ -3720,7 +3941,6 @@ function Start-WinRepairUI {
         if ($w.FontSize -gt 11) { $w.FontSize -= 1 }
     })
 
-    # Importar / Exportar JSON (Importação SOMENTE marca checkboxes, nunca executa)
     $window.FindName("btnExportConfig").Add_Click({
         $dlg = New-Object System.Windows.Forms.SaveFileDialog
         $dlg.Filter = "Configuração JSON (*.json)|*.json"
@@ -3779,13 +3999,12 @@ function Start-WinRepairUI {
         Start-AsyncAction -Label "Gerando Relatório do Ambiente..." -Action { Export-EnvironmentReport }
     })
 
-    # Console drawer buttons
     $window.FindName("btnToggleConsole").Add_Click({
         $ui = $global:WinRepairUi
         $row = $ui.Window.FindName("rowConsole")
         $btn = $ui.Window.FindName("btnToggleConsole")
         if ($ui.ConsoleCollapsed) {
-            $row.Height = New-Object System.Windows.GridLength(175)
+            $row.Height = New-Object System.Windows.GridLength(155)
             $btn.Content = "$([char]0x25BC) Minimizar"
             $ui.ConsoleCollapsed = $false
         } else {
@@ -3884,7 +4103,7 @@ function Start-WinRepairUI {
                     $cb.SetResourceReference([System.Windows.Controls.CheckBox]::ForegroundProperty, "BrushTextPrimary")
                 }
             }
-            Write-ToolLog "Verificação concluída: $found aplicativo(s) do catálogo detectado(s) em verde." "SUCCESS"
+            Write-ToolLog "Verificação concluída: $found aplicativo(s) do catálogo detectado(s)." "SUCCESS"
         }
     })
 
@@ -3978,7 +4197,7 @@ function Start-WinRepairUI {
                     $cb.SetResourceReference([System.Windows.Controls.CheckBox]::ForegroundProperty, "BrushTextMuted")
                 }
             }
-            Write-ToolLog "$found pacote(s) AppX do catálogo estão instalados atualmente (destacados em verde)." "SUCCESS"
+            Write-ToolLog "$found pacote(s) AppX do catálogo estão instalados atualmente (destacados)." "SUCCESS"
         }
     })
     $window.FindName("btnAppxRemove").Add_Click({
@@ -4235,7 +4454,6 @@ function Start-WinRepairUI {
         }
     })
 
-    # Timer da UI para drenar LogQueue, atualizar status pill / progressbar e completar Runspaces
     $uiTimer = New-Object System.Windows.Threading.DispatcherTimer
     $uiTimer.Interval = [TimeSpan]::FromMilliseconds(150)
     $uiTimer.Add_Tick({
@@ -4293,8 +4511,8 @@ function Start-WinRepairUI {
 
     $global:WinRepairUi.Initializing = $false
 
-    Write-ToolLog "WinRepair & Tweaks Pro v3.0 carregado com sucesso!" "SUCCESS"
-    Write-ToolLog "Escolha um perfil (Desktop / Notebook / All) ou navegue pelas abas laterais." "INFO"
+    Write-ToolLog "WinRepair & Tweaks Pro v3.1 carregado com sucesso!" "SUCCESS"
+    Write-ToolLog "Passe o mouse em qualquer opção para ler o resumo instantâneo antes de executar." "INFO"
 
     $window.Add_Closed({ $uiTimer.Stop() })
     $window.ShowDialog() | Out-Null
@@ -4313,19 +4531,19 @@ $embeddedConfigs = @{
 {"1password":{"category":"Utilities","choco":"1password","content":"1Password","description":"1Password is a password manager that allows you to store and manage your passwords securely.","link":"https://1password.com/","winget":"AgileBits.1Password","foss":false},"7zip":{"category":"Utilities","choco":"7zip","content":"7-Zip","description":"7-Zip is a free and open-source file archiver utility. It supports several compression formats and provides a high compression ratio, making it a popular choice for file compression.","link":"https://www.7-zip.org/","winget":"7zip.7zip","foss":true},"abdownloadmanager":{"category":"Utilities","choco":"ab-download-manager","content":"AB Download Manager","description":"AB Download Manager is an open-source download accelerator and manager with multi-threaded downloads, queue scheduling, speed limiting, and browser integration.","link":"https://abdownloadmanager.com/","winget":"amir1376.ABDownloadManager","foss":true},"adobe":{"category":"Document","choco":"adobereader","content":"Adobe Acrobat Reader","description":"Adobe Acrobat Reader is a free PDF viewer with essential features for viewing, printing, and annotating PDF documents.","link":"https://www.adobe.com/acrobat/pdf-reader.html","winget":"Adobe.Acrobat.Reader.64-bit","foss":false},"advancedip":{"category":"Pro Tools","choco":"advanced-ip-scanner","content":"Advanced IP Scanner","description":"Advanced IP Scanner is a fast and easy-to-use network scanner. It is designed to analyze LAN networks and provides information about connected devices.","link":"https://www.advanced-ip-scanner.com/","winget":"Famatech.AdvancedIPScanner","foss":false},"aimp":{"category":"Multimedia Tools","choco":"aimp","content":"AIMP (Music Player)","description":"AIMP is a feature-rich music player with support for various audio formats, playlists, and customizable user interface.","link":"https://www.aimp.ru/","winget":"AIMP.AIMP","foss":false},"angryipscanner":{"category":"Pro Tools","choco":"angryip","content":"Angry IP Scanner","description":"Angry IP Scanner is an open-source and cross-platform network scanner. It is used to scan IP addresses and ports, providing information about network connectivity.","link":"https://angryip.org/","winget":"angryziber.AngryIPScanner","foss":true},"anydesk":{"category":"Utilities","choco":"anydesk","content":"AnyDesk","description":"AnyDesk is a remote desktop software that enables users to access and control computers remotely. It is known for its fast connection and low latency.","link":"https://anydesk.com/","winget":"AnyDesk.AnyDesk","foss":false},"audacity":{"category":"Multimedia Tools","choco":"audacity","content":"Audacity","description":"Audacity is a free and open-source audio editing software known for its powerful recording and editing capabilities.","link":"https://www.audacityteam.org/","winget":"Audacity.Audacity","foss":true},"autoruns":{"category":"Microsoft Tools","choco":"autoruns","content":"Autoruns","description":"This utility shows you what programs are configured to run during system bootup or login.","link":"https://learn.microsoft.com/en-us/sysinternals/downloads/autoruns","winget":"Microsoft.Sysinternals.Autoruns","foss":false},"rdcman":{"category":"Microsoft Tools","choco":"rdcman","content":"RDCMan","description":"RDCMan manages multiple remote desktop connections. It is useful for managing server labs where you need regular access to each machine such as automated checkin systems and data centers.","link":"https://learn.microsoft.com/en-us/sysinternals/downloads/rdcman","winget":"Microsoft.Sysinternals.RDCMan","foss":false},"autohotkey":{"category":"Utilities","choco":"autohotkey","content":"AutoHotkey","description":"AutoHotkey is a scripting language for Windows that allows users to create custom automation scripts and macros. It is often used for automating repetitive tasks and customizing keyboard shortcuts.","link":"https://www.autohotkey.com/","winget":"AutoHotkey.AutoHotkey","foss":true},"battlenet":{"category":"Games","choco":"na","winget":"Blizzard.BattleNet","content":"Battle.net","description":"Battle.net is a launcher for games created and developed by Activision Blizzard","link":"https://battle.net","foss":false},"bitwarden":{"category":"Utilities","choco":"bitwarden","content":"Bitwarden","description":"Bitwarden is an open-source password management solution. It allows users to store and manage their passwords in a secure and encrypted vault, accessible across multiple devices.","link":"https://bitwarden.com/","winget":"Bitwarden.Bitwarden","foss":true},"blender":{"category":"Multimedia Tools","choco":"blender","content":"Blender (3D Graphics)","description":"Blender is a powerful open-source 3D creation suite, offering modeling, sculpting, animation, and rendering tools.","link":"https://www.blender.org/","winget":"BlenderFoundation.Blender","foss":true},"brave":{"category":"Browsers","choco":"brave","content":"Brave","description":"Brave is a privacy-focused web browser that blocks ads and trackers, offering a faster and safer browsing experience.","link":"https://www.brave.com","winget":"Brave.Brave","foss":true},"bruno":{"category":"Development","choco":"bruno","content":"Bruno","description":"Bruno is a local-first API client that stores collections as plain text files for version control and collaboration.","link":"https://www.usebruno.com/","winget":"Bruno.Bruno","foss":true},"bulkcrapuninstaller":{"category":"Utilities","choco":"bulk-crap-uninstaller","content":"Bulk Crap Uninstaller","description":"Bulk Crap Uninstaller is a free and open-source uninstaller utility for Windows. It helps users remove unwanted programs and clean up their system by uninstalling multiple applications at once.","link":"https://www.bcuninstaller.com/","winget":"Klocman.BulkCrapUninstaller","foss":true},"blurautoclicker":{"category":"Utilities","choco":"na","content":"BlurAutoClicker","description":"An Auto-clicker with a few advanced features and generally better performance than popular alternatives.","link":"https://blur009.vercel.app/projects/blur-autoclicker/","winget":"Blur009.BlurAutoClicker","foss":true},"calibre":{"category":"Multimedia Tools","choco":"calibre","content":"Calibre","description":"Calibre is a powerful and easy-to-use e-book manager, viewer, and converter.","link":"https://calibre-ebook.com/","winget":"calibre.calibre","foss":true},"cemu":{"category":"Games","choco":"cemu","content":"Cemu","description":"Cemu is a highly experimental software to emulate Wii U applications on PC.","link":"https://cemu.info/","winget":"Cemu.Cemu","foss":true},"chatgpt":{"category":"Development","choco":"na","content":"ChatGPT Desktop","description":"The official ChatGPT desktop app for Windows, distributed through the Microsoft Store.","link":"https://openai.com/chatgpt/download/","winget":"msstore:9NT1R1C2HH7J","foss":false},"chatterino":{"category":"Communications","choco":"chatterino","content":"Chatterino","description":"Chatterino is a chat client for Twitch chat that offers a clean and customizable interface for a better streaming experience.","link":"https://www.chatterino.com/","winget":"ChatterinoTeam.Chatterino","foss":true},"chrome":{"category":"Browsers","choco":"googlechrome","content":"Chrome","description":"Google Chrome is a widely used web browser known for its speed, simplicity, and seamless integration with Google services.","link":"https://www.google.com/chrome/","winget":"Google.Chrome","foss":false},"chromium":{"category":"Browsers","choco":"chromium","content":"Chromium","description":"Chromium is the open-source project that serves as the foundation for various web browsers, including Chrome.","link":"https://www.chromium.org/","winget":"Hibbiki.Chromium","foss":true},"cinebenchr23":{"category":"Pro Tools","choco":"na","content":"Cinebench R23","description":"Cinebench R23 is a benchmark tool for comparing CPU rendering performance across systems.","link":"https://www.maxon.net/en/cinebench","winget":"Maxon.CinebenchR23","foss":false},"claude":{"category":"Development","choco":"claude","content":"Claude Desktop","description":"Anthropic\u0027s Claude desktop application for focused AI-assisted work and chat.","link":"https://claude.ai/download","winget":"Anthropic.Claude","foss":false},"claude-code":{"category":"Development","choco":"claude-code","content":"Claude Code","description":"Anthropic\u0027s agentic coding tool for terminal and IDE development workflows.","link":"https://code.claude.com/","winget":"Anthropic.ClaudeCode","foss":false},"cmake":{"category":"Development","choco":"cmake","content":"CMake","description":"CMake is an open-source, cross-platform family of tools designed to build, test and package software.","link":"https://cmake.org/","winget":"Kitware.CMake","foss":true},"codex":{"category":"Development","choco":"codex","content":"Codex","description":"Codex CLI is an OpenAI coding agent that runs locally in your terminal.","link":"https://developers.openai.com/codex/cli","winget":"OpenAI.Codex","foss":true},"cpuz":{"category":"Pro Tools","choco":"cpu-z","content":"CPU-Z","description":"CPU-Z is a system monitoring and diagnostic tool for Windows. It provides detailed information about the computer\u0027s hardware components, including the CPU, memory, and motherboard.","link":"https://www.cpuid.com/softwares/cpu-z.html","winget":"CPUID.CPU-Z","foss":false},"crystaldiskinfo":{"category":"Utilities","choco":"crystaldiskinfo","content":"Crystal Disk Info","description":"Crystal Disk Info is a disk health monitoring tool that provides information about the status and performance of hard drives. It helps users anticipate potential issues and monitor drive health.","link":"https://crystalmark.info/en/software/crystaldiskinfo/","winget":"CrystalDewWorld.CrystalDiskInfo","foss":true},"crystaldiskmark":{"category":"Utilities","choco":"crystaldiskmark","content":"Crystal Disk Mark","description":"Crystal Disk Mark is a disk benchmarking tool that measures the read and write speeds of storage devices. It helps users assess the performance of their hard drives and SSDs.","link":"https://crystalmark.info/en/software/crystaldiskmark/","winget":"CrystalDewWorld.CrystalDiskMark","foss":true},"cursor":{"category":"Development","choco":"cursoride","content":"Cursor","description":"AI-powered code editor (VS Code-based) with agentic coding features and integrated AI assistance for development workflows.","link":"https://cursor.com/","winget":"Anysphere.Cursor","foss":false},"ddu":{"category":"Pro Tools","choco":"ddu","content":"Display Driver Uninstaller","description":"Display Driver Uninstaller (DDU) is a tool for completely uninstalling graphics drivers from NVIDIA, AMD, and Intel. It is useful for troubleshooting graphics driver-related issues.","link":"https://www.wagnardsoft.com/display-driver-uninstaller-DDU-","winget":"Wagnardsoft.DisplayDriverUninstaller","foss":true},"discord":{"category":"Communications","choco":"discord","content":"Discord","description":"Discord is a popular communication platform with voice, video, and text chat, designed for gamers but used by a wide range of communities.","link":"https://discord.com/","winget":"Discord.Discord","foss":false},"dismtools":{"category":"Microsoft Tools","choco":"dismtools","content":"DISMTools","description":"DISMTools is a fast, customizable GUI for the DISM utility, supporting Windows images from Windows 7 onward. It handles installations on any drive, offers project support, and lets users tweak settings like color modes, language, and DISM versions; powered by both native DISM and a managed DISM API.","link":"https://github.com/CodingWonders/DISMTools","winget":"CodingWondersSoftware.DISMTools.Stable","foss":true},"ntlite":{"category":"Microsoft Tools","choco":"ntlite-free","content":"NTLite","description":"Integrate updates, drivers, automate Windows and application setup, speedup Windows deployment process and have it all set for the next time.","link":"https://ntlite.com","winget":"Nlitesoft.NTLite","foss":false},"dorion":{"category":"Communications","choco":"dorion","content":"Dorion","description":"Tiny alternative Discord client with a smaller footprint, snappier startup, themes, plugins and more!","link":"https://spikehd.dev/projects/dorion/","winget":"SpikeHD.Dorion","foss":true},"dockerdesktop":{"category":"Development","choco":"docker-desktop","content":"Docker Desktop","description":"Docker Desktop provides a local environment for building, running, and testing containerized applications on Windows.","link":"https://www.docker.com/products/docker-desktop/","winget":"Docker.DockerDesktop","foss":false},"dotnet6":{"category":"Microsoft Tools","choco":"dotnet-6.0-runtime","content":".NET Desktop Runtime 6","description":".NET Desktop Runtime 6 is a runtime environment required for running applications developed with .NET 6.","link":"https://dotnet.microsoft.com/download/dotnet/6.0","winget":"Microsoft.DotNet.DesktopRuntime.6","foss":true},"dotnet8":{"category":"Microsoft Tools","choco":"dotnet-8.0-runtime","content":".NET Desktop Runtime 8","description":".NET Desktop Runtime 8 is a runtime environment required for running applications developed with .NET 8.","link":"https://dotnet.microsoft.com/download/dotnet/8.0","winget":"Microsoft.DotNet.DesktopRuntime.8","foss":true},"dotnet9":{"category":"Microsoft Tools","choco":"dotnet-9.0-runtime","content":".NET Desktop Runtime 9","description":".NET Desktop Runtime 9 is a runtime environment required for running applications developed with .NET 9.","link":"https://dotnet.microsoft.com/download/dotnet/9.0","winget":"Microsoft.DotNet.DesktopRuntime.9","foss":true},"dotnet10":{"category":"Microsoft Tools","choco":"dotnet-10.0-runtime","content":".NET Desktop Runtime 10","description":".NET Desktop Runtime 10 is a runtime environment required for running applications developed with .NET 10.","link":"https://dotnet.microsoft.com/download/dotnet/10.0","winget":"Microsoft.DotNet.DesktopRuntime.10","foss":true},"dropbox":{"category":"Utilities","choco":"dropbox","content":"Dropbox","description":"Dropbox is a cloud storage client for syncing files, sharing content, and keeping documents available across devices.","link":"https://www.dropbox.com/desktop","winget":"Dropbox.Dropbox","foss":false},"eaapp":{"category":"Games","choco":"ea-app","content":"EA App","description":"EA App is a platform for accessing and playing Electronic Arts games.","link":"https://www.ea.com/ea-app","winget":"ElectronicArts.EADesktop","foss":false},"eartrumpet":{"category":"Multimedia Tools","choco":"eartrumpet","content":"EarTrumpet (Audio)","description":"EarTrumpet is an audio control app for Windows, providing a simple and intuitive interface for managing sound settings.","link":"https://eartrumpet.app/","winget":"File-New-Project.EarTrumpet","foss":true},"edge":{"category":"Browsers","choco":"microsoft-edge","content":"Edge","description":"Microsoft Edge is a modern web browser built on Chromium, offering performance, security, and integration with Microsoft services.","link":"https://www.microsoft.com/edge","winget":"Microsoft.Edge","foss":false},"es-de":{"category":"Games","choco":"","content":"EmulationStation Desktop Edition","_comment":"This and emulationstation are two completely different things. ES-DE is your frontend for everything and has its own set of emulators. Emulationstation is a graphical frontend for RetroArch.","description":"EmulationStation Desktop Edition is a frontend for browsing and launching games from your multi-platform game collection.","link":"https://es-de.org/","winget":"ES-DE.EmulationStation-DE","foss":true},"enteauth":{"category":"Utilities","choco":"ente-auth","content":"Ente Auth","description":"Ente Auth is a free, cross-platform, end-to-end encrypted authenticator app.","link":"https://ente.io/auth/","winget":"ente-io.auth-desktop","foss":true},"epicgames":{"category":"Games","choco":"epicgameslauncher","content":"Epic Games Launcher","description":"Epic Games Launcher is the client for accessing and playing games from the Epic Games Store.","link":"https://www.epicgames.com/store/en-US/","winget":"EpicGames.EpicGamesLauncher","foss":false},"files":{"category":"Utilities","choco":"files","content":"Files","description":"Alternative file explorer.","link":"https://files.community","winget":"FilesCommunity.Files","foss":true},"fileconverter":{"category":"Multimedia Tools","choco":"file-converter","content":"File Converter","description":"File Converter converts and compresses files from the Windows Explorer context menu.","link":"https://file-converter.io/","winget":"AdrienAllard.FileConverter","foss":true},"firefox":{"category":"Browsers","choco":"firefox","content":"Firefox","description":"Mozilla Firefox is an open-source web browser known for its customization options, privacy features, and extensions.","link":"https://www.mozilla.org/en-US/firefox/new/","winget":"Mozilla.Firefox","foss":true},"firefoxesr":{"category":"Browsers","choco":"FirefoxESR","content":"Firefox ESR","description":"Mozilla Firefox is an open-source web browser known for its customization options, privacy features, and extensions. Firefox ESR (Extended Support Release) receives major updates every 42 weeks with minor updates such as crash fixes, security fixes and policy updates as needed, but at least every four weeks.","link":"https://www.mozilla.org/en-US/firefox/enterprise/","winget":"Mozilla.Firefox.ESR","foss":true},"floorp":{"category":"Browsers","choco":"floorp","content":"Floorp","description":"Floorp is an open-source web browser project that aims to provide a simple and fast browsing experience.","link":"https://floorp.app/","winget":"Ablaze.Floorp","foss":true},"flux":{"category":"Utilities","choco":"f.lux","content":"F.lux","description":"f.lux adjusts the color temperature of your screen to reduce eye strain during nighttime use.","link":"https://justgetflux.com/","winget":"flux.flux","foss":false},"foobar":{"category":"Multimedia Tools","choco":"foobar2000","content":"foobar2000 (Music Player)","description":"foobar2000 is a highly customizable and extensible music player for Windows, known for its modular design and advanced features.","link":"https://www.foobar2000.org/","winget":"PeterPawlowski.foobar2000","foss":false},"fnm":{"category":"Development","choco":"fnm","content":"Fast Node Manager","description":"Fast Node Manager (fnm) is a fast, cross-platform tool for installing and switching between Node.js versions.","link":"https://github.com/Schniz/fnm","winget":"Schniz.fnm","foss":true},"foxpdfreader":{"category":"Document","choco":"foxitreader","content":"Foxit PDF Reader","description":"Foxit PDF Reader is a free PDF viewer with a familiar ribbon-style interface.","link":"https://www.foxit.com/pdf-reader/","winget":"Foxit.FoxitReader","foss":false},"geforcenow":{"category":"Games","choco":"nvidia-geforce-now","content":"GeForce NOW","description":"GeForce NOW is a cloud gaming service that allows you to play high-quality PC games on your device.","link":"https://www.nvidia.com/en-us/geforce-now/","winget":"Nvidia.GeForceNow","foss":false},"gimp":{"category":"Multimedia Tools","choco":"gimp","content":"GIMP (Image Editor)","description":"GIMP is a versatile open-source raster graphics editor used for tasks such as photo retouching, image editing, and image composition.","link":"https://www.gimp.org/","winget":"GIMP.GIMP.3","foss":true},"git":{"category":"Development","choco":"git","content":"Git","description":"Git is a distributed version control system widely used for tracking changes in source code during software development.","link":"https://git-scm.com/","winget":"Git.Git","foss":true},"gitextensions":{"category":"Development","choco":"gitextensions","content":"Git Extensions","description":"Git Extensions is a graphical Git client for Windows with repository, history, and commit management tools.","link":"https://gitextensions.github.io/","winget":"GitExtensionsTeam.GitExtensions","foss":true},"githubcli":{"category":"Development","choco":"gh","content":"GitHub CLI","description":"GitHub CLI brings pull requests, issues, releases, and other GitHub workflows to the terminal.","link":"https://cli.github.com/","winget":"GitHub.cli","foss":true},"githubdesktop":{"category":"Development","choco":"git;github-desktop","content":"GitHub Desktop","description":"GitHub Desktop is a visual Git client that simplifies collaboration on GitHub repositories with an easy-to-use interface.","link":"https://desktop.github.com/","winget":"GitHub.GitHubDesktop","foss":true},"gog":{"category":"Games","choco":"goggalaxy","content":"GOG Galaxy","description":"GOG Galaxy is a gaming client that offers DRM-free games, additional content, and more.","link":"https://www.gog.com/galaxy","winget":"GOG.Galaxy","foss":false},"golang":{"category":"Development","choco":"golang","content":"Go","description":"Go (or Golang) is a statically typed, compiled programming language designed for simplicity, reliability, and efficiency.","link":"https://go.dev/","winget":"GoLang.Go","foss":true},"googledrive":{"category":"Utilities","choco":"googledrive","content":"Google Drive","description":"File syncing across devices all tied to your Google account.","link":"https://www.google.com/drive/","winget":"Google.GoogleDrive","foss":false},"gpuz":{"category":"Pro Tools","choco":"gpu-z","content":"GPU-Z","description":"GPU-Z provides detailed information about your graphics card and GPU.","link":"https://www.techpowerup.com/gpuz/","winget":"TechPowerUp.GPU-Z","foss":false},"gsudo":{"category":"Pro Tools","choco":"gsudo","content":"gsudo","description":"gsudo is a sudo equivalent for Windows. It allows you to run commands with elevated administrative privileges directly within the current console window.","link":"https://github.com/gerardog/gsudo","winget":"gerardog.gsudo","foss":true},"helium":{"category":"Browsers","choco":"helium","content":"Helium","description":"Private, fast, and honest web browser.","link":"https://helium.computer","winget":"ImputNet.Helium","foss":true},"hugo":{"category":"Development","choco":"hugo-extended","content":"Hugo","description":"The world\u0027s fastest framework for building websites.","link":"https://gohugo.io","winget":"Hugo.Hugo.Extended","foss":true},"handbrake":{"category":"Multimedia Tools","choco":"handbrake","content":"HandBrake","description":"HandBrake is an open-source video transcoder, allowing you to convert video from nearly any format to a selection of widely supported codecs.","link":"https://handbrake.fr/","winget":"HandBrake.HandBrake","foss":true},"heroiclauncher":{"category":"Games","choco":"heroic-games-launcher","content":"Heroic Games Launcher","description":"Heroic Games Launcher is an open-source alternative game launcher for Epic Games Store.","link":"https://heroicgameslauncher.com/","winget":"HeroicGamesLauncher.HeroicGamesLauncher","foss":true},"hwinfo":{"category":"Pro Tools","choco":"hwinfo","content":"HWiNFO","description":"HWiNFO provides comprehensive hardware information and diagnostics for Windows.","link":"https://www.hwinfo.com/","winget":"REALiX.HWiNFO","foss":false},"hwmonitor":{"category":"Pro Tools","choco":"hwmonitor","content":"HWMonitor","description":"HWMonitor is a hardware monitoring program that reads PC systems main health sensors.","link":"https://www.cpuid.com/softwares/hwmonitor.html","winget":"CPUID.HWMonitor","foss":false},"imhex":{"category":"Pro Tools","choco":"imhex","content":"ImHex","description":"ImHex is a free and open-source hex editor for reverse engineers and programmers, featuring a custom pattern language for decoding binary formats, a disassembler, and data analysis tools.","link":"https://imhex.werwolv.net/","winget":"WerWolv.ImHex","foss":true},"imageglass":{"category":"Multimedia Tools","choco":"imageglass","content":"ImageGlass (Image Viewer)","description":"ImageGlass is a versatile image viewer with support for various image formats and a focus on simplicity and speed.","link":"https://imageglass.org/","winget":"DuongDieuPhap.ImageGlass","foss":true},"internetdownloadmanager":{"category":"Utilities","choco":"internet-download-manager","content":"Internet Download Manager","description":"Internet Download Manager is a download manager for accelerating, resuming, and scheduling file downloads.","link":"https://www.internetdownloadmanager.com/","winget":"Tonec.InternetDownloadManager","foss":false},"irfanview":{"category":"Multimedia Tools","choco":"irfanview","content":"IrfanView","description":"IrfanView is a lightweight, fast, and free image viewer and editor. Supports multiple formats, batch processing, and powerful plugins.","link":"https://irfanview.com/","winget":"IrfanSkiljan.IrfanView","foss":false},"itch":{"category":"Games","choco":"itch","content":"Itch.io","description":"Itch.io is a digital distribution platform for indie games and creative projects.","link":"https://itch.io/","winget":"ItchIo.Itch","foss":true},"itunes":{"category":"Multimedia Tools","choco":"itunes","content":"iTunes","description":"iTunes is a media player, media library, and online radio broadcaster application developed by Apple Inc.","link":"https://www.apple.com/itunes/","winget":"Apple.iTunes","foss":false},"java8":{"category":"Development","choco":"corretto8jdk","content":"Amazon Corretto 8 (LTS)","description":"Amazon Corretto is a no-cost, multiplatform, production-ready distribution of the Open Java Development Kit (OpenJDK).","link":"https://aws.amazon.com/corretto","winget":"Amazon.Corretto.8.JDK","foss":true},"java21":{"category":"Development","choco":"corretto21jdk","content":"Amazon Corretto 21 (LTS)","description":"Amazon Corretto is a no-cost, multiplatform, production-ready distribution of the Open Java Development Kit (OpenJDK).","link":"https://aws.amazon.com/corretto","winget":"Amazon.Corretto.21.JDK","foss":true},"java25":{"category":"Development","choco":"corretto25jdk","content":"Amazon Corretto 25 (LTS)","description":"Amazon Corretto is a no-cost, multiplatform, production-ready distribution of the Open Java Development Kit (OpenJDK).","link":"https://aws.amazon.com/corretto","winget":"Amazon.Corretto.25.JDK","foss":true},"jellyfinmediaplayer":{"category":"Selfhosted Tools","choco":"jellyfin-media-player","content":"Jellyfin Media Player","description":"Jellyfin Media Player is a client application for the Jellyfin media server, providing access to your media library.","link":"https://jellyfin.org/","winget":"Jellyfin.JellyfinMediaPlayer","foss":true},"jellyfinserver":{"category":"Selfhosted Tools","choco":"jellyfin","content":"Jellyfin Server","description":"Jellyfin Server is an open-source media server software, allowing you to organize and stream your media library.","link":"https://jellyfin.org/","winget":"Jellyfin.Server","foss":true},"jetbrains":{"category":"Development","choco":"jetbrainstoolbox","content":"Jetbrains Toolbox","description":"Jetbrains Toolbox is a platform for easy installation and management of JetBrains developer tools.","link":"https://www.jetbrains.com/toolbox/","winget":"JetBrains.Toolbox","foss":false},"jpegview":{"category":"Utilities","choco":"jpegview","content":"JPEG View","description":"JPEGView is a lean, fast and highly configurable viewer/editor for JPEG, BMP, PNG, WEBP, TGA, GIF, JXL, HEIC, HEIF, AVIF, and TIFF images with a minimal GUI.","link":"https://github.com/sylikc/jpegview","winget":"sylikc.JPEGView","foss":true},"joplin":{"category":"Document","choco":"joplin","content":"Joplin","description":"Joplin is an open-source note-taking and to-do application with synchronization capabilities.","link":"https://joplinapp.org/","winget":"Joplin.Joplin","foss":true},"keepassxc":{"category":"Utilities","choco":"keepassxc","content":"KeePassXC","description":"KeePassXC is a modern, secure, and open-source password manager that stores and manages your most sensitive information. You can run KeePassXC on Windows, macOS, and Linux systems. KeePassXC is for people with extremely high demands of secure personal data management. It saves many different types of information, such as usernames, passwords, URLs, attachments, and notes in an offline, encrypted file that can be stored in any location, including private and public cloud solutions. For easy identification and management, user-defined titles and icons can be specified for entries. In addition, entries are sorted into customizable groups. An integrated search function allows you to use advanced patterns to easily find any entry in your database. A customizable, fast, and easy-to-use password generator utility allows you to create passwords with any combination of characters or easy to remember passphrases.","link":"https://keepassxc.org/","winget":"KeePassXCTeam.KeePassXC","foss":true},"klite":{"category":"Multimedia Tools","choco":"k-litecodecpack-standard","content":"K-Lite Codec Standard","description":"K-Lite Codec Pack Standard is a collection of audio and video codecs and related tools, providing essential components for media playback.","link":"https://www.codecguide.com/","winget":"CodecGuide.K-LiteCodecPack.Standard","foss":false},"kodi":{"category":"Selfhosted Tools","choco":"kodi","content":"Kodi Media Center","description":"Kodi is an open-source media center application that allows you to play and view most videos, music, podcasts, and other digital media files.","link":"https://kodi.tv/","winget":"XBMCFoundation.Kodi","foss":true},"lazygit":{"category":"Development","choco":"lazygit","content":"Lazygit","description":"Simple terminal UI for git commands.","link":"https://github.com/jesseduffield/lazygit/","winget":"JesseDuffield.lazygit","foss":true},"libreoffice":{"category":"Document","choco":"libreoffice-fresh","content":"LibreOffice","description":"LibreOffice is a powerful and free office suite, compatible with other major office suites.","link":"https://www.libreoffice.org/","winget":"TheDocumentFoundation.LibreOffice","foss":true},"librewolf":{"category":"Browsers","choco":"librewolf","content":"LibreWolf","description":"LibreWolf is a privacy-focused web browser based on Firefox, with additional privacy and security enhancements.","link":"https://librewolf.net/","winget":"LibreWolf.LibreWolf","foss":true},"localsend":{"category":"Selfhosted Tools","choco":"localsend.install","content":"LocalSend","description":"An open-source cross-platform alternative to AirDrop.","link":"https://localsend.org/","winget":"LocalSend.LocalSend","foss":true},"mpc-qt":{"category":"Multimedia Tools","choco":"mpc-qt","content":"mpc-qt","description":"Media Player Classic Qute Theater","link":"https://mpc-qt.github.io","winget":"mpc-qt.mpc-qt","foss":true},"mpv":{"category":"Multimedia Tools","content":"mpv","description":"mpv is a free, open source, and cross-platform media player supporting a wide variety of media formats, codecs, and subtitle types.","link":"https://mpv.io/","winget":"shinchiro.mpv","foss":true},"matrix":{"category":"Communications","choco":"element-desktop","content":"Element","description":"Element is a client for Matrix; an open network for secure, decentralized communication.","link":"https://element.io/","winget":"Element.Element","foss":true},"minitoolpartitionwizard":{"category":"Utilities","choco":"partitionwizard","content":"MiniTool Partition Wizard","description":"Comprehensive free partition manager that performs advanced operations Windows natively cannot, such as merging partitions, converting file systems, and organizing disk capacity.","link":"https://www.partitionwizard.com/","winget":"MiniTool.PartitionWizard.Free","foss":false},"modrinth":{"category":"Games","choco":"modrinth-app","content":"Modrinth App","description":"Modrinth App is a desktop application for managing Minecraft mods and modpacks.","link":"https://modrinth.com/app","winget":"Modrinth.ModrinthApp","foss":true},"moonlight":{"category":"Selfhosted Tools","choco":"moonlight-qt","content":"Moonlight/GameStream Client","description":"Moonlight/GameStream Client allows you to stream PC games to other devices over your local network.","link":"https://moonlight-stream.org/","winget":"MoonlightGameStreamingProject.Moonlight","foss":true},"mpchc":{"category":"Multimedia Tools","choco":"mpc-hc-clsid2","content":"Media Player Classic - Home Cinema","description":"Media Player Classic - Home Cinema (MPC-HC) is a free and open-source video and audio player for Windows. MPC-HC is based on the original Guliverkli project and contains many additional features and bug fixes.","link":"https://mpc-hc.org/","winget":"clsid2.mpc-hc","foss":true},"msedgeredirect":{"category":"Utilities","choco":"msedgeredirect","content":"MSEdgeRedirect","description":"A Tool to Redirect News, Search, Widgets, Weather, and More to your default browser.","link":"https://github.com/rcmaehl/MSEdgeRedirect","winget":"rcmaehl.MSEdgeRedirect","foss":true},"msiafterburner":{"category":"Pro Tools","choco":"msiafterburner","content":"MSI Afterburner","description":"MSI Afterburner is a graphics card overclocking utility with advanced features.","link":"https://www.msi.com/Landing/afterburner","winget":"Guru3D.Afterburner","foss":false},"mullvadvpn":{"category":"Pro Tools","choco":"mullvad-app","content":"Mullvad VPN","description":"This is the VPN client software for the Mullvad VPN service.","link":"https://mullvad.net/","winget":"MullvadVPN.MullvadVPN","foss":true},"mullvadbrowser":{"category":"Browsers","choco":"na","content":"Mullvad Browser","description":"Mullvad Browser is a privacy-focused web browser, developed in partnership with the Tor Project.","link":"https://mullvad.net/browser","winget":"MullvadVPN.MullvadBrowser","foss":true},"nomacs":{"category":"Multimedia Tools","choco":"nomacs","content":"nomacs","description":"nomacs is a free, open-source image viewer, which supports multiple platforms. You can use it for viewing all common image formats, including RAW and .psd images.","link":"https://nomacs.org/","winget":"nomacs.nomacs","foss":true},"nanazip":{"category":"Utilities","choco":"nanazip","content":"NanaZip","description":"NanaZip is a fast and efficient file compression and decompression tool.","link":"https://nanazip.org","winget":"M2Team.NanaZip","foss":true},"netbird":{"category":"Selfhosted Tools","choco":"netbird","content":"NetBird","description":"NetBird is an open-source alternative comparable to TailScale that can be connected to a self-hosted server.","link":"https://netbird.io/","winget":"Netbird.Netbird","foss":true},"tailscale":{"category":"Pro Tools","choco":"tailscale","content":"Tailscale","description":"The Tailscale client allows you to connect all your devices using WireGuard\u00ae, without the hassle. Tailscale makes it as easy as installing an app and signing in.","link":"https://tailscale.com/","winget":"Tailscale.Tailscale","foss":false},"naps2":{"category":"Document","choco":"naps2","content":"NAPS2 (Scanner)","description":"NAPS2 is a document scanning application that simplifies the process of creating electronic documents.","link":"https://www.naps2.com/","winget":"Cyanfish.NAPS2","foss":true},"neovim":{"category":"Development","choco":"neovim","content":"Neovim","description":"Neovim is a highly extensible text editor and an improvement over the original Vim editor.","link":"https://neovim.io/","winget":"Neovim.Neovim","foss":true},"nextclouddesktop":{"category":"Selfhosted Tools","choco":"nextcloud-client","content":"Nextcloud Desktop","description":"Nextcloud Desktop is the official desktop client for the Nextcloud file synchronization and sharing platform.","link":"https://nextcloud.com/install/#install-clients","winget":"Nextcloud.NextcloudDesktop","foss":true},"nmap":{"category":"Pro Tools","choco":"nmap","content":"Nmap","description":"Nmap (Network Mapper) is an open-source tool for network exploration and security auditing. It discovers devices on a network and provides information about their ports and services.","link":"https://nmap.org/","winget":"Insecure.Nmap","foss":true},"nodejs":{"category":"Development","choco":"nodejs","content":"NodeJS","description":"NodeJS is a JavaScript runtime built on Chrome\u0027s V8 JavaScript engine for building server-side and networking applications.","link":"https://nodejs.org/","winget":"OpenJS.NodeJS","foss":true},"nodejslts":{"category":"Development","choco":"nodejs-lts","content":"NodeJS LTS","description":"NodeJS LTS provides Long-Term Support releases for stable and reliable server-side JavaScript development.","link":"https://nodejs.org/","winget":"OpenJS.NodeJS.LTS","foss":true},"pnpm":{"category":"Development","content":"pnpm","description":"pnpm is a fast and disk space efficient package manager for JavaScript and Node.js applications.","link":"https://pnpm.io/","winget":"pnpm.pnpm","foss":true},"notepadplus":{"category":"Development","choco":"notepadplusplus","content":"Notepad++","description":"Notepad++ is a free, open-source code editor and Notepad replacement with support for multiple languages.","link":"https://notepad-plus-plus.org/","winget":"Notepad++.Notepad++","foss":true},"nuget":{"category":"Microsoft Tools","choco":"nuget.commandline","content":"NuGet","description":"NuGet is a package manager for the .NET framework, enabling developers to manage and share libraries in their .NET applications.","link":"https://www.nuget.org/","winget":"Microsoft.NuGet","foss":true},"nvclean":{"category":"Utilities","choco":"na","content":"NVCleanstall","description":"NVCleanstall is a tool designed to customize NVIDIA driver installations, allowing advanced users to control more aspects of the installation process.","link":"https://www.techpowerup.com/nvcleanstall/","winget":"TechPowerUp.NVCleanstall","foss":false},"obs":{"category":"Multimedia Tools","choco":"obs-studio","content":"OBS Studio","description":"OBS Studio is a free and open-source software for video recording and live streaming. It supports real-time video/audio capturing and mixing, making it popular among content creators.","link":"https://obsproject.com/","winget":"OBSProject.OBSStudio","foss":true},"obsidian":{"category":"Document","choco":"obsidian","content":"Obsidian","description":"Obsidian is a powerful note-taking and knowledge management application.","link":"https://obsidian.md/","winget":"Obsidian.Obsidian","foss":false},"okular":{"category":"Document","choco":"okular","content":"Okular","description":"Okular is a versatile document viewer with advanced features.","link":"https://okular.kde.org/","winget":"KDE.Okular","foss":true},"onedrive":{"category":"Microsoft Tools","choco":"onedrive","content":"OneDrive","description":"OneDrive is a cloud storage service provided by Microsoft, allowing users to store and share files securely across devices.","link":"https://onedrive.live.com/","winget":"Microsoft.OneDrive","foss":false},"onlyoffice":{"category":"Document","choco":"onlyoffice","content":"ONLYOFFICE Desktop","description":"ONLYOFFICE Desktop is a comprehensive office suite for document editing and collaboration.","link":"https://www.onlyoffice.com/desktop.aspx","winget":"ONLYOFFICE.DesktopEditors","foss":true},"OPAutoClicker":{"category":"Utilities","choco":"autoclicker","content":"OPAutoClicker","description":"A full-fledged autoclicker with two modes of autoclicking, at your dynamic cursor location or at a prespecified location.","link":"https://www.opautoclicker.com","winget":"OPAutoClicker.OPAutoClicker","foss":false},"opencode":{"category":"Development","choco":"opencode","content":"OpenCode","description":"OpenCode is an open-source AI coding agent built for the terminal. It is provider-agnostic and supports local and hosted AI models.","link":"https://opencode.ai/","winget":"SST.opencode","foss":true},"openrgb":{"category":"Utilities","choco":"openrgb","content":"OpenRGB","description":"OpenRGB is an open-source RGB lighting control software designed to manage and control RGB lighting for various components and peripherals.","link":"https://openrgb.org/","winget":"OpenRGB.OpenRGB","foss":true},"OpenVPN":{"category":"Pro Tools","choco":"openvpn-connect","content":"OpenVPN Connect","description":"OpenVPN Connect is a VPN client that allows you to connect securely to a VPN server. It provides a secure and encrypted connection for protecting your online privacy.","link":"https://openvpn.net/","winget":"OpenVPNTechnologies.OpenVPNConnect","foss":false},"OVirtualBox":{"category":"Utilities","choco":"virtualbox","content":"Oracle VirtualBox","description":"Oracle VirtualBox is a powerful and free open-source virtualization tool for x86 and AMD64/Intel64 architectures.","link":"https://www.virtualbox.org/","winget":"Oracle.VirtualBox","foss":true},"policyplus":{"category":"Utilities","choco":"na","content":"Policy Plus","description":"Local Group Policy Editor plus more, for all Windows editions.","link":"https://github.com/Fleex255/PolicyPlus","winget":"Fleex255.PolicyPlus","foss":true},"processexplorer":{"category":"Microsoft Tools","choco":"procexp","content":"Process Explorer","description":"Process Explorer is a task manager and system monitor.","link":"https://learn.microsoft.com/sysinternals/downloads/process-explorer","winget":"Microsoft.Sysinternals.ProcessExplorer","foss":false},"Paintdotnet":{"category":"Multimedia Tools","choco":"paint.net","content":"Paint.NET","description":"Paint.NET is a free image and photo editing software for Windows. It features an intuitive user interface and supports a wide range of powerful editing tools.","link":"https://www.getpaint.net/","winget":"dotPDN.PaintDotNet","foss":false},"parsec":{"category":"Utilities","choco":"parsec","content":"Parsec","description":"Parsec is a low-latency, high-quality remote desktop sharing application for collaborating and gaming across devices.","link":"https://parsec.app/","winget":"Parsec.Parsec","foss":false},"peazip":{"category":"Utilities","choco":"peazip","content":"PeaZip","description":"PeaZip is a free, open-source file archiver utility that supports multiple archive formats and provides encryption features.","link":"https://peazip.github.io/","winget":"Giorgiotani.Peazip","foss":true},"pdf-xchange":{"category":"Document","choco":"pdfxchangeeditor","content":"PDF-XChange Editor","description":"A comprehensive Windows-based software suite and editor for creating, viewing, editing, annotating, and signing PDF files.","link":"https://www.pdf-xchange.com/","winget":"TrackerSoftware.PDF-XChangeEditor","foss":false},"pdf24creator":{"category":"Document","choco":"pdf24","content":"PDF24 Creator","description":"Free and easy-to-use online/desktop PDF tools that make you more productive","link":"https://tools.pdf24.org/en/creator","winget":"geeksoftwareGmbH.PDF24Creator","foss":false},"pdfgear":{"category":"Document","choco":"pdfgear","content":"PDFgear","description":"PDFgear is a piece of full-featured PDF management software for Windows, macOS, and mobile, and it\u0027s completely free to use.","link":"https://www.pdfgear.com/","winget":"PDFgear.PDFgear","foss":false},"pdfsam":{"category":"Document","choco":"pdfsam","content":"PDFsam Basic","description":"PDFsam Basic is a free and open-source tool for splitting, merging, and rotating PDF files.","link":"https://pdfsam.org/","winget":"PDFsam.PDFsam","foss":true},"playnite":{"category":"Games","choco":"playnite","content":"Playnite","description":"Playnite is an open-source video game library manager with one simple goal: To provide a unified interface for all of your games.","link":"https://playnite.link/","winget":"Playnite.Playnite","foss":true},"plex":{"category":"Selfhosted Tools","choco":"plexmediaserver","content":"Plex Media Server","description":"Plex Media Server is a media server software that allows you to organize and stream your media library. It supports various media formats and offers a wide range of features.","link":"https://www.plex.tv/your-media/","winget":"Plex.PlexMediaServer","foss":false},"plexdesktop":{"category":"Selfhosted Tools","choco":"plex","content":"Plex Desktop","description":"Plex Desktop for Windows is the front end for Plex Media Server.","link":"https://www.plex.tv","winget":"Plex.Plex","foss":false},"posh":{"category":"Development","choco":"oh-my-posh","content":"Oh My Posh (Prompt)","description":"Oh My Posh is a cross-platform prompt theme engine for any shell.","link":"https://ohmyposh.dev/","winget":"JanDeDobbeleer.OhMyPosh","foss":true},"postman":{"category":"Development","choco":"postman","content":"Postman","description":"Postman is an API platform and desktop client for designing, testing, documenting, and collaborating on APIs.","link":"https://www.postman.com/downloads/","winget":"Postman.Postman","foss":false},"powershell":{"category":"Microsoft Tools","choco":"powershell-core","content":"PowerShell","description":"PowerShell is a task automation framework and scripting language designed for system administrators, offering powerful command-line capabilities.","link":"https://github.com/PowerShell/PowerShell","winget":"Microsoft.PowerShell","foss":true},"powertoys":{"category":"Microsoft Tools","choco":"powertoys","content":"PowerToys","description":"PowerToys is a set of utilities for power users to enhance productivity, featuring tools like FancyZones, PowerRename, and more.","link":"https://github.com/microsoft/PowerToys","winget":"Microsoft.PowerToys","foss":true},"prismlauncher":{"category":"Games","choco":"prismlauncher","content":"Prism Launcher","description":"Prism Launcher is an open-source Minecraft launcher with the ability to manage multiple instances, accounts, and mods.","link":"https://prismlauncher.org/","winget":"PrismLauncher.PrismLauncher","foss":true},"processlasso":{"category":"Utilities","choco":"plasso","content":"Process Lasso","description":"Process Lasso is a system optimization and automation tool that improves system responsiveness and stability by adjusting process priorities and CPU affinities.","link":"https://bitsum.com/","winget":"BitSum.ProcessLasso","foss":false},"protonauth":{"category":"Utilities","choco":"protonauth","content":"Proton Authenticator","description":"2FA app from Proton to securely sync and backup 2FA codes.","link":"https://proton.me/authenticator","winget":"Proton.ProtonAuthenticator","foss":true},"protonmail":{"category":"Communications","choco":"protonmail","content":"Proton Mail","description":"Proton Mail is an end-to-end encrypted email service by Proton, protecting your privacy with zero-access encryption.","link":"https://proton.me/mail","winget":"Proton.ProtonMail","foss":true},"protondrive":{"category":"Utilities","choco":"protondrive","content":"Proton Drive","description":"Proton Drive is an end-to-end encrypted Swiss vault for your files that protects your data.","link":"https://proton.me/drive","winget":"Proton.ProtonDrive","foss":true},"protonpass":{"category":"Utilities","choco":"protonpass","content":"Proton Pass","description":"Proton Pass is a cloud-based password manager with end-to-end encryption and unique email aliases.","link":"https://proton.me/pass","winget":"Proton.ProtonPass","foss":true},"protonvpn":{"category":"Pro Tools","choco":"protonvpn","content":"Proton VPN","description":"Proton VPN is a no-logs VPN service that protects your privacy online with features like Secure Core and Tor over VPN.","link":"https://protonvpn.com/","winget":"Proton.ProtonVPN","foss":true},"processmonitor":{"category":"Microsoft Tools","choco":"procmon","content":"Process Monitor","description":"SysInternals Process Monitor is an advanced monitoring tool that shows real-time file system, registry, and process/thread activity.","link":"https://docs.microsoft.com/en-us/sysinternals/downloads/procmon","winget":"Microsoft.Sysinternals.ProcessMonitor","foss":false},"pstools":{"category":"Microsoft Tools","choco":"pstools","content":"PsTools","description":"Microsoft Sysinternals PsTools provides utilities for managing local and remote Windows systems and monitoring processes. PsExec can run processes under the SYSTEM account when the user has local administrative rights on the target system.","link":"https://learn.microsoft.com/en-us/sysinternals/downloads/pstools","winget":"Microsoft.Sysinternals.PsTools","foss":false},"putty":{"category":"Pro Tools","choco":"putty","content":"PuTTY","description":"PuTTY is a free and open-source terminal emulator, serial console, and network file transfer application. It supports various network protocols such as SSH, Telnet, and SCP.","link":"https://www.chiark.greenend.org.uk/~sgtatham/putty/","winget":"PuTTY.PuTTY","foss":true},"python3":{"category":"Development","choco":"python","content":"Python3","description":"Python is a versatile programming language used for web development, data analysis, artificial intelligence, and more.","link":"https://www.python.org/","winget":"Python.Python.3.14","foss":true},"qbittorrent":{"category":"Utilities","choco":"qbittorrent","content":"qBittorrent","description":"qBittorrent is a free and open-source BitTorrent client that aims to provide a feature-rich and lightweight alternative to other torrent clients.","link":"https://www.qbittorrent.org/","winget":"qBittorrent.qBittorrent","foss":true},"qownnotes":{"category":"Document","choco":"qownnotes","content":"QOwnNotes","description":"QOwnNotes is a free open-source note-taking app with Nextcloud/ownCloud integration.","link":"https://www.qownnotes.org/","winget":"pbek.QOwnNotes","foss":true},"qtox":{"category":"Communications","choco":"qtox","content":"QTox","description":"QTox is a free and open-source messaging app that prioritizes user privacy and security in its design.","link":"https://qtox.github.io/","winget":"Tox.qTox","foss":true},"revo":{"category":"Utilities","choco":"revo-uninstaller","content":"Revo Uninstaller","description":"Revo Uninstaller is an advanced uninstaller tool that helps you remove unwanted software and clean up your system.","link":"https://www.revouninstaller.com/","winget":"RevoUninstaller.RevoUninstaller","foss":false},"WiseProgramUninstaller":{"category":"Utilities","choco":"na","content":"Wise Program Uninstaller (WiseCleaner)","description":"Wise Program Uninstaller is the perfect solution for uninstalling Windows programs, allowing you to uninstall applications quickly and completely using its simple and user-friendly interface.","link":"https://www.wisecleaner.com/wise-program-uninstaller.html","winget":"WiseCleaner.WiseProgramUninstaller","foss":false},"rufus":{"category":"Pro Tools","choco":"rufus","content":"Rufus Imager","description":"Rufus is a utility that helps format and create bootable USB drives, such as USB keys or pen drives.","link":"https://rufus.ie/","winget":"Rufus.Rufus","foss":true},"rustlang":{"category":"Development","choco":"rust","content":"Rust","description":"Rust is a programming language designed for safety and performance, particularly focused on systems programming.","link":"https://www.rust-lang.org/","winget":"Rustlang.Rust.MSVC","foss":true},"sdio":{"category":"Utilities","choco":"sdio","content":"Snappy Driver Installer Origin","description":"Snappy Driver Installer Origin is a free and open-source driver updater with a vast driver database for Windows.","link":"https://www.glenn.delahoy.com/snappy-driver-installer-origin/","winget":"GlennDelahoy.SnappyDriverInstallerOrigin","foss":true},"sharex":{"category":"Multimedia Tools","choco":"sharex","content":"ShareX (Screenshots)","description":"ShareX is a free and open-source screen capture and file sharing tool. It supports various capture methods and offers advanced features for editing and sharing screenshots.","link":"https://getsharex.com/","winget":"ShareX.ShareX","foss":true},"nilesoftShell":{"category":"Utilities","choco":"nilesoft-shell","content":"Nilesoft Shell","description":"Shell is an expanded context menu tool that adds extra functionality and customization options to the Windows context menu.","link":"https://nilesoft.org/","winget":"Nilesoft.Shell","foss":false},"systeminformer":{"category":"Pro Tools","choco":"systeminformer","content":"System Informer","description":"A free, powerful, multi-purpose tool that helps you monitor system resources, debug software and detect malware.","link":"https://systeminformer.com/","winget":"WinsiderSS.SystemInformer","foss":true},"signal":{"category":"Communications","choco":"signal","content":"Signal","description":"Signal is a privacy-focused messaging app that offers end-to-end encryption for secure and private communication.","link":"https://signal.org/","winget":"OpenWhisperSystems.Signal","foss":true},"signalrgb":{"category":"Utilities","choco":"na","content":"SignalRGB","description":"SignalRGB lets you control and sync your favorite RGB devices with one free application.","link":"https://www.signalrgb.com/","winget":"WhirlwindFX.SignalRgb","foss":false},"simplenote":{"category":"Document","choco":"simplenote","content":"Simplenote","description":"Simplenote is an easy way to keep notes, lists, ideas and more.","link":"https://simplenote.com/","winget":"Automattic.Simplenote","foss":true},"simplewall":{"category":"Pro Tools","choco":"simplewall","content":"Simplewall","description":"Simplewall is a free and open-source firewall application for Windows. It allows users to control and manage the inbound and outbound network traffic of applications.","link":"https://github.com/henrypp/simplewall","winget":"Henry++.simplewall","foss":true},"slack":{"category":"Communications","choco":"slack","content":"Slack","description":"Slack is a collaboration hub that connects teams and facilitates communication through channels, messaging, and file sharing.","link":"https://slack.com/","winget":"SlackTechnologies.Slack","foss":false},"startallback":{"category":"Utilities","choco":"StartAllBack","content":"StartAllBack","description":"StartAllBack restores and improves Windows taskbar, Start menu, File Explorer, and shell UI behavior.","link":"https://www.startallback.com/","winget":"StartIsBack.StartAllBack","foss":false},"starship":{"category":"Development","choco":"starship","content":"Starship (Shell Prompt)","description":"Starship is a fast, customizable, cross-platform prompt for PowerShell and other shells.","link":"https://starship.rs/","winget":"Starship.Starship","foss":true},"steam":{"category":"Games","choco":"steam-client","content":"Steam","description":"Steam is a digital distribution platform for purchasing and playing video games, offering multiplayer gaming, video streaming, and more.","link":"https://store.steampowered.com/about/","winget":"Valve.Steam","foss":false},"roblox":{"category":"Games","choco":"na","content":"Roblox","description":"Roblox is a platform and game creation system that allows users to create and play games developed by the community.","link":"https://www.roblox.com/","winget":"Roblox.Roblox","foss":false},"sublimetext":{"category":"Development","choco":"sublimetext4","content":"Sublime Text","description":"Sublime Text is a sophisticated text editor for code, markup, and prose.","link":"https://www.sublimetext.com/","winget":"SublimeHQ.SublimeText.4","foss":false},"sumatra":{"category":"Document","choco":"sumatrapdf","content":"Sumatra PDF","description":"Sumatra PDF is a lightweight and fast PDF viewer with minimalistic design.","link":"https://www.sumatrapdfreader.org/free-pdf-reader.html","winget":"SumatraPDF.SumatraPDF","foss":true},"sunshine":{"category":"Selfhosted Tools","choco":"sunshine","content":"Sunshine/GameStream Server","description":"Sunshine is a GameStream server that allows you to remotely play PC games on Android devices, offering low-latency streaming.","link":"https://app.lizardbyte.dev/Sunshine/","winget":"LizardByte.Sunshine","foss":true},"synctrayzor":{"category":"Selfhosted Tools","choco":"synctrayzor","content":"SyncTrayzor","description":"SyncTrayzor is a Windows tray utility that bundles and wraps Syncthing, making it behave like a native application to easily manage and monitor file synchronization.","link":"https://github.com/GermanCoding/SyncTrayzor","winget":"GermanCoding.SyncTrayzor"},"syncthing":{"category":"Selfhosted Tools","choco":"syncthing","content":"Syncthing (CLI / Web UI)","description":"Syncthing is a decentralized, peer-to-peer file synchronization tool that securely syncs files directly across devices without cloud servers, managed via a local web interface.","link":"https://syncthing.net/","winget":"Syncthing.Syncthing","foss":true},"tcpview":{"category":"Microsoft Tools","choco":"tcpview","content":"TCPView","description":"SysInternals TCPView is a network monitoring tool that displays a detailed list of all TCP and UDP endpoints on your system.","link":"https://docs.microsoft.com/en-us/sysinternals/downloads/tcpview","winget":"Microsoft.Sysinternals.TCPView","foss":false},"teams":{"category":"Communications","choco":"microsoft-teams","content":"Teams","description":"Microsoft Teams is a collaboration platform that integrates with Office 365 and offers chat, video conferencing, file sharing, and more.","link":"https://www.microsoft.com/en-us/microsoft-teams/group-chat-software","winget":"Microsoft.Teams","foss":false},"teamviewer":{"category":"Utilities","choco":"teamviewer","content":"TeamViewer","description":"TeamViewer is a popular remote access and support software that allows you to connect to and control remote devices.","link":"https://www.teamviewer.com/","winget":"TeamViewer.TeamViewer","foss":false},"teamspeak3":{"category":"Communications","choco":"teamspeak","content":"TeamSpeak 3","description":"TEAMSPEAK. YOUR TEAM. YOUR RULES. Use crystal clear sound to communicate with your teammates cross-platform with military-grade security, lag-free performance \u0026 unparalleled reliability and uptime.","link":"https://www.teamspeak.com/","winget":"TeamSpeakSystems.TeamSpeakClient","foss":false},"teamspeak6":{"category":"Communications","choco":"na","content":"TeamSpeak 6","description":"TEAMSPEAK. YOUR TEAM. YOUR RULES. Use crystal clear sound to communicate with your teammates cross-platform with military-grade security, lag-free performance \u0026 unparalleled reliability and uptime.","link":"https://www.teamspeak.com/","winget":"TeamSpeakSystems.TeamSpeakClient.Beta.6","foss":false},"telegram":{"category":"Communications","choco":"telegram","content":"Telegram","description":"Telegram is a cloud-based instant messaging app known for its security features, speed, and simplicity.","link":"https://telegram.org/","winget":"Telegram.TelegramDesktop","foss":true},"terminal":{"category":"Microsoft Tools","choco":"microsoft-windows-terminal","content":"Windows Terminal","description":"Windows Terminal is a modern, fast, and efficient terminal application for command-line users, supporting multiple tabs, panes, and more.","link":"https://aka.ms/terminal","winget":"Microsoft.WindowsTerminal","foss":true},"thunderbird":{"category":"Communications","choco":"thunderbird","content":"Thunderbird","description":"Mozilla Thunderbird is a free and open-source email client, news client, and chat client with advanced features.","link":"https://www.thunderbird.net/","winget":"Mozilla.Thunderbird","foss":true},"betterbird":{"category":"Communications","choco":"betterbird","content":"Betterbird","description":"Betterbird is a fork of Mozilla Thunderbird with additional features and bugfixes.","link":"https://www.betterbird.eu/","winget":"Betterbird.Betterbird","foss":true},"tor":{"category":"Browsers","choco":"tor-browser","content":"Tor Browser","description":"Tor Browser is designed for anonymous web browsing, utilizing the Tor network to protect user privacy and security.","link":"https://www.torproject.org/","winget":"TorProject.TorBrowser","foss":true},"totalcommander":{"category":"Utilities","choco":"TotalCommander","content":"Total Commander","description":"Total Commander is a file manager for Windows that provides a powerful and intuitive interface for file management.","link":"https://www.ghisler.com/","winget":"Ghisler.TotalCommander","foss":false},"treesize":{"category":"Utilities","choco":"treesizefree","content":"TreeSize Free","description":"TreeSize Free is a disk space manager that helps you analyze and visualize the space usage on your drives.","link":"https://www.jam-software.com/treesize_free/","winget":"JAMSoftware.TreeSize.Free","foss":false},"ttaskbar":{"category":"Utilities","choco":"translucenttb","content":"TranslucentTB","description":"TranslucentTB is a tool that allows you to customize the transparency of the Windows Taskbar.","link":"https://translucenttb.github.io","winget":"CharlesMilette.TranslucentTB","foss":true},"ubisoft":{"category":"Games","choco":"ubisoft-connect","content":"Ubisoft Connect","description":"Ubisoft Connect is Ubisoft\u0027s digital distribution and online gaming service, providing access to Ubisoft\u0027s games and services.","link":"https://ubisoftconnect.com/","winget":"Ubisoft.Connect","foss":false},"ungoogled":{"category":"Browsers","choco":"ungoogled-chromium","content":"Ungoogled Chromium","description":"Ungoogled Chromium is a version of Chromium without Google\u0027s integration for enhanced privacy and control.","link":"https://github.com/Eloston/ungoogled-chromium","winget":"eloston.ungoogled-chromium","foss":true},"unity":{"category":"Development","choco":"unity-hub","content":"Unity Game Engine","description":"Unity is a powerful game development platform for creating 2D, 3D, augmented reality, and virtual reality games.","link":"https://unity.com/","winget":"Unity.UnityHub","foss":false},"vagrant":{"category":"Development","choco":"vagrant","content":"Vagrant","description":"Vagrant builds and manages reproducible virtual machine development environments from declarative configuration.","link":"https://developer.hashicorp.com/vagrant","winget":"Hashicorp.Vagrant","foss":false},"everything":{"category":"Utilities","choco":"everything","content":"Everything","description":"Everything is a search engine that locates files and folders by filename instantly for Windows. Unlike Windows search Everything initially displays every file and folder on your computer (hence the name Everything). You type in a search filter to limit what files and folders are displayed.","link":"https://www.voidtools.com/","winget":"voidtools.Everything","foss":false},"vc2015_32":{"category":"Microsoft Tools","choco":"vcredist2015","content":"Visual C++ 2015-2022 32-bit","description":"Visual C++ 2015-2022 32-bit redistributable package installs runtime components of Visual C++ libraries required to run 32-bit applications.","link":"https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads","winget":"Microsoft.VCRedist.2015+.x86","foss":false},"vc2015_64":{"category":"Microsoft Tools","choco":"vcredist2015","content":"Visual C++ 2015-2022 64-bit","description":"Visual C++ 2015-2022 64-bit redistributable package installs runtime components of Visual C++ libraries required to run 64-bit applications.","link":"https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads","winget":"Microsoft.VCRedist.2015+.x64","foss":false},"ventoy":{"category":"Pro Tools","choco":"ventoy","content":"Ventoy","description":"Ventoy is an open-source tool for creating bootable USB drives. It supports multiple ISO files on a single USB drive, making it a versatile solution for installing operating systems.","link":"https://www.ventoy.net/","winget":"Ventoy.Ventoy","foss":true},"vesktop":{"category":"Communications","choco":"na","content":"Vesktop","description":"A cross-platform electron-based desktop app aiming to give you a snappier Discord experience with Vencord pre-installed.","link":"https://vesktop.dev","winget":"Vencord.Vesktop","foss":true},"viber":{"category":"Communications","choco":"viber","content":"Viber","description":"Viber is a free messaging and calling app with features like group chats, video calls, and more.","link":"https://www.viber.com/","winget":"Rakuten.Viber","foss":false},"visualstudio2022":{"category":"Development","choco":"visualstudio2022community","content":"Visual Studio 2022","description":"Visual Studio 2022 is an integrated development environment (IDE) for building, debugging, and deploying applications.","link":"https://visualstudio.microsoft.com/","winget":"Microsoft.VisualStudio.2022.Community","foss":false},"visualstudio2026":{"category":"Development","choco":"visualstudio2026community","content":"Visual Studio 2026","description":"Visual Studio 2026 is an integrated development environment (IDE) for building, debugging, and deploying applications.","link":"https://visualstudio.microsoft.com/","winget":"Microsoft.VisualStudio.Community","foss":false},"vivaldi":{"category":"Browsers","choco":"vivaldi","content":"Vivaldi","description":"Vivaldi is a highly customizable web browser with a focus on user personalization and productivity features.","link":"https://vivaldi.com/","winget":"Vivaldi.Vivaldi","foss":false},"vlc":{"category":"Multimedia Tools","choco":"vlc","content":"VLC (Video Player)","description":"VLC Media Player is a free and open-source multimedia player that supports a wide range of audio and video formats. It is known for its versatility and cross-platform compatibility.","link":"https://www.videolan.org/vlc/","winget":"VideoLAN.VLC","foss":true},"vrdesktopstreamer":{"category":"Games","choco":"na","content":"Virtual Desktop Streamer","description":"Virtual Desktop Streamer is a tool that allows you to stream your desktop screen to VR devices.","link":"https://www.vrdesktop.net/","winget":"VirtualDesktop.Streamer","foss":false},"vscode":{"category":"Development","choco":"vscode","content":"VS Code","description":"Visual Studio Code is a free, open-source code editor with support for multiple programming languages.","link":"https://code.visualstudio.com/","winget":"Microsoft.VisualStudioCode","foss":true},"vscodium":{"category":"Development","choco":"vscodium","content":"VS Codium","description":"VSCodium is a community-driven, freely-licensed binary distribution of Microsoft\u0027s VS Code.","link":"https://vscodium.com/","winget":"VSCodium.VSCodium","foss":true},"waterfox":{"category":"Browsers","choco":"waterfox","content":"Waterfox","description":"Waterfox is a fast, privacy-focused web browser based on Firefox, designed to preserve user choice and privacy.","link":"https://www.waterfox.net/","winget":"Waterfox.Waterfox","foss":true},"whatsapp":{"category":"Communications","choco":"na","content":"WhatsApp Desktop","description":"WhatsApp Desktop is the official Windows desktop messaging app from Meta, distributed through the Microsoft Store.","link":"https://www.whatsapp.com/download","winget":"msstore:9NKSQGP7F2NH","foss":false},"wingetui":{"category":"Utilities","choco":"wingetui","content":"UniGetUI","description":"UniGetUI is a GUI for WinGet, Chocolatey, and other Windows CLI package managers.","link":"https://devolutions.net/unigetui/","winget":"Devolutions.UniGetUI","foss":true},"winrar":{"category":"Utilities","choco":"winrar","content":"WinRAR","description":"WinRAR is a powerful archive manager that allows you to create, manage, and extract compressed files.","link":"https://www.win-rar.com/","winget":"RARLab.WinRAR","foss":false},"winscp":{"category":"Pro Tools","choco":"winscp","content":"WinSCP","description":"WinSCP is a popular open-source SFTP, FTP, and SCP client for Windows. It allows secure file transfers between a local and a remote computer.","link":"https://winscp.net/","winget":"WinSCP.WinSCP","foss":true},"wireguard":{"category":"Pro Tools","choco":"wireguard","content":"WireGuard","description":"WireGuard is a fast and modern VPN (Virtual Private Network) protocol. It aims to be simpler and more efficient than other VPN protocols, providing secure and reliable connections.","link":"https://www.wireguard.com/","winget":"WireGuard.WireGuard","foss":true},"wireshark":{"category":"Pro Tools","choco":"wireshark","content":"Wireshark","description":"Wireshark is a widely-used open-source network protocol analyzer. It allows users to capture and analyze network traffic in real-time, providing detailed insights into network activities.","link":"https://www.wireshark.org/","winget":"WiresharkFoundation.Wireshark","foss":true},"wiztree":{"category":"Utilities","choco":"wiztree","content":"WizTree","description":"WizTree is a fast disk space analyzer that helps you quickly find the files and folders consuming the most space on your hard drive.","link":"https://wiztreefree.com/","winget":"AntibodySoftware.WizTree","foss":false},"xeheditor":{"category":"Utilities","choco":"HxD","content":"HxD Hex Editor","description":"HxD is a free hex editor that allows you to edit, view, search, and analyze binary files.","link":"https://mh-nexus.de/en/hxd/","winget":"MHNexus.HxD","foss":false},"xournal":{"category":"Document","choco":"xournalplusplus","content":"Xournal++","description":"Xournal++ is an open-source handwriting notetaking software with PDF annotation capabilities.","link":"https://xournalpp.github.io/","winget":"Xournal++.Xournal++","foss":true},"yarn":{"category":"Development","choco":"yarn","content":"Yarn","description":"Yarn is a fast, reliable, and secure dependency management tool for JavaScript projects.","link":"https://yarnpkg.com/","winget":"Yarn.Yarn","foss":true},"zoom":{"category":"Communications","choco":"zoom","content":"Zoom","description":"Zoom is a popular video conferencing and web conferencing service for online meetings, webinars, and collaborative projects.","link":"https://zoom.us/","winget":"Zoom.Zoom","foss":false},"uv":{"category":"Development","choco":"uv","content":"uv","description":"uv is a fast Python package and project manager written in Rust.","link":"https://docs.astral.sh/uv/getting-started/installation/","winget":"astral-sh.uv","foss":true},"tightvnc":{"category":"Utilities","choco":"TightVNC","content":"TightVNC","description":"TightVNC is a free and open-source remote desktop software that lets you access and control a computer over the network. With its intuitive interface, you can interact with the remote screen as if you were sitting in front of it. You can open files, launch applications, and perform other actions on the remote desktop almost as if you were physically there.","link":"https://www.tightvnc.com/","winget":"GlavSoft.TightVNC","foss":true},"glazewm":{"category":"Utilities","choco":"glazewm","content":"GlazeWM","description":"GlazeWM is a tiling window manager for Windows inspired by i3 and Polybar.","link":"https://github.com/glzr-io/glazewm","winget":"glzr-io.glazewm","foss":true},"Overwolf":{"category":"Games","content":"CurseForge","description":"CurseForge is a desktop application for managing mods and modpacks across multiple games, powered by Overwolf.","link":"https://www.overwolf.com/app/overwolf-curseforge","winget":"Overwolf.CurseForge","foss":false},"OFGB":{"category":"Utilities","choco":"ofgb","content":"OFGB (Oh Frick Go Back)","description":"GUI Tool to remove ads from various places around Windows 11","link":"https://github.com/xM4ddy/OFGB","winget":"xM4ddy.OFGB","foss":true},"ZenBrowser":{"category":"Browsers","choco":"na","content":"Zen Browser","description":"The modern, privacy-focused, performance-driven browser built on Firefox.","link":"https://zen-browser.app/","winget":"Zen-Team.Zen-Browser","foss":true},"Zed":{"category":"Development","choco":"zed","content":"Zed","description":"Zed is a modern, high-performance code editor designed from the ground up for speed and collaboration.","link":"https://zed.dev/","winget":"ZedIndustries.Zed","foss":true},"zotero":{"category":"Document","choco":"zotero","content":"Zotero","description":"Zotero is a free, easy-to-use tool to help you collect, organize, cite, and share your research materials.","link":"https://www.zotero.org/","winget":"DigitalScholar.Zotero","foss":true},"deskflow":{"category":"Utilities","choco":"deskflow","content":"Deskflow","description":"Deskflow is a free and open-source software KVM that lets you share a single keyboard and mouse across multiple computers.","link":"https://github.com/deskflow/deskflow","winget":"Deskflow.Deskflow","foss":true},"Ruby":{"category":"Development","choco":"ruby","winget":"RubyInstallerTeam.Ruby.4.0","description":"A Ruby language execution environment with a MSYS2 installation.","content":"Ruby","link":"https://rubyinstaller.org/","foss":true},"Lua":{"category":"Development","choco":"lua","winget":"rjpcomputing.luaforwindows","description":"A \u0027batteries included environment\u0027 for the Lua scripting language on Windows.","content":"Lua","link":"https://github.com/rjpcomputing/luaforwindows","foss":true},"CloudflareWARP":{"category":"Utilities","choco":"warp","winget":"Cloudflare.Warp","description":"WARP is a freemium VPN service provided by Cloudflare. Includes usage of Cloudflare\u0027s DNS","content":"Cloudflare WARP","link":"https://one.one.one.one","foss":false}}
 '@ | ConvertFrom-Json
     Appx         = @'
-{"WPFAppxMicrosoft_WindowsFeedbackHub":{"Category":"Microsoft Apps","Content":"Feedback Hub","Description":"Allows users to submit bug reports, feature suggestions, and diagnostic data directly to Microsoft.","Panel":"0","PackageId":"Microsoft.WindowsFeedbackHub","StoreId":"9NBLGGH4R32N","DefaultDebloat":true},"WPFAppxMicrosoft_GetHelp":{"Category":"Microsoft Apps","Content":"Get Help","Description":"Provides access to automated troubleshooting guides, support documentation, and direct Microsoft customer assistance.","Panel":"0","PackageId":"Microsoft.GetHelp","StoreId":"9PKDZBMV1H3T","DefaultDebloat":true},"WPFAppxMicrosoft_OutlookForWindows":{"Category":"Microsoft Apps","Content":"Outlook for Windows","Description":"Provides modern email management, calendar scheduling, and contact organization features.","Panel":"0","PackageId":"Microsoft.OutlookForWindows","StoreId":"9NRX63209R7B","DefaultDebloat":false},"WPFAppxMSTeams":{"Category":"Microsoft Apps","Content":"Microsoft Teams","Description":"Facilitates instant messaging, video conferencing, file sharing, and workspace collaboration.","Panel":"0","PackageId":"MSTeams","StoreId":"XP8BT8DW290MPQ","DefaultDebloat":false},"WPFAppxClipchamp_Clipchamp":{"Category":"Utilities \u0026 Productivity","Content":"Clipchamp","Description":"Provides a user-friendly video editor with built-in templates, effects, and timeline editing tools.","Panel":"0","PackageId":"Clipchamp.Clipchamp","StoreId":"9P1J8S7CCWWT","DefaultDebloat":true},"WPFAppxMicrosoft_MicrosoftOfficeHub":{"Category":"Microsoft Apps","Content":"Microsoft 365","Description":"Serves as a centralized launcher and dashboard for accessing cloud-based Microsoft 365 apps and recent documents.","Panel":"0","PackageId":"Microsoft.MicrosoftOfficeHub","StoreId":"9WZDNCRD29V9","DefaultDebloat":true},"WPFAppxMicrosoft_ZuneMusic":{"Category":"Utilities \u0026 Productivity","Content":"Media Player","Description":"Plays local audio and video files with modern playlist management and casting capabilities.","Panel":"0","PackageId":"Microsoft.ZuneMusic","StoreId":"9WZDNCRFJ3PT","DefaultDebloat":false},"WPFAppxMicrosoft_BingSearch":{"Category":"Bing \u0026 Web Services","Content":"Bing Search","Description":"Integrates Microsoft Bing search capabilities and web services directly into the operating system.","Panel":"1","PackageId":"Microsoft.BingSearch","StoreId":"9NZBF4GT040C","DefaultDebloat":true},"WPFAppxMicrosoftCorporationII_QuickAssist":{"Category":"Utilities \u0026 Productivity","Content":"Quick Assist","Description":"Enables secure remote technical support and screen sharing over an internet connection.","Panel":"0","PackageId":"MicrosoftCorporationII.QuickAssist","StoreId":"9P7BP5VNWKX5","DefaultDebloat":true},"WPFAppxMicrosoft_WindowsDevHome":{"Category":"Developer Tools","Content":"Dev Home","Description":"Provides a specialized dashboard for software developer environment setups, repository syncing, and hardware widgets.","Panel":"1","PackageId":"Microsoft.Windows.DevHome","StoreId":"9N8MHTPHNGVV","DefaultDebloat":true},"WPFAppxMicrosoft_WindowsCrossDevice":{"Category":"Microsoft Ecosystem","Content":"Mobile Devices","Description":"Manages system-level background connectivity with paired mobile devices. Removing this may disable cross-device features such as phone screen mirroring, file transfer, and mobile hotspot handoff integrated into Windows Settings.","Panel":"0","PackageId":"MicrosoftWindows.CrossDevice","StoreId":"9NTXGKQ8P7N0","DefaultDebloat":false},"WPFAppxMicrosoft_Todos":{"Category":"Utilities \u0026 Productivity","Content":"To Do","Description":"Creates, tracks, and synchronizes personal tasks, smart lists, and daily reminders.","Panel":"0","PackageId":"Microsoft.Todos","StoreId":"9NBLGGH5R558","DefaultDebloat":true},"WPFAppxMicrosoft_PowerAutomateDesktop":{"Category":"Developer Tools","Content":"Power Automate","Description":"Automates repetitive workflows and desktop tasks using low-code visual scripting.","Panel":"1","PackageId":"Microsoft.PowerAutomateDesktop","StoreId":"9NFTCH6J7FHV","DefaultDebloat":true},"WPFAppxMicrosoft_YourPhone":{"Category":"Microsoft Ecosystem","Content":"Phone Link","Description":"Synchronizes text messages, phone notifications, photos, and calls from a mobile device to the desktop.","Panel":"0","PackageId":"Microsoft.YourPhone","StoreId":"9NMPJ99VJBWV","DefaultDebloat":false},"WPFAppxMicrosoft_MicrosoftStickyNotes":{"Category":"Utilities \u0026 Productivity","Content":"Sticky Notes","Description":"Creates quick, floating text notes on the desktop that automatically sync across devices.","Panel":"0","PackageId":"Microsoft.MicrosoftStickyNotes","StoreId":"9NBLGGH4QGHW","DefaultDebloat":true},"WPFAppxMicrosoft_WindowsSoundRecorder":{"Category":"Utilities \u0026 Productivity","Content":"Sound Recorder","Description":"Records and trims live audio inputs with simple microphone adjustment controls.","Panel":"0","PackageId":"Microsoft.WindowsSoundRecorder","StoreId":"9WZDNCRFHWKN","DefaultDebloat":true},"WPFAppxMicrosoft_WindowsAlarms":{"Category":"Utilities \u0026 Productivity","Content":"Clock","Description":"Features world clocks, alarms, countdown timers, stopwatches, and dedicated focus session tracking.","Panel":"0","PackageId":"Microsoft.WindowsAlarms","StoreId":"9WZDNCRFJ3PR","DefaultDebloat":true},"WPFAppxMicrosoft_Paint":{"Category":"Utilities \u0026 Productivity","Content":"Paint","Description":"Provides built-in digital sketching, basic image editing, and pixel-level graphic manipulation tools.","Panel":"0","PackageId":"Microsoft.Paint","StoreId":"9PCFS5B6T72H","DefaultDebloat":false},"WPFAppxMicrosoft_WindowsNotepad":{"Category":"Utilities \u0026 Productivity","Content":"Notepad","Description":"Provides a lightweight text editor with multi-tab support for plain text files and code snippets.","Panel":"0","PackageId":"Microsoft.WindowsNotepad","StoreId":"9MSMLRH6LZF3","DefaultDebloat":false},"WPFAppxMicrosoft_ScreenSketch":{"Category":"Utilities \u0026 Productivity","Content":"Snipping Tool","Description":"Captures screenshots or screen recordings with built-in markup, image cropping, and optical character recognition (OCR).","Panel":"0","PackageId":"Microsoft.ScreenSketch","StoreId":"9MZ95KL8MR0L","DefaultDebloat":false},"WPFAppxMicrosoft_Copilot":{"Category":"Bing \u0026 Web Services","Content":"Copilot","Description":"Launches the Microsoft AI companion for contextual answers, creative writing assistance, and intelligent web search.","Panel":"1","PackageId":"Microsoft.Copilot","StoreId":"9NHT9RB2F4HD","DefaultDebloat":true},"WPFAppxMicrosoft_WindowsCalculator":{"Category":"Utilities \u0026 Productivity","Content":"Calculator","Description":"Performs standard arithmetic, scientific operations, programming calculations, and unit conversions.","Panel":"0","PackageId":"Microsoft.WindowsCalculator","StoreId":"9WZDNCRFHVN5","DefaultDebloat":true},"WPFAppxMicrosoft_WindowsCamera":{"Category":"Utilities \u0026 Productivity","Content":"Camera","Description":"Captures photographs and records video files via connected webcams or imaging hardware.","Panel":"0","PackageId":"Microsoft.WindowsCamera","StoreId":"9WZDNCRFJBBG","DefaultDebloat":false},"WPFAppxMicrosoft_WindowsPhotos":{"Category":"Utilities \u0026 Productivity","Content":"Photos","Description":"Organizes, views, and crops local images with basic color adjustment and album creation tools.","Panel":"0","PackageId":"Microsoft.Windows.Photos","StoreId":"9WZDNCRFJBH4","DefaultDebloat":false},"WPFAppxMicrosoft_BingNews":{"Category":"Bing \u0026 Web Services","Content":"News","Description":"Aggregates breaking news headlines, personalized article feeds, and world current events.","Panel":"1","PackageId":"Microsoft.BingNews","StoreId":"9WZDNCRFHVFW","DefaultDebloat":true},"WPFAppxMicrosoft_BingWeather":{"Category":"Bing \u0026 Web Services","Content":"Weather","Description":"Displays local real-time weather tracking, radar maps, and historical meteorological forecasts.","Panel":"1","PackageId":"Microsoft.BingWeather","StoreId":"9WZDNCRFJ3Q2","DefaultDebloat":true},"WPFAppxMicrosoft_GamingApp":{"Category":"Xbox \u0026 Gaming","Content":"Xbox App","Description":"Serves as the primary gaming library manager, social community interface, and PC Game Pass dashboard.","Panel":"1","PackageId":"Microsoft.GamingApp","StoreId":"9MV0B5HZVK9Z","DefaultDebloat":false},"WPFAppxMicrosoft_XboxGamingOverlay":{"Category":"Xbox \u0026 Gaming","Content":"Xbox Game Bar","Description":"Provides customizable in-game status widgets, audio balancing sliders, system monitoring tools, and gameplay recording.","Panel":"1","PackageId":"Microsoft.XboxGamingOverlay","StoreId":"9NZKPSTSNW4P","DefaultDebloat":false},"WPFAppxMicrosoft_XboxIdentityProvider":{"Category":"Xbox \u0026 Gaming","Content":"Xbox Identity Provider","Description":"Manages Xbox network user authentication and background account validation for connected titles. Warning: removing this may break Microsoft account sign-in for non-Xbox games and apps that rely on this authentication pipeline.","Panel":"1","PackageId":"Microsoft.XboxIdentityProvider","StoreId":"9WZDNCRD1HKW","DefaultDebloat":false},"WPFAppxMicrosoft_XboxSpeechToTextOverlay":{"Category":"Xbox \u0026 Gaming","Content":"Xbox Speech To Text Overlay","Description":"Provides system-level live accessibility captions and voice-to-text translation for gaming chat networks.","Panel":"1","PackageId":"Microsoft.XboxSpeechToTextOverlay","DefaultDebloat":false},"WPFAppxMicrosoft_Xbox_TCUI":{"Category":"Xbox \u0026 Gaming","Content":"Xbox TCUI","Description":"Provides core account connection UI modules for single sign-on flows within game titles. Warning: removing this may break Microsoft account authentication in games and apps that do not otherwise require the Xbox app.","Panel":"1","PackageId":"Microsoft.Xbox.TCUI","DefaultDebloat":false},"WPFAppxMicrosoft_StartExperiencesApp":{"Category":"Bing \u0026 Web Services","Content":"Start Experiences App","Description":"Powers the Windows Widgets board, delivering a personalized feed of news, weather, sports, and finance content.","Panel":"1","PackageId":"Microsoft.StartExperiencesApp","StoreId":"9PC1H9VN18CM","DefaultDebloat":true},"WPFAppxMicrosoft_MicrosoftSolitaireCollection":{"Category":"Xbox \u0026 Gaming","Content":"Solitaire Collection","Description":"Bundles built-in card game modes including Klondike, Spider, FreeCell, Pyramid, and TriPeaks alongside daily challenges.","Panel":"1","PackageId":"Microsoft.MicrosoftSolitaireCollection","DefaultDebloat":true},"WPFAppxMicrosoft_ZuneVideo":{"Category":"Utilities \u0026 Productivity","Content":"Movies \u0026 TV","Description":"The default video player and storefront for purchasing or renting media.","Panel":"0","PackageId":"Microsoft.ZuneVideo","StoreId":"9WZDNCRFJ3P2","DefaultDebloat":false}}
+{"WPFAppxMicrosoft_WindowsFeedbackHub":{"Category":"Apps Microsoft","Content":"Hub de Feedback","Description":"App para enviar diagn\u00f3sticos e avalia\u00e7\u00f5es \u00e0 Microsoft.","Panel":"0","PackageId":"Microsoft.WindowsFeedbackHub","StoreId":"9NBLGGH4R32N","DefaultDebloat":true},"WPFAppxMicrosoft_GetHelp":{"Category":"Apps Microsoft","Content":"Obter Ajuda","Description":"Guias automatizados e suporte remoto Microsoft.","Panel":"0","PackageId":"Microsoft.GetHelp","StoreId":"9PKDZBMV1H3T","DefaultDebloat":true},"WPFAppxMicrosoft_OutlookForWindows":{"Category":"Apps Microsoft","Content":"Outlook para Windows","Description":"Cliente de e-mail e calend\u00e1rio padr\u00e3o baseado em Web.","Panel":"0","PackageId":"Microsoft.OutlookForWindows","StoreId":"9NRX63209R7B","DefaultDebloat":false},"WPFAppxMSTeams":{"Category":"Apps Microsoft","Content":"Microsoft Teams","Description":"Aplicativo de reuni\u00f5es e chat integrado ao Windows 11.","Panel":"0","PackageId":"MSTeams","StoreId":"XP8BT8DW290MPQ","DefaultDebloat":false},"WPFAppxClipchamp_Clipchamp":{"Category":"Utilit\u00e1rios \u0026 Produtividade","Content":"Clipchamp","Description":"Editor de v\u00eddeos pr\u00e9-instalado com recursos em nuvem.","Panel":"0","PackageId":"Clipchamp.Clipchamp","StoreId":"9P1J8S7CCWWT","DefaultDebloat":true},"WPFAppxMicrosoft_MicrosoftOfficeHub":{"Category":"Apps Microsoft","Content":"Microsoft 365 (Hub)","Description":"Painel de atalhos e propagandas do Office/Microsoft 365.","Panel":"0","PackageId":"Microsoft.MicrosoftOfficeHub","StoreId":"9WZDNCRD29V9","DefaultDebloat":true},"WPFAppxMicrosoft_ZuneMusic":{"Category":"Utilit\u00e1rios \u0026 Produtividade","Content":"Reprodutor Multim\u00eddia","Description":"Player de \u00e1udio e v\u00eddeo moderno do Windows.","Panel":"0","PackageId":"Microsoft.ZuneMusic","StoreId":"9WZDNCRFJ3PT","DefaultDebloat":false},"WPFAppxMicrosoft_BingSearch":{"Category":"Bing \u0026 Web","Content":"Pesquisa Bing","Description":"Integra\u00e7\u00e3o da busca web Bing no sistema.","Panel":"1","PackageId":"Microsoft.BingSearch","StoreId":"9NZBF4GT040C","DefaultDebloat":true},"WPFAppxMicrosoftCorporationII_QuickAssist":{"Category":"Utilit\u00e1rios \u0026 Produtividade","Content":"Assist\u00eancia R\u00e1pida","Description":"Ferramenta nativa para acesso remoto assistido.","Panel":"0","PackageId":"MicrosoftCorporationII.QuickAssist","StoreId":"9P7BP5VNWKX5","DefaultDebloat":true},"WPFAppxMicrosoft_WindowsDevHome":{"Category":"Ferramentas Dev","Content":"Dev Home","Description":"Painel de monitoramento e configura\u00e7\u00e3o para desenvolvedores.","Panel":"1","PackageId":"Microsoft.Windows.DevHome","StoreId":"9N8MHTPHNGVV","DefaultDebloat":true},"WPFAppxMicrosoft_WindowsCrossDevice":{"Category":"Ecossistema Microsoft","Content":"Dispositivos M\u00f3veis","Description":"Sincroniza\u00e7\u00e3o em segundo plano entre PC e celular.","Panel":"0","PackageId":"MicrosoftWindows.CrossDevice","StoreId":"9NTXGKQ8P7N0","DefaultDebloat":false},"WPFAppxMicrosoft_Todos":{"Category":"Utilit\u00e1rios \u0026 Produtividade","Content":"Microsoft To Do","Description":"Lista de tarefas sincronizada com conta Microsoft.","Panel":"0","PackageId":"Microsoft.Todos","StoreId":"9NBLGGH5R558","DefaultDebloat":true},"WPFAppxMicrosoft_PowerAutomateDesktop":{"Category":"Ferramentas Dev","Content":"Power Automate","Description":"Automa\u00e7\u00e3o de fluxos e rotinas de trabalho Microsoft.","Panel":"1","PackageId":"Microsoft.PowerAutomateDesktop","StoreId":"9NFTCH6J7FHV","DefaultDebloat":true},"WPFAppxMicrosoft_YourPhone":{"Category":"Ecossistema Microsoft","Content":"Vincular ao Celular (Phone Link)","Description":"Espelhamento de notifica\u00e7\u00f5es, SMS e chamadas Android/iOS.","Panel":"0","PackageId":"Microsoft.YourPhone","StoreId":"9NMPJ99VJBWV","DefaultDebloat":false},"WPFAppxMicrosoft_MicrosoftStickyNotes":{"Category":"Utilit\u00e1rios \u0026 Produtividade","Content":"Notas Autoadesivas (Sticky Notes)","Description":"Blocos de anota\u00e7\u00f5es r\u00e1pidas na \u00e1rea de trabalho.","Panel":"0","PackageId":"Microsoft.MicrosoftStickyNotes","StoreId":"9NBLGGH4QGHW","DefaultDebloat":true},"WPFAppxMicrosoft_WindowsSoundRecorder":{"Category":"Utilit\u00e1rios \u0026 Produtividade","Content":"Gravador de Som","Description":"Gravador de \u00e1udio nativo pelo microfone.","Panel":"0","PackageId":"Microsoft.WindowsSoundRecorder","StoreId":"9WZDNCRFHWKN","DefaultDebloat":true},"WPFAppxMicrosoft_WindowsAlarms":{"Category":"Utilit\u00e1rios \u0026 Produtividade","Content":"Rel\u00f3gio \u0026 Alarmes","Description":"Alarmes, cron\u00f4metro, timer e sess\u00f5es de foco.","Panel":"0","PackageId":"Microsoft.WindowsAlarms","StoreId":"9WZDNCRFJ3PR","DefaultDebloat":true},"WPFAppxMicrosoft_Paint":{"Category":"Utilit\u00e1rios \u0026 Produtividade","Content":"Microsoft Paint","Description":"Editor de desenhos e imagens cl\u00e1ssico/moderno do Windows.","Panel":"0","PackageId":"Microsoft.Paint","StoreId":"9PCFS5B6T72H","DefaultDebloat":false},"WPFAppxMicrosoft_WindowsNotepad":{"Category":"Utilit\u00e1rios \u0026 Produtividade","Content":"Bloco de Notas (Store)","Description":"Vers\u00e3o UWP atualizada do Bloco de Notas.","Panel":"0","PackageId":"Microsoft.WindowsNotepad","StoreId":"9MSMLRH6LZF3","DefaultDebloat":false},"WPFAppxMicrosoft_ScreenSketch":{"Category":"Utilit\u00e1rios \u0026 Produtividade","Content":"Ferramenta de Captura (Snipping Tool)","Description":"Captura de tela e grava\u00e7\u00e3o nativa (Win+Shift+S).","Panel":"0","PackageId":"Microsoft.ScreenSketch","StoreId":"9MZ95KL8MR0L","DefaultDebloat":false},"WPFAppxMicrosoft_Copilot":{"Category":"Bing \u0026 Web","Content":"Microsoft Copilot","Description":"Assistente de IA integrado ao sistema e barra lateral.","Panel":"1","PackageId":"Microsoft.Copilot","StoreId":"9NHT9RB2F4HD","DefaultDebloat":true},"WPFAppxMicrosoft_WindowsCalculator":{"Category":"Utilit\u00e1rios \u0026 Produtividade","Content":"Calculadora","Description":"Calculadora padr\u00e3o e cient\u00edfica nativa do Windows.","Panel":"0","PackageId":"Microsoft.WindowsCalculator","StoreId":"9WZDNCRFHVN5","DefaultDebloat":true},"WPFAppxMicrosoft_WindowsCamera":{"Category":"Utilit\u00e1rios \u0026 Produtividade","Content":"C\u00e2mera","Description":"Aplicativo nativo para webcam e c\u00e2mera do notebook.","Panel":"0","PackageId":"Microsoft.WindowsCamera","StoreId":"9WZDNCRFJBBG","DefaultDebloat":false},"WPFAppxMicrosoft_WindowsPhotos":{"Category":"Utilit\u00e1rios \u0026 Produtividade","Content":"Fotos","Description":"Visualizador padr\u00e3o de imagens e galeria do Windows.","Panel":"0","PackageId":"Microsoft.Windows.Photos","StoreId":"9WZDNCRFJBH4","DefaultDebloat":false},"WPFAppxMicrosoft_BingNews":{"Category":"Bing \u0026 Web","Content":"Not\u00edcias (Bing News)","Description":"Feed de not\u00edcias e manchetes patrocinadas.","Panel":"1","PackageId":"Microsoft.BingNews","StoreId":"9WZDNCRFHVFW","DefaultDebloat":true},"WPFAppxMicrosoft_BingWeather":{"Category":"Bing \u0026 Web","Content":"Clima (Bing Weather)","Description":"Previs\u00e3o do tempo e alertas meteorol\u00f3gicos.","Panel":"1","PackageId":"Microsoft.BingWeather","StoreId":"9WZDNCRFJ3Q2","DefaultDebloat":true},"WPFAppxMicrosoft_GamingApp":{"Category":"Xbox \u0026 Jogos","Content":"App Xbox","Description":"Central Xbox PC Game Pass e jogos na loja Microsoft.","Panel":"1","PackageId":"Microsoft.GamingApp","StoreId":"9MV0B5HZVK9Z","DefaultDebloat":false},"WPFAppxMicrosoft_XboxGamingOverlay":{"Category":"Xbox \u0026 Jogos","Content":"Xbox Game Bar","Description":"Sobreposi\u00e7\u00e3o Win+G para capturas e widgets durante jogos.","Panel":"1","PackageId":"Microsoft.XboxGamingOverlay","StoreId":"9NZKPSTSNW4P","DefaultDebloat":false},"WPFAppxMicrosoft_XboxIdentityProvider":{"Category":"Xbox \u0026 Jogos","Content":"Provedor de Identidade Xbox","Description":"Autentica\u00e7\u00e3o Xbox Live exigida por jogos da Microsoft Store.","Panel":"1","PackageId":"Microsoft.XboxIdentityProvider","StoreId":"9WZDNCRD1HKW","DefaultDebloat":false},"WPFAppxMicrosoft_XboxSpeechToTextOverlay":{"Category":"Xbox \u0026 Jogos","Content":"Xbox Voz para Texto","Description":"Recurso de acessibilidade de transcri\u00e7\u00e3o em jogos Xbox.","Panel":"1","PackageId":"Microsoft.XboxSpeechToTextOverlay","DefaultDebloat":false},"WPFAppxMicrosoft_Xbox_TCUI":{"Category":"Xbox \u0026 Jogos","Content":"Interface Xbox TCUI","Description":"Componentes de interface necess\u00e1rios para login em jogos Xbox.","Panel":"1","PackageId":"Microsoft.Xbox.TCUI","DefaultDebloat":false},"WPFAppxMicrosoft_StartExperiencesApp":{"Category":"Bing \u0026 Web","Content":"Experi\u00eancias do Iniciar","Description":"M\u00f3dulo de widgets din\u00e2micos e feed web do Menu Iniciar.","Panel":"1","PackageId":"Microsoft.StartExperiencesApp","StoreId":"9PC1H9VN18CM","DefaultDebloat":true},"WPFAppxMicrosoft_MicrosoftSolitaireCollection":{"Category":"Xbox \u0026 Jogos","Content":"Cole\u00e7\u00e3o Paci\u00eancia","Description":"Pacote de jogos de cartas com an\u00fancios pr\u00e9-instalado.","Panel":"1","PackageId":"Microsoft.MicrosoftSolitaireCollection","DefaultDebloat":true},"WPFAppxMicrosoft_ZuneVideo":{"Category":"Utilit\u00e1rios \u0026 Produtividade","Content":"Filmes e TV","Description":"Reprodutor de v\u00eddeo cl\u00e1ssico da Microsoft Store.","Panel":"0","PackageId":"Microsoft.ZuneVideo","StoreId":"9WZDNCRFJ3P2","DefaultDebloat":false}}
 '@ | ConvertFrom-Json
     Dns          = @'
 {"Google":{"BenchmarkEligible":true,"Primary":"8.8.8.8","Secondary":"8.8.4.4","Primary6":"2001:4860:4860::8888","Secondary6":"2001:4860:4860::8844","DohTemplate":"https://dns.google/dns-query"},"Cloudflare":{"BenchmarkEligible":true,"Primary":"1.1.1.1","Secondary":"1.0.0.1","Primary6":"2606:4700:4700::1111","Secondary6":"2606:4700:4700::1001","DohTemplate":"https://cloudflare-dns.com/dns-query"},"Cloudflare_Malware":{"Primary":"1.1.1.2","Secondary":"1.0.0.2","Primary6":"2606:4700:4700::1112","Secondary6":"2606:4700:4700::1002","DohTemplate":"https://security.cloudflare-dns.com/dns-query"},"Cloudflare_Malware_Adult":{"Primary":"1.1.1.3","Secondary":"1.0.0.3","Primary6":"2606:4700:4700::1113","Secondary6":"2606:4700:4700::1003","DohTemplate":"https://family.cloudflare-dns.com/dns-query"},"Open_DNS":{"Primary":"208.67.222.222","Secondary":"208.67.220.220","Primary6":"2620:119:35::35","Secondary6":"2620:119:53::53","DohTemplate":"https://doh.opendns.com/dns-query"},"Quad9":{"Primary":"9.9.9.9","Secondary":"149.112.112.112","Primary6":"2620:fe::fe","Secondary6":"2620:fe::9","DohTemplate":"https://dns.quad9.net/dns-query"},"AdGuard_Ads_Trackers":{"Primary":"94.140.14.14","Secondary":"94.140.15.15","Primary6":"2a10:50c0::ad1:ff","Secondary6":"2a10:50c0::ad2:ff","DohTemplate":"https://dns.adguard-dns.com/dns-query"},"AdGuard_Ads_Trackers_Malware_Adult":{"Primary":"94.140.14.15","Secondary":"94.140.15.16","Primary6":"2a10:50c0::bad1:ff","Secondary6":"2a10:50c0::bad2:ff","DohTemplate":"https://family.adguard-dns.com/dns-query"}}
 '@ | ConvertFrom-Json
     Features     = @'
-{"WPFFeaturesdotnet":{"Content":".NET Framework (Versions 2, 3, 4) - Enable","Description":".NET and .NET Framework is a developer platform made up of tools, programming languages, and libraries for building many different types of applications.","category":"Features","panel":"1","feature":["NetFx4-AdvSrvs","NetFx3"],"InvokeScript":[]},"WPFFixesNTPPool":{"Content":"NTP Server - Enable","Description":"Replaces the default Windows NTP server (time.windows.com) with pool.ntp.org for improved time synchronization accuracy and reliability.","category":"Fixes","panel":"1","Type":"Button","ButtonWidth":"300","function":"Invoke-WPFFixesNTPPool"},"WPFFeatureshyperv":{"Content":"Hyper-V - Enable","Description":"Hyper-V is a hardware virtualization product developed by Microsoft that allows users to create and manage virtual machines.","category":"Features","panel":"1","feature":["Microsoft-Hyper-V-All"]},"WPFFeatureslegacymedia":{"Content":"Legacy Media Components (WMP, DirectPlay) - Enable","Description":"Enables legacy programs from previous versions of Windows.","category":"Features","panel":"1","feature":["WindowsMediaPlayer","MediaPlayback","DirectPlay","LegacyComponents"],"InvokeScript":[]},"WPFFeaturewsl":{"Content":"Windows Subsystem for Linux (WSL) - Enable","Description":"Windows Subsystem for Linux is an optional feature of Windows that allows Linux programs to run natively on Windows without the need for a separate virtual machine or dual booting.","category":"Features","panel":"1","feature":["VirtualMachinePlatform","Microsoft-Windows-Subsystem-Linux"],"InvokeScript":[]},"WPFFeaturenfs":{"Content":"Network File System (NFS) - Enable","Description":"Network File System (NFS) is a mechanism for storing files on a network.","category":"Features","panel":"1","feature":["ServicesForNFS-ClientOnly","ClientForNFS-Infrastructure","NFS-Administration"],"InvokeScript":["nfsadmin client stop","Set-ItemProperty -Path \u0027HKLM:\\SOFTWARE\\Microsoft\\ClientForNFS\\CurrentVersion\\Default\u0027 -Name \u0027AnonymousUID\u0027 -Type DWord -Value 0","Set-ItemProperty -Path \u0027HKLM:\\SOFTWARE\\Microsoft\\ClientForNFS\\CurrentVersion\\Default\u0027 -Name \u0027AnonymousGID\u0027 -Type DWord -Value 0","nfsadmin client start","nfsadmin client localhost config fileaccess=755 SecFlavors=+sys -krb5 -krb5i"]},"WPFFeatureRegBackup":{"Content":"Registry Backup (Daily Task 12:30am) - Enable","Description":"Enables daily registry backup, previously disabled by Microsoft in Windows 10 1803.","category":"Features","panel":"1","feature":[],"InvokeScript":["\n      New-ItemProperty -Path \u0027HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Configuration Manager\u0027 -Name \u0027EnablePeriodicBackup\u0027 -Type DWord -Value 1 -Force\n      New-ItemProperty -Path \u0027HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Configuration Manager\u0027 -Name \u0027BackupCount\u0027 -Type DWord -Value 2 -Force\n      $action = New-ScheduledTaskAction -Execute \u0027schtasks\u0027 -Argument \u0027/run /i /tn \"\\Microsoft\\Windows\\Registry\\RegIdleBackup\"\u0027\n      $trigger = New-ScheduledTaskTrigger -Daily -At 00:30\n      Register-ScheduledTask -Action $action -Trigger $trigger -TaskName \u0027AutoRegBackup\u0027 -Description \u0027Create System Registry Backups\u0027 -User \u0027System\u0027\n      "]},"WPFFeatureEnableLegacyRecovery":{"Content":"Legacy F8 Boot Recovery - Enable","Description":"Enables Advanced Boot Options screen that lets you start Windows in advanced troubleshooting modes.","category":"Features","panel":"1","feature":[],"InvokeScript":["bcdedit /set bootmenupolicy legacy"]},"WPFFeatureDisableLegacyRecovery":{"Content":"Legacy F8 Boot Recovery - Disable","Description":"Disables Advanced Boot Options screen that lets you start Windows in advanced troubleshooting modes.","category":"Features","panel":"1","feature":[],"InvokeScript":["bcdedit /set bootmenupolicy standard"]},"WPFFeaturesSandbox":{"Content":"Windows Sandbox - Enable","Description":"Windows Sandbox is a lightweight virtual machine that provides a temporary desktop environment to safely run applications and programs in isolation.","category":"Features","panel":"1","feature":["Containers-DisposableClientVM"]},"WPFFeatureInstall":{"Content":"Install Features","category":"Features","panel":"1","Type":"Button","ButtonWidth":"300","function":"Invoke-WPFFeatureInstall"},"WPFPanelAutologin":{"Content":"AutoLogon - Run","category":"Fixes","panel":"1","Type":"Button","ButtonWidth":"300","function":"Invoke-WPFPanelAutologin"},"WPFFixesUpdate":{"Content":"Windows Update - Reset","category":"Fixes","panel":"1","Type":"Button","ButtonWidth":"300","function":"Invoke-WPFFixesUpdate"},"WPFFixesNetwork":{"Content":"Network - Reset","category":"Fixes","panel":"1","Type":"Button","ButtonWidth":"300","function":"Invoke-WPFFixesNetwork"},"WPFPanelDISM":{"Content":"System Corruption Scan - Run","category":"Fixes","panel":"1","Type":"Button","ButtonWidth":"300","function":"Invoke-WPFSystemRepair"},"WPFFixesWinget":{"Content":"WinGet - Reinstall","category":"Fixes","panel":"1","Type":"Button","ButtonWidth":"300","function":"Invoke-WPFFixesWinget"},"WPFPanelComputer":{"Content":"Computer Management","category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["compmgmt.msc"]},"WPFPanelControl":{"Content":"Control Panel","category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["control"]},"WPFPanelMouse":{"Content":"Mouse Properties","category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["main.cpl"]},"WPFPanelNetwork":{"Content":"Network Connections","category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["ncpa.cpl"]},"WPFPanelPower":{"Content":"Power Panel","category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["powercfg.cpl"]},"WPFPanelPrinter":{"Content":"Printer Panel","category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["Start-Process \u0027shell:::{A8A91A66-3A7D-4424-8D24-04E180695C7A}\u0027"]},"WPFPanelPrograms":{"Content":"Programs and Features","category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["appwiz.cpl"]},"WPFPanelRegion":{"Content":"Region","category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["intl.cpl"]},"WPFPanelSecurity":{"Content":"Security and Maintenance","category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["wscui.cpl"]},"WPFPanelSound":{"Content":"Sound Settings","category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["mmsys.cpl"]},"WPFPanelSystem":{"Content":"System Properties","category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["sysdm.cpl"]},"WPFPanelTimedate":{"Content":"Time and Date","category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["timedate.cpl"]},"WPFPanelFirewall":{"Content":"Windows Defender Firewall","category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["firewall.cpl"]},"WPFPanelRestore":{"Content":"Windows Restore","category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["rstrui.exe"]},"WPFInstallPSProfile":{"Content":"WinRepair PowerShell Profile - Install","category":"Powershell Profile Powershell 7+ Only","panel":"2","Type":"Button","ButtonWidth":"300","function":"Install-EnhancedPowerShellProfile"},"WPFUninstallPSProfile":{"Content":"WinRepair PowerShell Profile - Remove","category":"Powershell Profile Powershell 7+ Only","panel":"2","Type":"Button","ButtonWidth":"300","function":"Uninstall-EnhancedPowerShellProfile"},"WPFEnableSSHServer":{"Content":"OpenSSH Server - Enable","category":"Remote Access","panel":"2","Type":"Button","ButtonWidth":"300","function":"Invoke-WPFSSHServer"}}
+{"WPFFeaturesdotnet":{"category":"Features","panel":"1","feature":["NetFx4-AdvSrvs","NetFx3"],"InvokeScript":[],"Content":".NET Framework 3.5 (Vers\u00f5es 2.0, 3.0 e 3.5)","Description":"Habilita suporte a programas legados e sistemas corporativos que exigem .NET antigo."},"WPFFixesNTPPool":{"Content":"NTP Server - Enable","Description":"Replaces the default Windows NTP server (time.windows.com) with pool.ntp.org for improved time synchronization accuracy and reliability.","category":"Fixes","panel":"1","Type":"Button","ButtonWidth":"300","function":"Invoke-WPFFixesNTPPool"},"WPFFeatureshyperv":{"category":"Features","panel":"1","feature":["Microsoft-Hyper-V-All"],"Content":"Hyper-V (Virtualiza\u00e7\u00e3o Completa)","Description":"Habilita o hipervisor nativo da Microsoft para rodar m\u00e1quinas virtuais de alto desempenho."},"WPFFeatureslegacymedia":{"category":"Features","panel":"1","feature":["WindowsMediaPlayer","MediaPlayback","DirectPlay","LegacyComponents"],"InvokeScript":[],"Content":"Recursos de M\u00eddia Legados (WMP, DirectPlay)","Description":"Ativa Windows Media Player antigo e DirectPlay necess\u00e1rios para jogos cl\u00e1ssicos."},"WPFFeaturewsl":{"category":"Features","panel":"1","feature":["VirtualMachinePlatform","Microsoft-Windows-Subsystem-Linux"],"InvokeScript":[],"Content":"WSL 2 (Subsistema Windows para Linux)","Description":"Instala o kernel Linux nativo no Windows para rodar Ubuntu, Docker e ferramentas CLI."},"WPFFeaturenfs":{"category":"Features","panel":"1","feature":["ServicesForNFS-ClientOnly","ClientForNFS-Infrastructure","NFS-Administration"],"InvokeScript":["nfsadmin client stop","Set-ItemProperty -Path \u0027HKLM:\\SOFTWARE\\Microsoft\\ClientForNFS\\CurrentVersion\\Default\u0027 -Name \u0027AnonymousUID\u0027 -Type DWord -Value 0","Set-ItemProperty -Path \u0027HKLM:\\SOFTWARE\\Microsoft\\ClientForNFS\\CurrentVersion\\Default\u0027 -Name \u0027AnonymousGID\u0027 -Type DWord -Value 0","nfsadmin client start","nfsadmin client localhost config fileaccess=755 SecFlavors=+sys -krb5 -krb5i"],"Content":"Cliente NFS (Network File System)","Description":"Permite montar compartilhamentos de rede NFS de servidores Linux/NAS no Windows."},"WPFFeatureRegBackup":{"category":"Features","panel":"1","feature":[],"InvokeScript":["\n      New-ItemProperty -Path \u0027HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Configuration Manager\u0027 -Name \u0027EnablePeriodicBackup\u0027 -Type DWord -Value 1 -Force\n      New-ItemProperty -Path \u0027HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Configuration Manager\u0027 -Name \u0027BackupCount\u0027 -Type DWord -Value 2 -Force\n      $action = New-ScheduledTaskAction -Execute \u0027schtasks\u0027 -Argument \u0027/run /i /tn \"\\Microsoft\\Windows\\Registry\\RegIdleBackup\"\u0027\n      $trigger = New-ScheduledTaskTrigger -Daily -At 00:30\n      Register-ScheduledTask -Action $action -Trigger $trigger -TaskName \u0027AutoRegBackup\u0027 -Description \u0027Create System Registry Backups\u0027 -User \u0027System\u0027\n      "],"Content":"Backup Di\u00e1rio Autom\u00e1tico do Registro","Description":"Reativa a tarefa agendada di\u00e1ria de c\u00f3pia de seguran\u00e7a do Registro em System32\\config\\RegBack."},"WPFFeatureEnableLegacyRecovery":{"category":"Features","panel":"1","feature":[],"InvokeScript":["bcdedit /set bootmenupolicy legacy"],"Content":"Ativar Menu F8 Cl\u00e1ssico no Boot","Description":"Restaura a tela cl\u00e1ssica de Op\u00e7\u00f5es Avan\u00e7adas ao pressionar F8 durante a inicializa\u00e7\u00e3o."},"WPFFeatureDisableLegacyRecovery":{"category":"Features","panel":"1","feature":[],"InvokeScript":["bcdedit /set bootmenupolicy standard"],"Content":"Desativar Menu F8 Cl\u00e1ssico (Boot R\u00e1pido)","Description":"Retorna a pol\u00edtica moderna de boot r\u00e1pido do Windows 10/11."},"WPFFeaturesSandbox":{"category":"Features","panel":"1","feature":["Containers-DisposableClientVM"],"Content":"Windows Sandbox (\u00c1rea Restrita)","Description":"Cria uma m\u00e1quina virtual descart\u00e1vel e isolada com 1 clique para testar arquivos suspeitos com seguran\u00e7a."},"WPFFeatureInstall":{"Content":"Install Features","category":"Features","panel":"1","Type":"Button","ButtonWidth":"300","function":"Invoke-WPFFeatureInstall"},"WPFPanelAutologin":{"Content":"AutoLogon - Run","category":"Fixes","panel":"1","Type":"Button","ButtonWidth":"300","function":"Invoke-WPFPanelAutologin"},"WPFFixesUpdate":{"Content":"Windows Update - Reset","category":"Fixes","panel":"1","Type":"Button","ButtonWidth":"300","function":"Invoke-WPFFixesUpdate"},"WPFFixesNetwork":{"Content":"Network - Reset","category":"Fixes","panel":"1","Type":"Button","ButtonWidth":"300","function":"Invoke-WPFFixesNetwork"},"WPFPanelDISM":{"Content":"System Corruption Scan - Run","category":"Fixes","panel":"1","Type":"Button","ButtonWidth":"300","function":"Invoke-WPFSystemRepair"},"WPFFixesWinget":{"Content":"WinGet - Reinstall","category":"Fixes","panel":"1","Type":"Button","ButtonWidth":"300","function":"Invoke-WPFFixesWinget"},"WPFPanelComputer":{"category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["compmgmt.msc"],"Content":"Gerenciamento do Computador","Description":"Abre compmgmt.msc (Discos, Usu\u00e1rios, Servi\u00e7os e Visualizador de Eventos)."},"WPFPanelControl":{"category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["control"],"Content":"Painel de Controle Cl\u00e1ssico","Description":"Abre o Painel de Controle tradicional completo do Windows."},"WPFPanelMouse":{"category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["main.cpl"],"Content":"Propriedades do Mouse","Description":"Abre configura\u00e7\u00f5es cl\u00e1ssicas de velocidade, ponteiro e bot\u00f5es (main.cpl)."},"WPFPanelNetwork":{"category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["ncpa.cpl"],"Content":"Conex\u00f5es de Rede","Description":"Abre a lista de adaptadores Ethernet/Wi-Fi (ncpa.cpl) para alterar IP/DNS manualmente."},"WPFPanelPower":{"category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["powercfg.cpl"],"Content":"Op\u00e7\u00f5es de Energia","Description":"Abre o painel cl\u00e1ssico de planos de energia e bot\u00f5es de suspens\u00e3o (powercfg.cpl)."},"WPFPanelPrinter":{"category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["Start-Process \u0027shell:::{A8A91A66-3A7D-4424-8D24-04E180695C7A}\u0027"],"Content":"Dispositivos e Impressoras","Description":"Abre o gerenciador cl\u00e1ssico completo de impressoras e portas locais."},"WPFPanelPrograms":{"category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["appwiz.cpl"],"Content":"Programas e Recursos","Description":"Abre a janela cl\u00e1ssica de desinstala\u00e7\u00e3o de programas Win32 (appwiz.cpl)."},"WPFPanelRegion":{"category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["intl.cpl"],"Content":"Regi\u00e3o e Formato","Description":"Abre formatos de data, moeda, hora e localidade do sistema (intl.cpl)."},"WPFPanelSecurity":{"category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["wscui.cpl"],"Content":"Seguran\u00e7a e Manuten\u00e7\u00e3o","Description":"Abre o resumo de integridade e avisos de seguran\u00e7a cl\u00e1ssicos (wscui.cpl)."},"WPFPanelSound":{"category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["mmsys.cpl"],"Content":"Configura\u00e7\u00f5es de Som Cl\u00e1ssicas","Description":"Abre mmsys.cpl para gerenciar dispositivos de reprodu\u00e7\u00e3o, grava\u00e7\u00e3o e taxa de amostragem."},"WPFPanelSystem":{"category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["sysdm.cpl"],"Content":"Propriedades do Sistema","Description":"Abre sysdm.cpl (Nome do PC, Vari\u00e1veis de Ambiente, Efeitos Visuais e Mem\u00f3ria Virtual)."},"WPFPanelTimedate":{"category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["timedate.cpl"],"Content":"Data e Hora","Description":"Abre ajustes cl\u00e1ssicos de rel\u00f3gio, fuso hor\u00e1rio e servidor NTP (timedate.cpl)."},"WPFPanelFirewall":{"category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["firewall.cpl"],"Content":"Firewall do Windows Defender","Description":"Abre configura\u00e7\u00f5es e regras r\u00e1pidas do Firewall nativo (firewall.cpl)."},"WPFPanelRestore":{"category":"Legacy Windows Panels","panel":"2","Type":"Button","ButtonWidth":"300","InvokeScript":["rstrui.exe"],"Content":"Restaura\u00e7\u00e3o do Sistema","Description":"Abre o assistente rstrui.exe para restaurar o Windows a um ponto anterior."},"WPFInstallPSProfile":{"Content":"WinRepair PowerShell Profile - Install","category":"Powershell Profile Powershell 7+ Only","panel":"2","Type":"Button","ButtonWidth":"300","function":"Install-EnhancedPowerShellProfile"},"WPFUninstallPSProfile":{"Content":"WinRepair PowerShell Profile - Remove","category":"Powershell Profile Powershell 7+ Only","panel":"2","Type":"Button","ButtonWidth":"300","function":"Uninstall-EnhancedPowerShellProfile"},"WPFEnableSSHServer":{"Content":"OpenSSH Server - Enable","category":"Remote Access","panel":"2","Type":"Button","ButtonWidth":"300","function":"Invoke-WPFSSHServer"}}
 '@ | ConvertFrom-Json
     Presets      = @'
 {"Desktop":["WPFTweaksRestorePoint","WPFTweaksDeleteTempFiles","WPFTweaksDiskCleanup","WPFTweaksTelemetry","WPFTweaksActivity","WPFTweaksLocation","WPFTweaksConsumerFeatures","WPFTweaksDeliveryOptimization","WPFTweaksHiber","WPFTweaksServices","WPFTweaksEndTaskOnTaskbar","WPFTweaksDisableExplorerAutoDiscovery","WPFTweaksWPBT","WPFTweaksPreventDeviceMetadataFromNetwork","WPFTweaksDisableStoreSearch","WPFTweaksWidget","TweaksGameDvr","TweaksSsdTrim","TweaksFastMenus","TweaksTcpGaming","TweaksFlushDns"],"Notebook":["WPFTweaksRestorePoint","WPFTweaksDeleteTempFiles","WPFTweaksDiskCleanup","WPFTweaksTelemetry","WPFTweaksActivity","WPFTweaksLocation","WPFTweaksConsumerFeatures","WPFTweaksDeliveryOptimization","WPFTweaksServices","WPFTweaksEndTaskOnTaskbar","WPFTweaksDisableExplorerAutoDiscovery","WPFTweaksWPBT","WPFTweaksPreventDeviceMetadataFromNetwork","WPFTweaksDisableStoreSearch","WPFTweaksWidget","TweaksGameDvr","TweaksSsdTrim","TweaksFastMenus","TweaksFlushDns"],"All":["WPFTweaksActivity","WPFTweaksHiber","WPFTweaksWidget","WPFTweaksRevertStartMenu","WPFTweaksDisableStoreSearch","WPFTweaksLocation","WPFTweaksServices","WPFTweaksSvcHostSplitting","WPFTweaksBraveDebloat","WPFTweaksDisableWarningForUnsignedRdp","WPFTweaksEdgeDebloat","WPFTweaksConsumerFeatures","WPFTweaksTelemetry","WPFTweaksDeliveryOptimization","WPFTweaksRemoveEdge","WPFTweaksDisableBitLocker","WPFTweaksUTC","WPFTweaksRemoveOneDrive","WPFTweaksRemoveHomeAndGallery","WPFTweaksDisplay","WPFTweaksReservedStorage","WPFTweaksRestorePoint","WPFTweaksEndTaskOnTaskbar","WPFTweaksStorage","WPFTweaksWindowsAI","WPFTweaksWPBT","WPFTweaksPreventDeviceMetadataFromNetwork","WPFTweaksRazerBlock","WPFTweaksLogiBlock","WPFTweaksDisableNotifications","WPFTweaksBlockAdobeNet","WPFTweaksRightClickMenu","WPFTweaksDiskCleanup","WPFTweaksDeleteTempFiles","WPFTweaksIPv46","WPFTweaksTeredo","WPFTweaksDisableSearchIndexing","WPFTweaksDisableIPv6","WPFTweaksDisableBGapps","WPFTweaksDisableExplorerAutoDiscovery","TweaksGameDvr","TweaksSsdTrim","TweaksFastMenus","TweaksTakeOwnership","TweaksTcpGaming","TweaksFlushDns","TweaksRenewDhcp","TweaksResetNetStack"]}
 '@ | ConvertFrom-Json
     Tweaks       = @'
-{"WPFTweaksActivity":{"Content":"Activity History - Disable","Description":"Stops Windows from publishing or uploading user activities while preserving clipboard history.","category":"Essenciais","panel":"1","registry":[{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System","Name":"EnableActivityFeed","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System","Name":"PublishUserActivities","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System","Name":"UploadUserActivities","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksHiber":{"Content":"Hibernation - Disable","Description":"Hibernation is really meant for laptops as it saves what\u0027s in memory before turning the PC off. It really should never be used.","category":"Essenciais","panel":"1","registry":[{"Path":"HKLM:\\System\\CurrentControlSet\\Control\\Session Manager\\Power","Name":"HibernateEnabled","Value":"0","Type":"DWord","OriginalValue":"1"},{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FlyoutMenuSettings","Name":"ShowHibernateOption","Value":"0","Type":"DWord","OriginalValue":"1"}],"InvokeScript":["powercfg.exe /hibernate off"],"UndoScript":["powercfg.exe /hibernate on"]},"WPFTweaksWidget":{"Content":"Widgets - Remove","Description":"Removes the annoying widgets in the bottom left of the Taskbar.","category":"Essenciais","panel":"1","InvokeScript":["\n      # Sometimes if you dont stop the Widgets process the removal may fail\n\n      Get-Process *Widget* | Stop-Process\n      Get-AppxPackage Microsoft.WidgetsPlatformRuntime -AllUsers | Remove-AppxPackage -AllUsers\n      Get-AppxPackage MicrosoftWindows.Client.WebExperience -AllUsers | Remove-AppxPackage -AllUsers\n\n      Invoke-ExplorerRefresh -action \"restart\"\n      Write-Host \"Removed widgets\"\n      "]},"WPFTweaksRevertStartMenu":{"Content":"Start Menu Previous Layout - Enable","Description":"Bring back the old Start Menu layout from before the gradual rollout of the new one in 25H2. On newer versions of Windows !!THIS TWEAK WILL NOT WORK!!","category":"Essenciais","panel":"1","registry":[{"Path":"HKLM:\\SYSTEM\\ControlSet001\\Control\\FeatureManagement\\Overrides\\8\\3036241548","Name":"EnabledState","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksDisableStoreSearch":{"Content":"Microsoft Store Recommended Search Results - Disable","Description":"Will not display recommended Microsoft Store apps when searching for apps in the Start menu.","category":"Essenciais","panel":"1","InvokeScript":["icacls \"$Env:LocalAppData\\Packages\\Microsoft.WindowsStore_8wekyb3d8bbwe\\LocalState\\store.db\" /deny *S-1-1-0:F"],"UndoScript":["icacls \"$Env:LocalAppData\\Packages\\Microsoft.WindowsStore_8wekyb3d8bbwe\\LocalState\\store.db\" /grant *S-1-1-0:F"]},"WPFTweaksLocation":{"Content":"Location Tracking - Disable","Description":"Disables Location Tracking.","category":"Essenciais","panel":"1","service":[{"Name":"lfsvc","StartupType":"Disabled","OriginalType":"Manual"}],"registry":[{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\location","Name":"Value","Value":"Deny","Type":"String","OriginalValue":"Allow"},{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Sensor\\Overrides\\{BFA794E4-F964-4FDB-90F6-51056BFE4B44}","Name":"SensorPermissionState","Value":"0","Type":"DWord","OriginalValue":"1"},{"Path":"HKLM:\\SYSTEM\\Maps","Name":"AutoUpdateEnabled","Value":"0","Type":"DWord","OriginalValue":"1"}]},"WPFTweaksServices":{"Content":"Services - Set to Manual","Description":"Sets some services to Manual startup.","category":"Essenciais","panel":"1","service":[{"Name":"CscService","StartupType":"Disabled","OriginalType":"Manual"},{"Name":"DiagTrack","StartupType":"Disabled","OriginalType":"Automatic"},{"Name":"MapsBroker","StartupType":"Manual","OriginalType":"Automatic"},{"Name":"StorSvc","StartupType":"Manual","OriginalType":"Automatic"},{"Name":"SharedAccess","StartupType":"Disabled","OriginalType":"Automatic"}]},"WPFTweaksSvcHostSplitting":{"Content":"svchost.exe Splitting - Disable","Description":"Disables service-host splitting to reduce the number of svchost.exe processes and modestly lower memory overhead. Recommended for low-performance systems with 12 GB of RAM or less. Can interfere with Xbox services. Restart Windows after changing this setting.","category":"Avancados","panel":"1","InvokeScript":["\n      # A threshold above the physical memory disables svchost service splitting\n      $Memory = (Get-CimInstance Win32_PhysicalMemory | Measure-Object Capacity -Sum).Sum / 1KB\n      Set-ItemProperty -Path \"HKLM:\\SYSTEM\\CurrentControlSet\\Control\" -Name SvcHostSplitThresholdInKB -Value $Memory -Type DWord\n      "],"UndoScript":["\n      # Windows client default (0x380000): splitting back on\n      Set-ItemProperty -Path \"HKLM:\\SYSTEM\\CurrentControlSet\\Control\" -Name SvcHostSplitThresholdInKB -Value 3670016 -Type DWord -Force\n      "]},"WPFTweaksBraveDebloat":{"Content":"Brave Browser - Debloat","Description":"Disables various annoyances like Brave Rewards, Leo AI, Crypto Wallet and VPN.","category":"Avancados","panel":"1","registry":[{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"BraveRewardsDisabled","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"BraveWalletDisabled","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"BraveVPNDisabled","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"BraveAIChatEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"BraveStatsPingEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"BraveNewsDisabled","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"BraveTalkDisabled","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"TorDisabled","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"BraveP3AEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"UrlKeyedAnonymizedDataCollectionEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"SafeBrowsingExtendedReportingEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"MetricsReportingEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksDisableWarningForUnsignedRdp":{"Content":"RDP Unsigned File Warnings - Disable","Description":"Disables warnings shown when launching unsigned RDP files introduced with the latest Windows 10 and 11 updates.","category":"Avancados","panel":"1","registry":[{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows NT\\Terminal Services\\Client","Name":"RedirectionWarningDialogVersion","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\SOFTWARE\\Microsoft\\Terminal Server Client","Name":"RdpLaunchConsentAccepted","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksEdgeDebloat":{"Content":"Microsoft Edge - Debloat","Description":"Disables various telemetry options, popups, and other annoyances in Edge.","category":"Avancados","panel":"1","registry":[{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\EdgeUpdate","Name":"CreateDesktopShortcutDefault","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"PersonalizationReportingEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge\\ExtensionInstallBlocklist","Name":"1","Value":"ofefcgjbeghpigppfmkologfjadafddi","Type":"String","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"ShowRecommendationsEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"HideFirstRunExperience","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"UserFeedbackAllowed","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"ConfigureDoNotTrack","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"AlternateErrorPagesEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"EdgeCollectionsEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"EdgeShoppingAssistantEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"MicrosoftEdgeInsiderPromotionEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"ShowMicrosoftRewards","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"WebWidgetAllowed","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"DiagnosticData","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"EdgeAssetDeliveryServiceEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"WalletDonationEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"DefaultBrowserSettingsCampaignEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksConsumerFeatures":{"Content":"ConsumerFeatures - Disable","Description":"Stops promoted app installs and reduces app suggestions from Microsoft Store content.","category":"Essenciais","panel":"1","registry":[{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent","Name":"DisableWindowsConsumerFeatures","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksTelemetry":{"Content":"Telemetry - Disable","Description":"Disables Microsoft Telemetry.","category":"Essenciais","panel":"1","service":[{"Name":"diagtrack","StartupType":"Disabled","OriginalType":"Automatic"},{"Name":"WerSvc","StartupType":"Disabled","OriginalType":"Manual"}],"registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo","Name":"Enabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Privacy","Name":"TailoredExperiencesWithDiagnosticDataEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\Speech_OneCore\\Settings\\OnlineSpeechPrivacy","Name":"HasAccepted","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\Input\\TIPC","Name":"Enabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\InputPersonalization","Name":"RestrictImplicitInkCollection","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\InputPersonalization","Name":"RestrictImplicitTextCollection","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\InputPersonalization\\TrainedDataStore","Name":"HarvestContacts","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\Personalization\\Settings","Name":"AcceptedPrivacyPolicy","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection","Name":"AllowTelemetry","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"Start_TrackProgs","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System","Name":"PublishUserActivities","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\Siuf\\Rules","Name":"NumberOfSIUFInPeriod","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\Siuf\\Rules","Name":"PeriodInNanoSeconds","Value":"\u003cRemoveEntry\u003e","Type":"QWord","OriginalValue":"\u003cRemoveEntry\u003e"}],"InvokeScript":["[Environment]::SetEnvironmentVariable(\u0027POWERSHELL_TELEMETRY_OPTOUT\u0027, \u00271\u0027, \u0027Machine\u0027)"],"UndoScript":["[Environment]::SetEnvironmentVariable(\u0027POWERSHELL_TELEMETRY_OPTOUT\u0027, \u0027\u0027, \u0027Machine\u0027)"]},"WPFTweaksDeliveryOptimization":{"Content":"Delivery Optimization - Disable","Description":"Stops Windows from using your bandwidth to upload updates to other PCs on the internet or local network.","category":"Essenciais","panel":"1","registry":[{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DeliveryOptimization","Name":"DODownloadMode","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksRemoveEdge":{"Content":"Microsoft Edge - Remove","Description":"Uninstalls Microsoft Edge by creating dummy MicrosoftEdge.exe file in the legacy Edge folder. This tricks Windows into unlocking the official Edge uninstaller allowing for a system-level removal.","category":"Avancados","panel":"1","InvokeScript":["\n      $EdgeAppDir = \"$Env:ProgramFiles (x86)\\Microsoft\\Edge\\Application\"\n      $Path = $null\n      if (Test-Path -LiteralPath $EdgeAppDir -ErrorAction Stop) {\n          $InstallerPattern = Join-Path $EdgeAppDir \"*\\Installer\\setup.exe\"\n          if (Test-Path -Path $InstallerPattern -ErrorAction Stop) {\n              $Path = Resolve-Path -Path $InstallerPattern -ErrorAction Stop | Select-Object -Last 1\n          }\n      }\n\n      if ($Path) {\n          New-Item -Path \"$Env:SystemRoot\\SystemApps\\Microsoft.MicrosoftEdge_8wekyb3d8bbwe\\MicrosoftEdge.exe\" -Force\n          Start-Process -FilePath $Path -ArgumentList \"--uninstall --system-level --force-uninstall --delete-profile\" -Wait\n          Write-Host \"Microsoft Edge was removed\"\n      } else {\n          Write-Host \"Microsoft Edge is not installed\"\n      }\n      "],"UndoScript":["\n      Write-Host \"Installing Microsoft Edge...\"\n      winget install Microsoft.Edge --source winget\n      "]},"WPFTweaksDisableBitLocker":{"Content":"BitLocker - Disable","Description":"Disables BitLocker.","category":"Essenciais","panel":"1","InvokeScript":["\n      $bitLockerVolume = Get-BitLockerVolume -MountPoint $Env:SystemDrive -ErrorAction Stop\n\n      if ($bitLockerVolume.VolumeStatus -eq \u0027FullyDecrypted\u0027) {\n          Write-Host \"BitLocker is already disabled on $($Env:SystemDrive).\"\n      } else {\n          Disable-BitLocker -MountPoint $Env:SystemDrive -ErrorAction Stop\n      }\n      "],"UndoScript":["Enable-BitLocker -MountPoint $Env:SystemDrive"]},"WPFTweaksUTC":{"Content":"Date \u0026 Time - Set Time to UTC","Description":"Essential for computers that are dual booting. Fixes the time sync with Linux systems.","category":"Avancados","panel":"1","registry":[{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Control\\TimeZoneInformation","Name":"RealTimeIsUniversal","Value":"1","Type":"QWord","OriginalValue":"0"}]},"WPFTweaksRemoveOneDrive":{"Content":"Microsoft OneDrive - Remove","Description":"Denies permission to remove OneDrive user files, then uses its own uninstaller to remove it and restores the original permission afterward.","category":"Avancados","panel":"1","InvokeScript":["\n      $OneDrivePath = $Env:OneDrive\n      $OneDriveFolderExists = -not [string]::IsNullOrWhiteSpace($OneDrivePath) -and (Test-Path -LiteralPath $OneDrivePath -PathType Container -ErrorAction Stop)\n\n      if ($OneDriveFolderExists) {\n          $OneDriveAcl = Get-Acl -LiteralPath $OneDrivePath -ErrorAction Stop\n      } else {\n          Write-Host \"OneDrive folder is already absent; skipping folder permissions and cleanup.\"\n      }\n\n      try {\n          if ($OneDriveFolderExists) {\n              # Protect user files while the uninstaller runs.\n              icacls $OneDrivePath /deny \"*S-1-5-32-544:(D,DC)\"\n              if ($LASTEXITCODE -ne 0) { throw \"Unable to protect the OneDrive folder (icacls exit code $LASTEXITCODE).\" }\n          }\n\n          Write-Host \"Uninstalling OneDrive...\"\n          Start-Process -FilePath (Join-Path $Env:SystemRoot \"System32\\OneDriveSetup.exe\") -ArgumentList \u0027/uninstall\u0027 -Wait -ErrorAction Stop\n\n          # Some of OneDrive files use explorer, and OneDrive uses FileCoAuth\n          Write-Host \"Removing leftover OneDrive Files...\"\n\n          Get-Process -ErrorAction Stop | Where-Object ProcessName -eq \u0027FileCoAuth\u0027 | Stop-Process -ErrorAction Stop\n          Get-Process -ErrorAction Stop | Where-Object ProcessName -eq \u0027Explorer\u0027 | Stop-Process -ErrorAction Stop\n\n          $OneDriveLeftovers = @(\"$Env:LocalAppData\\Microsoft\\OneDrive\", \"$Env:ProgramData\\Microsoft OneDrive\")\n          foreach ($LeftoverPath in $OneDriveLeftovers) {\n              if (Test-Path -LiteralPath $LeftoverPath -ErrorAction Stop) {\n                  Remove-Item -LiteralPath $LeftoverPath -Recurse -Force -ErrorAction Stop\n              }\n          }\n      } finally {\n          if ($OneDriveFolderExists) {\n              # Restore access even when uninstall or leftover cleanup fails.\n              Set-Acl -LiteralPath $OneDrivePath -AclObject $OneDriveAcl -ErrorAction Stop\n          }\n      }\n\n      if ($OneDriveFolderExists -and -not (Get-ChildItem -LiteralPath $OneDrivePath -Force -ErrorAction Stop)) {\n          # Refuse to delete if files appeared after the emptiness check.\n          [System.IO.Directory]::Delete($OneDrivePath, $false)\n          [Environment]::SetEnvironmentVariable(\u0027OneDrive\u0027, $null, \u0027User\u0027)\n      }\n\n      # OneSyncSvc is a per-user template; Get-Service only exposes user instances.\n      # Skip the operation if this Windows installation has no template.\n      if (Test-Path -LiteralPath \u0027HKLM:\\SYSTEM\\CurrentControlSet\\Services\\OneSyncSvc\u0027) {\n          Set-Service -Name OneSyncSvc -StartupType Disabled\n      }\n      "],"UndoScript":["\n      Write-Host \"Installing OneDrive\"\n      winget install Microsoft.Onedrive --source winget\n\n      # Enable OneSyncSvc when the per-user service template exists\n      if (Test-Path -LiteralPath \u0027HKLM:\\SYSTEM\\CurrentControlSet\\Services\\OneSyncSvc\u0027) {\n          Set-Service -Name OneSyncSvc -StartupType Automatic\n      }\n      "]},"WPFTweaksRemoveHomeAndGallery":{"Content":"File Explorer Home and Gallery - Disable","Description":"Removes the Home and Gallery from Explorer and sets This PC as default.","category":"Avancados","panel":"1","registry":[{"Path":"HKCU:\\Software\\Classes\\CLSID\\{f874310e-b6b7-47dc-bc84-b9e6b38f5903}","Name":"System.IsPinnedToNameSpaceTree","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Classes\\CLSID\\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}","Name":"System.IsPinnedToNameSpaceTree","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"LaunchTo","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksDisplay":{"Content":"Visual Effects - Set to Best Performance","Description":"Sets the system preferences to performance. You can do this manually with sysdm.cpl as well.","category":"Avancados","panel":"1","registry":[{"Path":"HKCU:\\Control Panel\\Desktop","Name":"DragFullWindows","Value":"0","Type":"String","OriginalValue":"1"},{"Path":"HKCU:\\Control Panel\\Desktop","Name":"MenuShowDelay","Value":"200","Type":"String","OriginalValue":"400"},{"Path":"HKCU:\\Control Panel\\Desktop\\WindowMetrics","Name":"MinAnimate","Value":"0","Type":"String","OriginalValue":"1"},{"Path":"HKCU:\\Control Panel\\Keyboard","Name":"KeyboardDelay","Value":"0","Type":"String","OriginalValue":"1"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"ListviewAlphaSelect","Value":"0","Type":"DWord","OriginalValue":"1"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"ListviewShadow","Value":"0","Type":"DWord","OriginalValue":"1"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"TaskbarAnimations","Value":"0","Type":"DWord","OriginalValue":"1"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects","Name":"VisualFXSetting","Value":"3","Type":"DWord","OriginalValue":"1"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\DWM","Name":"EnableAeroPeek","Value":"0","Type":"DWord","OriginalValue":"1"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"TaskbarMn","Value":"0","Type":"DWord","OriginalValue":"1"}],"InvokeScript":["Set-ItemProperty -Path \"HKCU:\\Control Panel\\Desktop\" -Name \"UserPreferencesMask\" -Type Binary -Value ([byte[]](144,18,3,128,16,0,0,0))"],"UndoScript":["Remove-ItemProperty -Path \"HKCU:\\Control Panel\\Desktop\" -Name \"UserPreferencesMask\""]},"WPFTweaksReservedStorage":{"Content":"Disable Reserved Storage","Description":"Disables Windows Reserved Storage (7-10 GB held for updates/temp files). Recommended only on small drives. Re-enable before major Windows feature updates to avoid installation failures.","category":"Avancados","panel":"1","InvokeScript":["DISM /Online /Set-ReservedStorageState /State:Disabled"],"UndoScript":["DISM /Online /Set-ReservedStorageState /State:Enabled"]},"WPFTweaksRestorePoint":{"Content":"Restore Point - Create","Description":"Creates a restore point at runtime in case a revert is needed from WinRepair Pro modifications.","category":"Essenciais","panel":"1","Checked":"False","registry":[{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\SystemRestore","Name":"SystemRestorePointCreationFrequency","Value":"0","Type":"DWord","OriginalValue":"1440"}],"InvokeScript":["\n      if (-not (Get-ComputerRestorePoint)) {\n          Enable-ComputerRestore -Drive $Env:SystemDrive\n      }\n\n      Checkpoint-Computer -Description \"System Restore Point created by WinRepair Pro\" -RestorePointType MODIFY_SETTINGS\n      Write-Host \"System Restore Point Created Successfully\" -ForegroundColor Green\n      "]},"WPFTweaksEndTaskOnTaskbar":{"Content":"End Task With Right Click - Enable","Description":"Enables option to end task when right-clicking a program in the taskbar.","category":"Essenciais","panel":"1","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\\TaskbarDeveloperSettings","Name":"TaskbarEndTask","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksStorage":{"Content":"Storage Sense - Disable","Description":"Storage Sense deletes temp files automatically.","category":"Avancados","panel":"1","registry":[{"Path":"HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\StorageSense\\Parameters\\StoragePolicy","Name":"01","Value":"0","Type":"DWord","OriginalValue":"1"}]},"WPFTweaksWindowsAI":{"Content":"Windows AI - Disable And Remove","Description":"Removes and disables all AI features/packages","category":"Avancados","panel":"1","registry":[{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer","Name":"SettingsPageVisibility","Value":"hide:aicomponents","Type":"String","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\WindowsNotepad","Name":"DisableAIFeatures","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}],"InvokeScript":["\n      $Appx = (Get-AppxPackage MicrosoftWindows.Client.CoreAI).PackageFullName\n      $Sid = (Get-LocalUser $Env:UserName).Sid.Value\n\n      New-Item \"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\$Sid\\$Appx\" -Force\n\n      Get-AppxPackage -AllUsers \"*Copilot*\" | Remove-AppxPackage -AllUsers\n      winget uninstall -e --name \"Copilot\" --silent --force --accept-source-agreements 2\u003e$null\n      Get-AppxPackage -AllUsers Microsoft.MicrosoftOfficeHub | Remove-AppxPackage -AllUsers\n\n      if ($Appx) {\n          Remove-AppxPackage $Appx\n      }\n\n      # WSAIFabricSvc only exists on some Windows 11 builds; without the guard a\n      # missing service aborts the rest of this script block and Recall stays enabled\n      if (Get-Service -Name WSAIFabricSvc -ErrorAction SilentlyContinue) {\n          Set-Service -Name WSAIFabricSvc -StartupType Disabled\n      }\n      # Store/MSIX PowerShell 7 can hang or fail COM activation in DISM.\n      $RecallCommand = {\n          Disable-WindowsOptionalFeature -FeatureName Recall -Online -NoRestart -ErrorAction Stop | Out-Null\n      }\n      $RecallOutput = powershell.exe -NoProfile -NonInteractive -Command $RecallCommand 2\u003e\u00261\n      if ($LASTEXITCODE -ne 0) {\n          throw \"Failed to disable Recall (exit code $LASTEXITCODE): $(($RecallOutput | Out-String).Trim())\"\n      }\n      $RecallOutput | ForEach-Object { Write-Host $_ }\n\n      Write-Host \"Windows AI Disabled\"\n      "]},"WPFTweaksWPBT":{"Content":"Windows Platform Binary Table (WPBT) - Disable","Description":"If enabled, WPBT allows your computer vendor to execute programs at boot time, such as anti-theft software, software drivers, as well as force install software without user consent. Poses potential security risk.","category":"Essenciais","panel":"1","registry":[{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager","Name":"DisableWpbtExecution","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksPreventDeviceMetadataFromNetwork":{"Content":"Prevent Device Companion Apps","Description":"Prevents additional software from being installed when plugging in devices (e.g. Ads when plugging in a monitor). Poses potential security risk.","category":"Essenciais","panel":"1","registry":[{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Device Metadata","Name":"PreventDeviceMetadataFromNetwork","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksRazerBlock":{"Content":"Razer Software Auto-Install - Disable","Description":"Blocks ALL Razer Software installations. The hardware works fine without any software.","category":"Avancados","panel":"1","registry":[{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\DriverSearching","Name":"SearchOrderConfig","Value":"0","Type":"DWord","OriginalValue":"1"},{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Device Installer","Name":"DisableCoInstallers","Value":"1","Type":"DWord","OriginalValue":"0"}],"InvokeScript":["\n      $RazerPath = \"$Env:SystemRoot\\Installer\\Razer\"\n\n      if (Test-Path $RazerPath) {\n        Remove-Item $RazerPath\\* -Recurse -Force\n      } else {\n        New-Item -Path $RazerPath -ItemType Directory\n      }\n\n      icacls $RazerPath /deny \"*S-1-1-0:(W)\"\n      "],"UndoScript":["\n      icacls \"$Env:SystemRoot\\Installer\\Razer\" /remove:d *S-1-1-0\n      "]},"WPFTweaksLogiBlock":{"Content":"Logitech Download Assistant Auto-Install - Disable","Description":"Blocks the Logi Download Assistant that Windows Update keeps reinstalling with Logitech device drivers. Logitech hardware keeps working without it.","category":"Avancados","panel":"1","InvokeScript":["\n      Stop-Process -Name \"logi_download_assistant\" -Force -ErrorAction SilentlyContinue\n\n      $ProgramFiles64 = if ($Env:ProgramW6432) { $Env:ProgramW6432 } else { $Env:ProgramFiles }\n      $LogiPath = \"$ProgramFiles64\\LogiDownloadAssistant\"\n\n      if (Test-Path $LogiPath) {\n        Remove-Item $LogiPath\\* -Recurse -Force\n      } else {\n        New-Item -Path $LogiPath -ItemType Directory\n      }\n\n      icacls $LogiPath /deny \"*S-1-1-0:(W)\"\n      if ($LASTEXITCODE -ne 0) { throw \"icacls failed to deny write access on $LogiPath (exit code $LASTEXITCODE)\" }\n      "],"UndoScript":["\n      $ProgramFiles64 = if ($Env:ProgramW6432) { $Env:ProgramW6432 } else { $Env:ProgramFiles }\n      $LogiPath = \"$ProgramFiles64\\LogiDownloadAssistant\"\n\n      if (Test-Path $LogiPath) {\n        icacls $LogiPath /remove:d \"*S-1-1-0\"\n        if ($LASTEXITCODE -ne 0) { throw \"icacls failed to remove the write-deny rule on $LogiPath (exit code $LASTEXITCODE)\" }\n      }\n      "]},"WPFTweaksDisableNotifications":{"Content":"System Tray Notifications \u0026 Calendar - Disable","Description":"Disables all Notifications INCLUDING Calendar.","category":"Avancados","panel":"1","registry":[{"Path":"HKCU:\\Software\\Policies\\Microsoft\\Windows\\Explorer","Name":"DisableNotificationCenter","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\PushNotifications","Name":"ToastEnabled","Value":"0","Type":"DWord","OriginalValue":"1"}]},"WPFTweaksBlockAdobeNet":{"Content":"Adobe URL Block List - Enable","Description":"Reduces user interruptions by selectively blocking connections to Adobe\u0027s activation and telemetry servers. Credit: Ruddernation-Designs","category":"Avancados","panel":"1","InvokeScript":["\n      $hostsUrl = Invoke-RestMethod -Uri https://github.com/Ruddernation-Designs/Adobe-URL-Block-List/raw/refs/heads/master/hosts\n      Add-Content -Path \"$Env:SystemRoot\\System32\\drivers\\etc\\hosts\" -Value $hostsUrl\n\n      ipconfig /flushdns\n      Write-Host \u0027Added Adobe url block list from host file\u0027\n      "],"UndoScript":["\n      Set-Content \"$Env:SystemRoot\\System32\\drivers\\etc\\hosts\" (\n          (Get-Content \"$Env:SystemRoot\\System32\\drivers\\etc\\hosts\") -join \"`n\" -replace \u0027(?s)#New Ver.*\u0027, \u0027\u0027\n      )\n\n      ipconfig /flushdns\n      Write-Host \u0027Removed Adobe url block list from host file\u0027\n      "]},"WPFTweaksRightClickMenu":{"Content":"Right-Click Menu Previous Layout - Enable","Description":"Attempts to restore the classic Windows 11 File Explorer context menu on newer builds. Compatibility may vary.","category":"Avancados","panel":"1","InvokeScript":["Set-ClassicContextMenu"],"UndoScript":["Set-ClassicContextMenu -Undo"]},"WPFTweaksDiskCleanup":{"Content":"Disk Cleanup - Run","Description":"Runs Disk Cleanup on Drive C: and removes old Windows Updates.","category":"Essenciais","panel":"1","InvokeScript":["\n      cleanmgr.exe /d C: /VERYLOWDISK\n      Dism.exe /online /Cleanup-Image /StartComponentCleanup /ResetBase\n      "]},"WPFTweaksDeleteTempFiles":{"Content":"Temporary Files - Remove","Description":"Erases TEMP Folders.","category":"Essenciais","panel":"1","InvokeScript":["\n      # A temp folder always holds files something has open, including this run\u0027s own, and\n      # the job layer counts a logged error as a failed step\n      Remove-Item -Path \"$Env:Temp\\*\" -Recurse -Force -ErrorAction SilentlyContinue\n      Remove-Item -Path \"$Env:SystemRoot\\Temp\\*\" -Recurse -Force -ErrorAction SilentlyContinue\n      "]},"WPFTweaksIPv46":{"Content":"IPv6 - Set IPv4 as Preferred","Description":"Setting the IPv4 preference can have latency and security benefits on private networks where IPv6 is not configured.","category":"Avancados","panel":"1","registry":[{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters","Name":"DisabledComponents","Value":"32","Type":"DWord","OriginalValue":"0"}]},"WPFTweaksTeredo":{"Content":"Teredo - Disable","Description":"Teredo network tunneling is an IPv6 feature that can cause additional latency, but may cause problems with some games.","category":"Avancados","panel":"1","registry":[{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters","Name":"DisabledComponents","Value":"1","Type":"DWord","OriginalValue":"0"}],"InvokeScript":["netsh interface teredo set state disabled"],"UndoScript":["netsh interface teredo set state default"]},"WPFTweaksDisableSearchIndexing":{"Content":"Windows Search Indexing - Disable","Description":"Stops and disables the Windows Search service (WSearch) to cut background disk activity, mainly useful on mechanical hard drives. Warning: file searches in Explorer and the Start menu become much slower because Windows no longer maintains a search index. Undo restores the service and starts it again.","category":"Avancados","panel":"1","service":[{"Name":"WSearch","StartupType":"Disabled","OriginalType":"Automatic"}],"InvokeScript":["$search = Get-Service -Name WSearch -ErrorAction SilentlyContinue\n      if ($search -and $search.StartType -eq \u0027Disabled\u0027 -and $search.Status -ne \u0027Stopped\u0027) {\n        Stop-Service -Name WSearch -Force -ErrorAction Stop\n      }"],"UndoScript":["$search = Get-Service -Name WSearch -ErrorAction SilentlyContinue\n      if ($search -and $search.StartType -eq \u0027Automatic\u0027 -and $search.Status -ne \u0027Running\u0027) {\n        Start-Service -Name WSearch -ErrorAction Stop\n      }"]},"WPFTweaksDisableIPv6":{"Content":"IPv6 - Disable","Description":"Disables IPv6.","category":"Avancados","panel":"1","registry":[{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters","Name":"DisabledComponents","Value":"255","Type":"DWord","OriginalValue":"0"}],"InvokeScript":["Disable-NetAdapterBinding -Name * -ComponentID ms_tcpip6"],"UndoScript":["Enable-NetAdapterBinding -Name * -ComponentID ms_tcpip6"]},"WPFTweaksDisableBGapps":{"Content":"Background Apps - Disable","Description":"Disables all Microsoft Store apps from running in the background, which has to be done individually since Windows 11.","category":"Avancados","panel":"1","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\BackgroundAccessApplications","Name":"GlobalUserDisabled","Value":"1","Type":"DWord","OriginalValue":"0"}]},"WPFTweaksDisableExplorerAutoDiscovery":{"Content":"File Explorer Automatic Folder Discovery - Disable","Description":"Windows Explorer automatically tries to guess the type of the folder based on its contents, slowing down the browsing experience. WARNING! Will disable File Explorer grouping.","category":"Essenciais","panel":"1","InvokeScript":["\n      # Previously detected folders\n      $bags = \"HKCU:\\Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\Bags\"\n\n      # Folder types lookup table\n      $bagMRU = \"HKCU:\\Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\BagMRU\"\n\n      # Flush Explorer view database. Explorer creates these keys only after a folder\n      # view has been saved, so skip them when missing or already removed\n      if (Test-Path $bags) {\n        Remove-Item -Path $bags -Recurse -Force\n        Write-Host \"Removed $bags\"\n      }\n\n      if (Test-Path $bagMRU) {\n        Remove-Item -Path $bagMRU -Recurse -Force\n        Write-Host \"Removed $bagMRU\"\n      }\n\n      # Every folder\n      $allFolders = \"HKCU:\\Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\Bags\\AllFolders\\Shell\"\n\n      if (!(Test-Path $allFolders)) {\n        New-Item -Path $allFolders -Force\n        Write-Host \"Created $allFolders\"\n      }\n\n      # Generic view\n      New-ItemProperty -Path $allFolders -Name \"FolderType\" -Value \"NotSpecified\" -PropertyType String -Force\n      Write-Host \"Set FolderType to NotSpecified\"\n\n      Write-Host Please sign out and back in, or restart your computer to apply the changes!\n      "],"UndoScript":["\n      # Previously detected folders\n      $bags = \"HKCU:\\Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\Bags\"\n\n      # Folder types lookup table\n      $bagMRU = \"HKCU:\\Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\BagMRU\"\n\n      # Flush Explorer view database. Explorer creates these keys only after a folder\n      # view has been saved, so skip them when missing or already removed\n      if (Test-Path $bags) {\n        Remove-Item -Path $bags -Recurse -Force\n        Write-Host \"Removed $bags\"\n      }\n\n      if (Test-Path $bagMRU) {\n        Remove-Item -Path $bagMRU -Recurse -Force\n        Write-Host \"Removed $bagMRU\"\n      }\n\n      Write-Host Please sign out and back in, or restart your computer to apply the changes!\n      "]},"WPFToggleDetailedBSoD":{"Content":"BSoD Verbose Mode","Description":"Gives more information when you blue screen.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Control\\CrashControl","Name":"DisplayParameters","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"false"},{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Control\\CrashControl","Name":"DisableEmoticon","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"false"}]},"WPFToggleBatteryPercentage":{"Content":"System Tray Battery Percentage","Description":"Shows numeric battery percentage next to the battery icon in the system tray.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"IsBatteryPercentageEnabled","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e","DefaultState":"false"}]},"WPFToggleDarkMode":{"Content":"Dark Theme for Windows","Description":"Dark Mode for the system and applications.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize","Name":"AppsUseLightTheme","Value":"0","Type":"DWord","OriginalValue":"1","DefaultState":"false"},{"Path":"HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize","Name":"SystemUsesLightTheme","Value":"0","Type":"DWord","OriginalValue":"1","DefaultState":"false"}],"InvokeScript":["Invoke-ExplorerRefresh\nif ($WinRepairSync -and $WinRepairSync.ThemeMode -eq \u0027Auto\u0027) { Invoke-ThemeRefresh -Theme \u0027Auto\u0027 }"],"UndoScript":["Invoke-ExplorerRefresh\nif ($WinRepairSync -and $WinRepairSync.ThemeMode -eq \u0027Auto\u0027) { Invoke-ThemeRefresh -Theme \u0027Auto\u0027 }"]},"WPFToggleShowExt":{"Content":"File Explorer File Extensions","Description":"Shows .file extensions in Explorer (.exe, .png, etc.)","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"HideFileExt","Value":"0","Type":"DWord","OriginalValue":"1","DefaultState":"false"}],"InvokeScript":["\n      Invoke-ExplorerRefresh -action \"restart\"\n      "],"UndoScript":["\n      Invoke-ExplorerRefresh -action \"restart\"\n      "]},"WPFToggleHiddenFiles":{"Content":"File Explorer Hidden Files","Description":"Reveals hidden files in Explorer.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"Hidden","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"false"}],"InvokeScript":["\n      Invoke-ExplorerRefresh -action \"restart\"\n      "],"UndoScript":["\n      Invoke-ExplorerRefresh -action \"restart\"\n      "]},"WPFToggleVerboseLogon":{"Content":"Logon Verbose Mode","Description":"Show detailed messages during startup/shutdown.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System","Name":"VerboseStatus","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"false"}]},"WPFToggleNewOutlook":{"Content":"Microsoft Outlook New Version","Description":"This will ensure the new Outlook application is used.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\SOFTWARE\\Microsoft\\Office\\16.0\\Outlook\\Preferences","Name":"UseNewOutlook","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"true"},{"Path":"HKCU:\\Software\\Microsoft\\Office\\16.0\\Outlook\\Options\\General","Name":"HideNewOutlookToggle","Value":"0","Type":"DWord","OriginalValue":"1","DefaultState":"true"},{"Path":"HKCU:\\Software\\Policies\\Microsoft\\Office\\16.0\\Outlook\\Options\\General","Name":"DoNewOutlookAutoMigration","Value":"0","Type":"DWord","OriginalValue":"0","DefaultState":"false"},{"Path":"HKCU:\\Software\\Policies\\Microsoft\\Office\\16.0\\Outlook\\Preferences","Name":"NewOutlookMigrationUserSetting","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e","DefaultState":"true"}]},"WPFToggleScrollbars":{"Content":"Scrollbars Always Visible","Description":"If enabled, scrollbars will always be visible. If disabled, Windows will automatically hide scrollbars when not in use.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Control Panel\\Accessibility","Name":"DynamicScrollbars","Value":"0","Type":"DWord","OriginalValue":"1","DefaultState":"false"}]},"WPFMultiplaneOverlay":{"Content":"Multiplane Overlay","Description":"Multiplane Overlay composes multiple image layers, which can sometimes cause issues with graphics cards. Changes to this preference are applied immediately.","category":"Preferencias","panel":"2","Type":"Combobox","ComboItems":"Enabled|Disabled (Compatibility)|Fully Disabled","ComboDescriptions":{"Enabled":"Uses Windows\u0027 default overlay behavior.","Disabled (Compatibility)":"Disables MPO using OverlayTestMode=5, the less aggressive compatibility method.","Fully Disabled":"Disables MPO using OverlayTestMode=5 and DisableOverlays=1, the more aggressive method."},"registry":[{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows\\Dwm","Name":"OverlayTestMode","Type":"DWord","DefaultValue":"0","Values":{"Enabled":"\u003cRemoveEntry\u003e","Disabled (Compatibility)":"5","Fully Disabled":"5"}},{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers","Name":"DisableOverlays","Type":"DWord","DefaultValue":"0","Values":{"Enabled":"\u003cRemoveEntry\u003e","Disabled (Compatibility)":"\u003cRemoveEntry\u003e","Fully Disabled":"1"}}]},"WPFToggleMouseAcceleration":{"Content":"Mouse Acceleration","Description":"Makes it so Cursor movement is affected by the speed of your physical mouse movements.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Control Panel\\Mouse","Name":"MouseSpeed","Value":"1","Type":"String","OriginalValue":"0","DefaultState":"true"},{"Path":"HKCU:\\Control Panel\\Mouse","Name":"MouseThreshold1","Value":"6","Type":"String","OriginalValue":"0","DefaultState":"true"},{"Path":"HKCU:\\Control Panel\\Mouse","Name":"MouseThreshold2","Value":"10","Type":"String","OriginalValue":"0","DefaultState":"true"}]},"WPFToggleNumLock":{"Content":"Num Lock on Startup","Description":"Toggle the Num Lock key state when your computer starts.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKU:\\.Default\\Control Panel\\Keyboard","Name":"InitialKeyboardIndicators","Value":"2","Type":"String","OriginalValue":"0","DefaultState":"false"},{"Path":"HKCU:\\Control Panel\\Keyboard","Name":"InitialKeyboardIndicators","Value":"2","Type":"String","OriginalValue":"0","DefaultState":"false"}]},"WPFToggleWindowSnapping":{"Content":"Window Snapping","Description":"Toggles the window snapping feature when dragging windows.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Control Panel\\Desktop","Name":"WindowArrangementActive","Value":"1","Type":"String","OriginalValue":"0","DefaultState":"true"}]},"WPFToggleStandbyFix":{"Content":"S0 Sleep Network Connectivity","Description":"Toggles network connectivity during S0 Sleep which is low power idle in modern laptops.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\SOFTWARE\\Policies\\Microsoft\\Power\\PowerSettings\\f15576e8-98b7-4186-b944-eafa664402d9","Name":"ACSettingIndex","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"true"}]},"WPFToggleS3Sleep":{"Content":"S3 Sleep","Description":"Toggles between Modern Standby and S3 Sleep, which cuts off power to the CPU while continuing to refresh the memory.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Power","Name":"PlatformAoAcOverride","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e","DefaultState":"false"}]},"WPFToggleHideSettingsHome":{"Content":"Settings Home Page","Description":"Toggles the Home Page in the Windows Settings app.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer","Name":"SettingsPageVisibility","Value":"show:home","Type":"String","OriginalValue":"hide:home","DefaultState":"true"}]},"WPFToggleBingSearch":{"Content":"Start Menu Bing Search","Description":"Toggles Bing web search results in Windows Search.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Search","Name":"BingSearchEnabled","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"true"}]},"WPFToggleLoginBlur":{"Content":"Logon Screen Acrylic Blur","Description":"Toggles the acrylic blur effect on login screen background.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System","Name":"DisableAcrylicBackgroundOnLogon","Value":"0","Type":"DWord","OriginalValue":"1","DefaultState":"true"}]},"WPFToggleDisableLockscreen":{"Content":"Lock Screen - Disable","Description":"Skips the lock screen entirely and goes directly to the sign-in screen on boot and wake.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Personalization","Name":"NoLockScreen","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFToggleStartMenuRecommendations":{"Content":"Start Menu Recommendations","Description":"Toggles the recommendations section in the Start Menu. WARNING: This will also disable Windows Spotlight on your Lock Screen as a side effect.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKLM:\\SOFTWARE\\Microsoft\\PolicyManager\\current\\device\\Start","Name":"HideRecommendedSection","Value":"0","Type":"DWord","OriginalValue":"1","DefaultState":"true"},{"Path":"HKLM:\\SOFTWARE\\Microsoft\\PolicyManager\\current\\device\\Education","Name":"IsEducationEnvironment","Value":"0","Type":"DWord","OriginalValue":"1","DefaultState":"true"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Explorer","Name":"HideRecommendedSection","Value":"0","Type":"DWord","OriginalValue":"1","DefaultState":"true"}],"InvokeScript":["\n      Invoke-ExplorerRefresh -action \"restart\"\n      "],"UndoScript":["\n      Invoke-ExplorerRefresh -action \"restart\"\n      "]},"WPFToggleStickyKeys":{"Content":"Sticky Keys","Description":"Toggles the Sticky Keys, which activate when clicking shift rapidly.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Control Panel\\Accessibility\\StickyKeys","Name":"Flags","Value":"506","Type":"DWord","OriginalValue":"58","DefaultState":"true"}]},"WPFToggleTaskbarAlignment":{"Content":"Taskbar Centered Icons","Description":"Toggles the Taskbar alignment either to the left or center.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"TaskbarAl","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"true"}],"InvokeScript":["\n      Invoke-ExplorerRefresh -action \"restart\"\n      "],"UndoScript":["\n      Invoke-ExplorerRefresh -action \"restart\"\n      "]},"WPFToggleTaskbarSearch":{"Content":"Taskbar Search Icon","Description":"Toggles the Search Button on the Taskbar.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Search","Name":"SearchboxTaskbarMode","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"true"}]},"WPFToggleTaskView":{"Content":"Taskbar Task View Icon","Description":"Toggles the Task View Button in the Taskbar.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"ShowTaskViewButton","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"true"}]},"WPFToggleGameMode":{"Content":"Game Mode","Description":"Toggles Windows prioritizes gaming performance by allocating system resources to games.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Software\\Microsoft\\GameBar","Name":"AllowAutoGameMode","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"true"},{"Path":"HKCU:\\Software\\Microsoft\\GameBar","Name":"AutoGameModeEnabled","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"true"}]},"WPFToggleLongPaths":{"Content":"Enable Long Paths","Description":"Toggles support for file paths longer than 260 characters in Explorer.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Control\\FileSystem","Name":"LongPathsEnabled","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"false"}]},"WPFOOSUbutton":{"Content":"O\u0026O ShutUp10++ - Run","Description":"Baixa O\u0026O ShutUp10++ (~82 MB) em %LocalAppData%\\WinRepairPro e executa diretamente.","category":"Avancados","panel":"1","Type":"Button"},"WPFchangedns":{"Content":"DNS - Set to:","category":"Avancados","panel":"1","Type":"Combobox","ComboItems":"Default DHCP Fastest Google Cloudflare Cloudflare_Malware Cloudflare_Malware_Adult Open_DNS Quad9 AdGuard_Ads_Trackers AdGuard_Ads_Trackers_Malware_Adult"},"WPFAddUltPerf":{"Content":"Ultimate Performance Profile - Enable","category":"Energia","panel":"2","Type":"Button","ButtonWidth":"300"},"WPFRemoveUltPerf":{"Content":"Ultimate Performance Profile - Disable","category":"Energia","panel":"2","Type":"Button","ButtonWidth":"300"},"TweaksGameDvr":{"Content":"GameDVR \u0026 Gravacao em Fundo - Desativar","Description":"Desativa o GameDVR em segundo plano para reduzir input lag e quedas de FPS em jogos.","category":"Essenciais","Type":"CheckBox","InvokeScript":["Disable-GameDvrAndBackgroundRecording"],"UndoScript":["Set-RegistryEntry -Path \u0027HKCU:\\System\\GameConfigStore\u0027 -Name \u0027GameDVR_Enabled\u0027 -Type DWord -Value 1\nSet-RegistryEntry -Path \u0027HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR\u0027 -Name \u0027AllowGameDVR\u0027 -Type DWord -Value 1"]},"TweaksSsdTrim":{"Content":"Otimizar Unidades SSD (Executar TRIM)","Description":"Executa ReTrim nos volumes fixos para manter desempenho e longevidade de SSDs.","category":"Essenciais","Type":"CheckBox","InvokeScript":["Optimize-SsdTrim"],"UndoScript":["Write-ToolLog \u0027TRIM e uma otimizacao pontual e nao requer reversao.\u0027 \u0027INFO\u0027"]},"TweaksFastMenus":{"Content":"Acelerar Menus \u0026 Prioridade de CPU","Description":"Reduz MenuShowDelay para 10ms e ajusta Win32PrioritySeparation=38 para foco responsivo.","category":"Essenciais","Type":"CheckBox","InvokeScript":["Optimize-SystemResponsivenessAndVisuals"],"UndoScript":["Set-RegistryEntry -Path \u0027HKCU:\\Control Panel\\Desktop\u0027 -Name \u0027MenuShowDelay\u0027 -Type String -Value \u0027400\u0027\nSet-RegistryEntry -Path \u0027HKLM:\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl\u0027 -Name \u0027Win32PrioritySeparation\u0027 -Type DWord -Value 2"]},"TweaksTakeOwnership":{"Content":"Adicionar \u0027Take Ownership\u0027 no Botao Direito","Description":"Adiciona a opcao Obter Acesso Total (Take Ownership) no menu de contexto de arquivos e pastas.","category":"Avancados","Type":"CheckBox","InvokeScript":["Add-TakeOwnershipContextMenu"],"UndoScript":["Remove-Item -Path \u0027HKCR:\\*\\shell\\runas\u0027 -Recurse -Force -ErrorAction SilentlyContinue\nRemove-Item -Path \u0027HKCR:\\Directory\\shell\\runas\u0027 -Recurse -Force -ErrorAction SilentlyContinue"]},"TweaksTcpGaming":{"Content":"Otimizar Latencia TCP/IP (AutoTune, RSS, ECN)","Description":"Otimiza parametros TCP, RSS, ECN e NetworkThrottlingIndex para jogos e menor latencia.","category":"Essenciais","Type":"CheckBox","InvokeScript":["Optimize-TcpLatencyAndThroughput"],"UndoScript":["Set-RegistryEntry -Path \u0027HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\u0027 -Name \u0027NetworkThrottlingIndex\u0027 -Type DWord -Value 10\nSet-RegistryEntry -Path \u0027HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\u0027 -Name \u0027SystemResponsiveness\u0027 -Type DWord -Value 20"]},"TweaksFlushDns":{"Content":"Limpar Cache DNS","Description":"Executa Clear-DnsClientCache para limpar registros de DNS antigos.","category":"Essenciais","Type":"CheckBox","InvokeScript":["Invoke-FlushDns"],"UndoScript":["Write-ToolLog \u0027Limpeza de cache DNS nao requer reversao.\u0027 \u0027INFO\u0027"]},"TweaksRenewDhcp":{"Content":"Renovar Concessao de IP / DHCP","Description":"Libera e renova o endereco IP local junto ao roteador/servidor DHCP.","category":"Avancados","Type":"CheckBox","InvokeScript":["Invoke-RenewDhcp"],"UndoScript":["Write-ToolLog \u0027Renovacao DHCP nao requer reversao.\u0027 \u0027INFO\u0027"]},"TweaksResetNetStack":{"Content":"Redefinir Pilha de Rede Completa","Description":"Executa reset de Winsock, TCP/IP, IPv6, WinHTTP Proxy, cache ARP e Firewall.","category":"Avancados","Type":"CheckBox","InvokeScript":["Invoke-ResetNetworkStack"],"UndoScript":["Write-ToolLog \u0027Reset de pilha de rede nao possui reversao automatica.\u0027 \u0027WARN\u0027"]}}
+{"WPFTweaksActivity":{"Content":"Hist\u00f3rico de Atividades - Desativar","Description":"Impede o Windows de enviar hist\u00f3rico de uso e atividades para a Microsoft, mantendo a \u00e1rea de transfer\u00eancia intacta.","category":"Essenciais","panel":"1","registry":[{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System","Name":"EnableActivityFeed","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System","Name":"PublishUserActivities","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System","Name":"UploadUserActivities","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksHiber":{"Content":"Hiberna\u00e7\u00e3o - Desativar (Desktop)","Description":"Desativa a hiberna\u00e7\u00e3o e remove o arquivo hiberfil.sys para liberar v\u00e1rios GB de espa\u00e7o no disco. N\u00e3o recomendado para notebooks.","category":"Essenciais","panel":"1","registry":[{"Path":"HKLM:\\System\\CurrentControlSet\\Control\\Session Manager\\Power","Name":"HibernateEnabled","Value":"0","Type":"DWord","OriginalValue":"1"},{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FlyoutMenuSettings","Name":"ShowHibernateOption","Value":"0","Type":"DWord","OriginalValue":"1"}],"InvokeScript":["powercfg.exe /hibernate off"],"UndoScript":["powercfg.exe /hibernate on"]},"WPFTweaksWidget":{"Content":"Widgets da Barra de Tarefas - Remover","Description":"Remove o painel de Widgets e not\u00edcias da barra de tarefas do Windows 11, liberando mem\u00f3ria em segundo plano.","category":"Essenciais","panel":"1","InvokeScript":["\n      # Sometimes if you dont stop the Widgets process the removal may fail\n\n      Get-Process *Widget* | Stop-Process\n      Get-AppxPackage Microsoft.WidgetsPlatformRuntime -AllUsers | Remove-AppxPackage -AllUsers\n      Get-AppxPackage MicrosoftWindows.Client.WebExperience -AllUsers | Remove-AppxPackage -AllUsers\n\n      Invoke-ExplorerRefresh -action \"restart\"\n      Write-Host \"Removed widgets\"\n      "]},"WPFTweaksRevertStartMenu":{"Content":"Menu Iniciar Layout Cl\u00e1ssico","Description":"Tenta restaurar o layout anterior do Menu Iniciar em vers\u00f5es compat\u00edveis do Windows 11.","category":"Essenciais","panel":"1","registry":[{"Path":"HKLM:\\SYSTEM\\ControlSet001\\Control\\FeatureManagement\\Overrides\\8\\3036241548","Name":"EnabledState","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksDisableStoreSearch":{"Content":"Sugest\u00f5es da Store na Busca - Desativar","Description":"Impede que aplicativos promovidos da Microsoft Store apare\u00e7am nas pesquisas do Menu Iniciar.","category":"Essenciais","panel":"1","InvokeScript":["icacls \"$Env:LocalAppData\\Packages\\Microsoft.WindowsStore_8wekyb3d8bbwe\\LocalState\\store.db\" /deny *S-1-1-0:F"],"UndoScript":["icacls \"$Env:LocalAppData\\Packages\\Microsoft.WindowsStore_8wekyb3d8bbwe\\LocalState\\store.db\" /grant *S-1-1-0:F"]},"WPFTweaksLocation":{"Content":"Rastreamento de Localiza\u00e7\u00e3o - Desativar","Description":"Desativa os servi\u00e7os de geolocaliza\u00e7\u00e3o e rastreamento de localiza\u00e7\u00e3o pelo sistema e apps.","category":"Essenciais","panel":"1","service":[{"Name":"lfsvc","StartupType":"Disabled","OriginalType":"Manual"}],"registry":[{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\location","Name":"Value","Value":"Deny","Type":"String","OriginalValue":"Allow"},{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Sensor\\Overrides\\{BFA794E4-F964-4FDB-90F6-51056BFE4B44}","Name":"SensorPermissionState","Value":"0","Type":"DWord","OriginalValue":"1"},{"Path":"HKLM:\\SYSTEM\\Maps","Name":"AutoUpdateEnabled","Value":"0","Type":"DWord","OriginalValue":"1"}]},"WPFTweaksServices":{"Content":"Servi\u00e7os Secund\u00e1rios em Manual","Description":"Define dezenas de servi\u00e7os n\u00e3o essenciais para inicializa\u00e7\u00e3o Manual, reduzindo uso de RAM e processos no boot.","category":"Essenciais","panel":"1","service":[{"Name":"CscService","StartupType":"Disabled","OriginalType":"Manual"},{"Name":"DiagTrack","StartupType":"Disabled","OriginalType":"Automatic"},{"Name":"MapsBroker","StartupType":"Manual","OriginalType":"Automatic"},{"Name":"StorSvc","StartupType":"Manual","OriginalType":"Automatic"},{"Name":"SharedAccess","StartupType":"Disabled","OriginalType":"Automatic"}]},"WPFTweaksSvcHostSplitting":{"Content":"Agrupamento svchost.exe - Otimizar RAM","Description":"Desativa a divis\u00e3o excessiva de processos svchost.exe para reduzir consumo de mem\u00f3ria em PCs com 12 GB de RAM ou menos. Requer rein\u00edcio.","category":"Avancados","panel":"1","InvokeScript":["\n      # A threshold above the physical memory disables svchost service splitting\n      $Memory = (Get-CimInstance Win32_PhysicalMemory | Measure-Object Capacity -Sum).Sum / 1KB\n      Set-ItemProperty -Path \"HKLM:\\SYSTEM\\CurrentControlSet\\Control\" -Name SvcHostSplitThresholdInKB -Value $Memory -Type DWord\n      "],"UndoScript":["\n      # Windows client default (0x380000): splitting back on\n      Set-ItemProperty -Path \"HKLM:\\SYSTEM\\CurrentControlSet\\Control\" -Name SvcHostSplitThresholdInKB -Value 3670016 -Type DWord -Force\n      "]},"WPFTweaksBraveDebloat":{"Content":"Brave Browser - Remover Extras (Debloat)","Description":"Desativa Brave Rewards, Leo AI, Carteira Cripto e VPN integrada via pol\u00edticas do navegador.","category":"Avancados","panel":"1","registry":[{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"BraveRewardsDisabled","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"BraveWalletDisabled","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"BraveVPNDisabled","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"BraveAIChatEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"BraveStatsPingEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"BraveNewsDisabled","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"BraveTalkDisabled","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"TorDisabled","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"BraveP3AEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"UrlKeyedAnonymizedDataCollectionEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"SafeBrowsingExtendedReportingEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave","Name":"MetricsReportingEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksDisableWarningForUnsignedRdp":{"Content":"Avisos RDP N\u00e3o Assinados - Desativar","Description":"Remove avisos extras ao abrir arquivos de \u00c1rea de Trabalho Remota (.rdp) n\u00e3o assinados.","category":"Avancados","panel":"1","registry":[{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows NT\\Terminal Services\\Client","Name":"RedirectionWarningDialogVersion","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\SOFTWARE\\Microsoft\\Terminal Server Client","Name":"RdpLaunchConsentAccepted","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksEdgeDebloat":{"Content":"Microsoft Edge - Desativar Telemetria/Popups","Description":"Remove banners promocionais, sidebar, telemetria e recomenda\u00e7\u00f5es de compras no Microsoft Edge.","category":"Avancados","panel":"1","registry":[{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\EdgeUpdate","Name":"CreateDesktopShortcutDefault","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"PersonalizationReportingEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge\\ExtensionInstallBlocklist","Name":"1","Value":"ofefcgjbeghpigppfmkologfjadafddi","Type":"String","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"ShowRecommendationsEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"HideFirstRunExperience","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"UserFeedbackAllowed","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"ConfigureDoNotTrack","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"AlternateErrorPagesEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"EdgeCollectionsEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"EdgeShoppingAssistantEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"MicrosoftEdgeInsiderPromotionEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"ShowMicrosoftRewards","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"WebWidgetAllowed","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"DiagnosticData","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"EdgeAssetDeliveryServiceEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"WalletDonationEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge","Name":"DefaultBrowserSettingsCampaignEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksConsumerFeatures":{"Content":"Instala\u00e7\u00e3o Silenciosa de Apps/An\u00fancios - Desativar","Description":"Bloqueia a instala\u00e7\u00e3o autom\u00e1tica de jogos e aplicativos patrocinados (Candy Crush, etc.) pela Microsoft.","category":"Essenciais","panel":"1","registry":[{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent","Name":"DisableWindowsConsumerFeatures","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksTelemetry":{"Content":"Telemetria \u0026 Coleta de Dados - Desativar","Description":"Desativa telemetria do sistema, tarefas CEIP e coleta de dados de diagn\u00f3stico em segundo plano.","category":"Essenciais","panel":"1","service":[{"Name":"diagtrack","StartupType":"Disabled","OriginalType":"Automatic"},{"Name":"WerSvc","StartupType":"Disabled","OriginalType":"Manual"}],"registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo","Name":"Enabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Privacy","Name":"TailoredExperiencesWithDiagnosticDataEnabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\Speech_OneCore\\Settings\\OnlineSpeechPrivacy","Name":"HasAccepted","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\Input\\TIPC","Name":"Enabled","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\InputPersonalization","Name":"RestrictImplicitInkCollection","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\InputPersonalization","Name":"RestrictImplicitTextCollection","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\InputPersonalization\\TrainedDataStore","Name":"HarvestContacts","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\Personalization\\Settings","Name":"AcceptedPrivacyPolicy","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection","Name":"AllowTelemetry","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"Start_TrackProgs","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System","Name":"PublishUserActivities","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\Siuf\\Rules","Name":"NumberOfSIUFInPeriod","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\Siuf\\Rules","Name":"PeriodInNanoSeconds","Value":"\u003cRemoveEntry\u003e","Type":"QWord","OriginalValue":"\u003cRemoveEntry\u003e"}],"InvokeScript":["[Environment]::SetEnvironmentVariable(\u0027POWERSHELL_TELEMETRY_OPTOUT\u0027, \u00271\u0027, \u0027Machine\u0027)"],"UndoScript":["[Environment]::SetEnvironmentVariable(\u0027POWERSHELL_TELEMETRY_OPTOUT\u0027, \u0027\u0027, \u0027Machine\u0027)"]},"WPFTweaksDeliveryOptimization":{"Content":"Otimiza\u00e7\u00e3o de Entrega (P2P Updates) - Desativar","Description":"Impede o Windows de usar sua banda de internet para enviar atualiza\u00e7\u00f5es a outros computadores.","category":"Essenciais","panel":"1","registry":[{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DeliveryOptimization","Name":"DODownloadMode","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksRemoveEdge":{"Content":"Microsoft Edge - Desinstalar Completamente","Description":"Executa a remo\u00e7\u00e3o completa do Microsoft Edge em n\u00edvel de sistema (Cuidado: requer outro navegador instalado).","category":"Avancados","panel":"1","InvokeScript":["\n      $EdgeAppDir = \"$Env:ProgramFiles (x86)\\Microsoft\\Edge\\Application\"\n      $Path = $null\n      if (Test-Path -LiteralPath $EdgeAppDir -ErrorAction Stop) {\n          $InstallerPattern = Join-Path $EdgeAppDir \"*\\Installer\\setup.exe\"\n          if (Test-Path -Path $InstallerPattern -ErrorAction Stop) {\n              $Path = Resolve-Path -Path $InstallerPattern -ErrorAction Stop | Select-Object -Last 1\n          }\n      }\n\n      if ($Path) {\n          New-Item -Path \"$Env:SystemRoot\\SystemApps\\Microsoft.MicrosoftEdge_8wekyb3d8bbwe\\MicrosoftEdge.exe\" -Force\n          Start-Process -FilePath $Path -ArgumentList \"--uninstall --system-level --force-uninstall --delete-profile\" -Wait\n          Write-Host \"Microsoft Edge was removed\"\n      } else {\n          Write-Host \"Microsoft Edge is not installed\"\n      }\n      "],"UndoScript":["\n      Write-Host \"Installing Microsoft Edge...\"\n      winget install Microsoft.Edge --source winget\n      "]},"WPFTweaksDisableBitLocker":{"Content":"Criptografia Autom\u00e1tica BitLocker - Desativar","Description":"Impede a ativa\u00e7\u00e3o autom\u00e1tica da criptografia de disco BitLocker em contas locais/Microsoft.","category":"Essenciais","panel":"1","InvokeScript":["\n      $bitLockerVolume = Get-BitLockerVolume -MountPoint $Env:SystemDrive -ErrorAction Stop\n\n      if ($bitLockerVolume.VolumeStatus -eq \u0027FullyDecrypted\u0027) {\n          Write-Host \"BitLocker is already disabled on $($Env:SystemDrive).\"\n      } else {\n          Disable-BitLocker -MountPoint $Env:SystemDrive -ErrorAction Stop\n      }\n      "],"UndoScript":["Enable-BitLocker -MountPoint $Env:SystemDrive"]},"WPFTweaksUTC":{"Content":"Rel\u00f3gio do Sistema em UTC (Dual-Boot)","Description":"Define o rel\u00f3gio da BIOS/Windows para UTC, corrigindo atraso de hor\u00e1rio em m\u00e1quinas com Dual-Boot Windows/Linux.","category":"Avancados","panel":"1","registry":[{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Control\\TimeZoneInformation","Name":"RealTimeIsUniversal","Value":"1","Type":"QWord","OriginalValue":"0"}]},"WPFTweaksRemoveOneDrive":{"Content":"Microsoft OneDrive - Remover Completamente","Description":"Desinstala o OneDrive preservando arquivos do usu\u00e1rio, limpa pastas residuais e remove do Explorer.","category":"Avancados","panel":"1","InvokeScript":["\n      $OneDrivePath = $Env:OneDrive\n      $OneDriveFolderExists = -not [string]::IsNullOrWhiteSpace($OneDrivePath) -and (Test-Path -LiteralPath $OneDrivePath -PathType Container -ErrorAction Stop)\n\n      if ($OneDriveFolderExists) {\n          $OneDriveAcl = Get-Acl -LiteralPath $OneDrivePath -ErrorAction Stop\n      } else {\n          Write-Host \"OneDrive folder is already absent; skipping folder permissions and cleanup.\"\n      }\n\n      try {\n          if ($OneDriveFolderExists) {\n              # Protect user files while the uninstaller runs.\n              icacls $OneDrivePath /deny \"*S-1-5-32-544:(D,DC)\"\n              if ($LASTEXITCODE -ne 0) { throw \"Unable to protect the OneDrive folder (icacls exit code $LASTEXITCODE).\" }\n          }\n\n          Write-Host \"Uninstalling OneDrive...\"\n          Start-Process -FilePath (Join-Path $Env:SystemRoot \"System32\\OneDriveSetup.exe\") -ArgumentList \u0027/uninstall\u0027 -Wait -ErrorAction Stop\n\n          # Some of OneDrive files use explorer, and OneDrive uses FileCoAuth\n          Write-Host \"Removing leftover OneDrive Files...\"\n\n          Get-Process -ErrorAction Stop | Where-Object ProcessName -eq \u0027FileCoAuth\u0027 | Stop-Process -ErrorAction Stop\n          Get-Process -ErrorAction Stop | Where-Object ProcessName -eq \u0027Explorer\u0027 | Stop-Process -ErrorAction Stop\n\n          $OneDriveLeftovers = @(\"$Env:LocalAppData\\Microsoft\\OneDrive\", \"$Env:ProgramData\\Microsoft OneDrive\")\n          foreach ($LeftoverPath in $OneDriveLeftovers) {\n              if (Test-Path -LiteralPath $LeftoverPath -ErrorAction Stop) {\n                  Remove-Item -LiteralPath $LeftoverPath -Recurse -Force -ErrorAction Stop\n              }\n          }\n      } finally {\n          if ($OneDriveFolderExists) {\n              # Restore access even when uninstall or leftover cleanup fails.\n              Set-Acl -LiteralPath $OneDrivePath -AclObject $OneDriveAcl -ErrorAction Stop\n          }\n      }\n\n      if ($OneDriveFolderExists -and -not (Get-ChildItem -LiteralPath $OneDrivePath -Force -ErrorAction Stop)) {\n          # Refuse to delete if files appeared after the emptiness check.\n          [System.IO.Directory]::Delete($OneDrivePath, $false)\n          [Environment]::SetEnvironmentVariable(\u0027OneDrive\u0027, $null, \u0027User\u0027)\n      }\n\n      # OneSyncSvc is a per-user template; Get-Service only exposes user instances.\n      # Skip the operation if this Windows installation has no template.\n      if (Test-Path -LiteralPath \u0027HKLM:\\SYSTEM\\CurrentControlSet\\Services\\OneSyncSvc\u0027) {\n          Set-Service -Name OneSyncSvc -StartupType Disabled\n      }\n      "],"UndoScript":["\n      Write-Host \"Installing OneDrive\"\n      winget install Microsoft.Onedrive --source winget\n\n      # Enable OneSyncSvc when the per-user service template exists\n      if (Test-Path -LiteralPath \u0027HKLM:\\SYSTEM\\CurrentControlSet\\Services\\OneSyncSvc\u0027) {\n          Set-Service -Name OneSyncSvc -StartupType Automatic\n      }\n      "]},"WPFTweaksRemoveHomeAndGallery":{"Content":"Explorer: Ocultar In\u00edcio e Galeria","Description":"Remove as abas In\u00edcio e Galeria do Explorador de Arquivos e define \"Este Computador\" como tela padr\u00e3o.","category":"Avancados","panel":"1","registry":[{"Path":"HKCU:\\Software\\Classes\\CLSID\\{f874310e-b6b7-47dc-bc84-b9e6b38f5903}","Name":"System.IsPinnedToNameSpaceTree","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Classes\\CLSID\\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}","Name":"System.IsPinnedToNameSpaceTree","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"LaunchTo","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksDisplay":{"Content":"Efeitos Visuais - Desempenho M\u00e1ximo","Description":"Ajusta os efeitos visuais do Windows (anima\u00e7\u00f5es/sombras) para priorizar m\u00e1xima velocidade de resposta.","category":"Avancados","panel":"1","registry":[{"Path":"HKCU:\\Control Panel\\Desktop","Name":"DragFullWindows","Value":"0","Type":"String","OriginalValue":"1"},{"Path":"HKCU:\\Control Panel\\Desktop","Name":"MenuShowDelay","Value":"200","Type":"String","OriginalValue":"400"},{"Path":"HKCU:\\Control Panel\\Desktop\\WindowMetrics","Name":"MinAnimate","Value":"0","Type":"String","OriginalValue":"1"},{"Path":"HKCU:\\Control Panel\\Keyboard","Name":"KeyboardDelay","Value":"0","Type":"String","OriginalValue":"1"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"ListviewAlphaSelect","Value":"0","Type":"DWord","OriginalValue":"1"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"ListviewShadow","Value":"0","Type":"DWord","OriginalValue":"1"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"TaskbarAnimations","Value":"0","Type":"DWord","OriginalValue":"1"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects","Name":"VisualFXSetting","Value":"3","Type":"DWord","OriginalValue":"1"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\DWM","Name":"EnableAeroPeek","Value":"0","Type":"DWord","OriginalValue":"1"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"TaskbarMn","Value":"0","Type":"DWord","OriginalValue":"1"}],"InvokeScript":["Set-ItemProperty -Path \"HKCU:\\Control Panel\\Desktop\" -Name \"UserPreferencesMask\" -Type Binary -Value ([byte[]](144,18,3,128,16,0,0,0))"],"UndoScript":["Remove-ItemProperty -Path \"HKCU:\\Control Panel\\Desktop\" -Name \"UserPreferencesMask\""]},"WPFTweaksReservedStorage":{"Content":"Armazenamento Reservado (7-10 GB) - Desativar","Description":"Libera o espa\u00e7o reservado para atualiza\u00e7\u00f5es futuras. Recomendado apenas em SSDs pequenos; reative antes de grandes updates.","category":"Avancados","panel":"1","InvokeScript":["DISM /Online /Set-ReservedStorageState /State:Disabled"],"UndoScript":["DISM /Online /Set-ReservedStorageState /State:Enabled"]},"WPFTweaksRestorePoint":{"Content":"Ponto de Restaura\u00e7\u00e3o - Criar Agora","Description":"Cria um Ponto de Restaura\u00e7\u00e3o do Sistema antes de aplicar otimiza\u00e7\u00f5es, permitindo reverter facilmente pelo Windows.","category":"Essenciais","panel":"1","Checked":"False","registry":[{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\SystemRestore","Name":"SystemRestorePointCreationFrequency","Value":"0","Type":"DWord","OriginalValue":"1440"}],"InvokeScript":["\n      if (-not (Get-ComputerRestorePoint)) {\n          Enable-ComputerRestore -Drive $Env:SystemDrive\n      }\n\n      Checkpoint-Computer -Description \"System Restore Point created by WinRepair Pro\" -RestorePointType MODIFY_SETTINGS\n      Write-Host \"System Restore Point Created Successfully\" -ForegroundColor Green\n      "]},"WPFTweaksEndTaskOnTaskbar":{"Content":"Finalizar Tarefa no Bot\u00e3o Direito","Description":"Ativa a op\u00e7\u00e3o r\u00e1pida \"Finalizar Tarefa\" ao clicar com o bot\u00e3o direito em qualquer app na Barra de Tarefas (Win 11).","category":"Essenciais","panel":"1","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\\TaskbarDeveloperSettings","Name":"TaskbarEndTask","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksStorage":{"Content":"Sensor de Armazenamento - Desativar","Description":"Desativa a exclus\u00e3o autom\u00e1tica de arquivos tempor\u00e1rios e da lixeira gerenciada pelo Sensor de Armazenamento.","category":"Avancados","panel":"1","registry":[{"Path":"HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\StorageSense\\Parameters\\StoragePolicy","Name":"01","Value":"0","Type":"DWord","OriginalValue":"1"}]},"WPFTweaksWindowsAI":{"Content":"IA do Windows (Copilot \u0026 Recall) - Remover","Description":"Remove pacotes Copilot/AI e desativa o recurso Recall para m\u00e1xima privacidade e menor consumo de recursos.","category":"Avancados","panel":"1","registry":[{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer","Name":"SettingsPageVisibility","Value":"hide:aicomponents","Type":"String","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKLM:\\SOFTWARE\\Policies\\WindowsNotepad","Name":"DisableAIFeatures","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}],"InvokeScript":["\n      $Appx = (Get-AppxPackage MicrosoftWindows.Client.CoreAI).PackageFullName\n      $Sid = (Get-LocalUser $Env:UserName).Sid.Value\n\n      New-Item \"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\$Sid\\$Appx\" -Force\n\n      Get-AppxPackage -AllUsers \"*Copilot*\" | Remove-AppxPackage -AllUsers\n      winget uninstall -e --name \"Copilot\" --silent --force --accept-source-agreements 2\u003e$null\n      Get-AppxPackage -AllUsers Microsoft.MicrosoftOfficeHub | Remove-AppxPackage -AllUsers\n\n      if ($Appx) {\n          Remove-AppxPackage $Appx\n      }\n\n      # WSAIFabricSvc only exists on some Windows 11 builds; without the guard a\n      # missing service aborts the rest of this script block and Recall stays enabled\n      if (Get-Service -Name WSAIFabricSvc -ErrorAction SilentlyContinue) {\n          Set-Service -Name WSAIFabricSvc -StartupType Disabled\n      }\n      # Store/MSIX PowerShell 7 can hang or fail COM activation in DISM.\n      $RecallCommand = {\n          Disable-WindowsOptionalFeature -FeatureName Recall -Online -NoRestart -ErrorAction Stop | Out-Null\n      }\n      $RecallOutput = powershell.exe -NoProfile -NonInteractive -Command $RecallCommand 2\u003e\u00261\n      if ($LASTEXITCODE -ne 0) {\n          throw \"Failed to disable Recall (exit code $LASTEXITCODE): $(($RecallOutput | Out-String).Trim())\"\n      }\n      $RecallOutput | ForEach-Object { Write-Host $_ }\n\n      Write-Host \"Windows AI Disabled\"\n      "]},"WPFTweaksWPBT":{"Content":"WPBT (Execut\u00e1veis da BIOS) - Bloquear","Description":"Bloqueia o recurso WPBT que permite a fabricantes injetarem programas e bloatwares direto do firmware durante o boot.","category":"Essenciais","panel":"1","registry":[{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager","Name":"DisableWpbtExecution","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksPreventDeviceMetadataFromNetwork":{"Content":"Bloqueio de Apps Autom\u00e1ticos de Dispositivos","Description":"Impede o Windows de baixar softwares promocionais de fabricantes ao conectar perif\u00e9ricos ou monitores.","category":"Essenciais","panel":"1","registry":[{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Device Metadata","Name":"PreventDeviceMetadataFromNetwork","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFTweaksRazerBlock":{"Content":"Auto-Instala\u00e7\u00e3o Razer Synapse - Bloquear","Description":"Bloqueia a instala\u00e7\u00e3o for\u00e7ada do software Razer via Windows Update ao plugar mouses ou teclados.","category":"Avancados","panel":"1","registry":[{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\DriverSearching","Name":"SearchOrderConfig","Value":"0","Type":"DWord","OriginalValue":"1"},{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Device Installer","Name":"DisableCoInstallers","Value":"1","Type":"DWord","OriginalValue":"0"}],"InvokeScript":["\n      $RazerPath = \"$Env:SystemRoot\\Installer\\Razer\"\n\n      if (Test-Path $RazerPath) {\n        Remove-Item $RazerPath\\* -Recurse -Force\n      } else {\n        New-Item -Path $RazerPath -ItemType Directory\n      }\n\n      icacls $RazerPath /deny \"*S-1-1-0:(W)\"\n      "],"UndoScript":["\n      icacls \"$Env:SystemRoot\\Installer\\Razer\" /remove:d *S-1-1-0\n      "]},"WPFTweaksLogiBlock":{"Content":"Auto-Instala\u00e7\u00e3o Logitech Assistant - Bloquear","Description":"Bloqueia a reinstala\u00e7\u00e3o autom\u00e1tica do Logitech Download Assistant via drivers do Windows.","category":"Avancados","panel":"1","InvokeScript":["\n      Stop-Process -Name \"logi_download_assistant\" -Force -ErrorAction SilentlyContinue\n\n      $ProgramFiles64 = if ($Env:ProgramW6432) { $Env:ProgramW6432 } else { $Env:ProgramFiles }\n      $LogiPath = \"$ProgramFiles64\\LogiDownloadAssistant\"\n\n      if (Test-Path $LogiPath) {\n        Remove-Item $LogiPath\\* -Recurse -Force\n      } else {\n        New-Item -Path $LogiPath -ItemType Directory\n      }\n\n      icacls $LogiPath /deny \"*S-1-1-0:(W)\"\n      if ($LASTEXITCODE -ne 0) { throw \"icacls failed to deny write access on $LogiPath (exit code $LASTEXITCODE)\" }\n      "],"UndoScript":["\n      $ProgramFiles64 = if ($Env:ProgramW6432) { $Env:ProgramW6432 } else { $Env:ProgramFiles }\n      $LogiPath = \"$ProgramFiles64\\LogiDownloadAssistant\"\n\n      if (Test-Path $LogiPath) {\n        icacls $LogiPath /remove:d \"*S-1-1-0\"\n        if ($LASTEXITCODE -ne 0) { throw \"icacls failed to remove the write-deny rule on $LogiPath (exit code $LASTEXITCODE)\" }\n      }\n      "]},"WPFTweaksDisableNotifications":{"Content":"Central de Notifica\u00e7\u00f5es \u0026 Calend\u00e1rio - Desativar","Description":"Desativa popups de notifica\u00e7\u00f5es da bandeja e a barra de notifica\u00e7\u00f5es do sistema (Aten\u00e7\u00e3o: oculta alertas).","category":"Avancados","panel":"1","registry":[{"Path":"HKCU:\\Software\\Policies\\Microsoft\\Windows\\Explorer","Name":"DisableNotificationCenter","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"},{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\PushNotifications","Name":"ToastEnabled","Value":"0","Type":"DWord","OriginalValue":"1"}]},"WPFTweaksBlockAdobeNet":{"Content":"Lista de Bloqueio Telemetria Adobe (Hosts)","Description":"Adiciona regras no arquivo hosts para bloquear servidores de telemetria e verifica\u00e7\u00e3o em segundo plano da Adobe.","category":"Avancados","panel":"1","InvokeScript":["\n      $hostsUrl = Invoke-RestMethod -Uri https://github.com/Ruddernation-Designs/Adobe-URL-Block-List/raw/refs/heads/master/hosts\n      Add-Content -Path \"$Env:SystemRoot\\System32\\drivers\\etc\\hosts\" -Value $hostsUrl\n\n      ipconfig /flushdns\n      Write-Host \u0027Added Adobe url block list from host file\u0027\n      "],"UndoScript":["\n      Set-Content \"$Env:SystemRoot\\System32\\drivers\\etc\\hosts\" (\n          (Get-Content \"$Env:SystemRoot\\System32\\drivers\\etc\\hosts\") -join \"`n\" -replace \u0027(?s)#New Ver.*\u0027, \u0027\u0027\n      )\n\n      ipconfig /flushdns\n      Write-Host \u0027Removed Adobe url block list from host file\u0027\n      "]},"WPFTweaksRightClickMenu":{"Content":"Menu de Contexto Cl\u00e1ssico (Bot\u00e3o Direito)","Description":"Restaura o menu completo cl\u00e1ssico ao clicar com o bot\u00e3o direito no Windows 11, sem precisar clicar em \"Mostrar mais op\u00e7\u00f5es\".","category":"Avancados","panel":"1","InvokeScript":["Set-ClassicContextMenu"],"UndoScript":["Set-ClassicContextMenu -Undo"]},"WPFTweaksDiskCleanup":{"Content":"Limpeza de Disco do Windows - Executar","Description":"Executa a Limpeza de Disco (cleanmgr) removendo caches antigos de atualiza\u00e7\u00f5es e arquivos de sistema.","category":"Essenciais","panel":"1","InvokeScript":["\n      cleanmgr.exe /d C: /VERYLOWDISK\n      Dism.exe /online /Cleanup-Image /StartComponentCleanup /ResetBase\n      "]},"WPFTweaksDeleteTempFiles":{"Content":"Limpar Arquivos Tempor\u00e1rios \u0026 Prefetch","Description":"Apaga pastas TEMP do usu\u00e1rio e do sistema para recuperar espa\u00e7o e remover lixo acumulado.","category":"Essenciais","panel":"1","InvokeScript":["\n      # A temp folder always holds files something has open, including this run\u0027s own, and\n      # the job layer counts a logged error as a failed step\n      Remove-Item -Path \"$Env:Temp\\*\" -Recurse -Force -ErrorAction SilentlyContinue\n      Remove-Item -Path \"$Env:SystemRoot\\Temp\\*\" -Recurse -Force -ErrorAction SilentlyContinue\n      "]},"WPFTweaksIPv46":{"Content":"Priorizar IPv4 sobre IPv6","Description":"Configura o sistema para preferir conex\u00f5es IPv4 em redes onde o IPv6 local \u00e9 inst\u00e1vel ou mal configurado.","category":"Avancados","panel":"1","registry":[{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters","Name":"DisabledComponents","Value":"32","Type":"DWord","OriginalValue":"0"}]},"WPFTweaksTeredo":{"Content":"Tunelamento Teredo - Desativar","Description":"Desativa o t\u00fanel Teredo (IPv6). Pode melhorar lat\u00eancia, por\u00e9m alguns jogos Xbox/Microsoft dependem do Teredo para Multiplayer.","category":"Avancados","panel":"1","registry":[{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters","Name":"DisabledComponents","Value":"1","Type":"DWord","OriginalValue":"0"}],"InvokeScript":["netsh interface teredo set state disabled"],"UndoScript":["netsh interface teredo set state default"]},"WPFTweaksDisableSearchIndexing":{"Content":"Indexa\u00e7\u00e3o de Pesquisa (WSearch) - Desativar","Description":"Desativa o servi\u00e7o de indexa\u00e7\u00e3o em disco (ideal para HDs mec\u00e2nicos antigos; a busca de arquivos pode ficar mais lenta).","category":"Avancados","panel":"1","service":[{"Name":"WSearch","StartupType":"Disabled","OriginalType":"Automatic"}],"InvokeScript":["$search = Get-Service -Name WSearch -ErrorAction SilentlyContinue\n      if ($search -and $search.StartType -eq \u0027Disabled\u0027 -and $search.Status -ne \u0027Stopped\u0027) {\n        Stop-Service -Name WSearch -Force -ErrorAction Stop\n      }"],"UndoScript":["$search = Get-Service -Name WSearch -ErrorAction SilentlyContinue\n      if ($search -and $search.StartType -eq \u0027Automatic\u0027 -and $search.Status -ne \u0027Running\u0027) {\n        Start-Service -Name WSearch -ErrorAction Stop\n      }"]},"WPFTweaksDisableIPv6":{"Content":"Protocolo IPv6 - Desativar","Description":"Desativa o protocolo IPv6 em todas as placas de rede (use com cautela caso seu provedor utilize IPv6 nativo).","category":"Avancados","panel":"1","registry":[{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters","Name":"DisabledComponents","Value":"255","Type":"DWord","OriginalValue":"0"}],"InvokeScript":["Disable-NetAdapterBinding -Name * -ComponentID ms_tcpip6"],"UndoScript":["Enable-NetAdapterBinding -Name * -ComponentID ms_tcpip6"]},"WPFTweaksDisableBGapps":{"Content":"Apps da Store em Segundo Plano - Desativar","Description":"Impede que aplicativos universais (UWP/Store) continuem rodando e consumindo RAM quando fechados.","category":"Avancados","panel":"1","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\BackgroundAccessApplications","Name":"GlobalUserDisabled","Value":"1","Type":"DWord","OriginalValue":"0"}]},"WPFTweaksDisableExplorerAutoDiscovery":{"Content":"Auto-Descoberta de Pastas do Explorer - Desativar","Description":"Impede o Explorer de reanalisar milhares de arquivos para adivinhar o tipo da pasta, deixando a navega\u00e7\u00e3o muito mais r\u00e1pida.","category":"Essenciais","panel":"1","InvokeScript":["\n      # Previously detected folders\n      $bags = \"HKCU:\\Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\Bags\"\n\n      # Folder types lookup table\n      $bagMRU = \"HKCU:\\Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\BagMRU\"\n\n      # Flush Explorer view database. Explorer creates these keys only after a folder\n      # view has been saved, so skip them when missing or already removed\n      if (Test-Path $bags) {\n        Remove-Item -Path $bags -Recurse -Force\n        Write-Host \"Removed $bags\"\n      }\n\n      if (Test-Path $bagMRU) {\n        Remove-Item -Path $bagMRU -Recurse -Force\n        Write-Host \"Removed $bagMRU\"\n      }\n\n      # Every folder\n      $allFolders = \"HKCU:\\Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\Bags\\AllFolders\\Shell\"\n\n      if (!(Test-Path $allFolders)) {\n        New-Item -Path $allFolders -Force\n        Write-Host \"Created $allFolders\"\n      }\n\n      # Generic view\n      New-ItemProperty -Path $allFolders -Name \"FolderType\" -Value \"NotSpecified\" -PropertyType String -Force\n      Write-Host \"Set FolderType to NotSpecified\"\n\n      Write-Host Please sign out and back in, or restart your computer to apply the changes!\n      "],"UndoScript":["\n      # Previously detected folders\n      $bags = \"HKCU:\\Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\Bags\"\n\n      # Folder types lookup table\n      $bagMRU = \"HKCU:\\Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\BagMRU\"\n\n      # Flush Explorer view database. Explorer creates these keys only after a folder\n      # view has been saved, so skip them when missing or already removed\n      if (Test-Path $bags) {\n        Remove-Item -Path $bags -Recurse -Force\n        Write-Host \"Removed $bags\"\n      }\n\n      if (Test-Path $bagMRU) {\n        Remove-Item -Path $bagMRU -Recurse -Force\n        Write-Host \"Removed $bagMRU\"\n      }\n\n      Write-Host Please sign out and back in, or restart your computer to apply the changes!\n      "]},"WPFToggleDetailedBSoD":{"Content":"Tela Azul (BSoD) em Modo Detalhado","Description":"Exibe c\u00f3digos t\u00e9cnicos completos e par\u00e2metros de falha caso ocorra uma tela azul.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Control\\CrashControl","Name":"DisplayParameters","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"false"},{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Control\\CrashControl","Name":"DisableEmoticon","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"false"}]},"WPFToggleBatteryPercentage":{"Content":"Porcentagem de Bateria na Bandeja","Description":"Exibe o percentual num\u00e9rico exato da bateria ao lado do \u00edcone do sistema.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"IsBatteryPercentageEnabled","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e","DefaultState":"false"}]},"WPFToggleDarkMode":{"Content":"Tema Escuro Global do Windows","Description":"Alterna instantaneamente o modo escuro para aplicativos e interface do Windows.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize","Name":"AppsUseLightTheme","Value":"0","Type":"DWord","OriginalValue":"1","DefaultState":"false"},{"Path":"HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize","Name":"SystemUsesLightTheme","Value":"0","Type":"DWord","OriginalValue":"1","DefaultState":"false"}],"InvokeScript":["Invoke-ExplorerRefresh\nif ($WinRepairSync -and $WinRepairSync.ThemeMode -eq \u0027Auto\u0027) { Invoke-ThemeRefresh -Theme \u0027Auto\u0027 }"],"UndoScript":["Invoke-ExplorerRefresh\nif ($WinRepairSync -and $WinRepairSync.ThemeMode -eq \u0027Auto\u0027) { Invoke-ThemeRefresh -Theme \u0027Auto\u0027 }"]},"WPFToggleShowExt":{"Content":"Mostrar Extens\u00f5es de Arquivos","Description":"Exibe extens\u00f5es como .exe, .dll, .pdf e .zip no Explorador de Arquivos para maior seguran\u00e7a.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"HideFileExt","Value":"0","Type":"DWord","OriginalValue":"1","DefaultState":"false"}],"InvokeScript":["\n      Invoke-ExplorerRefresh -action \"restart\"\n      "],"UndoScript":["\n      Invoke-ExplorerRefresh -action \"restart\"\n      "]},"WPFToggleHiddenFiles":{"Content":"Mostrar Arquivos e Pastas Ocultas","Description":"Torna vis\u00edveis arquivos e pastas ocultas no Explorador de Arquivos.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"Hidden","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"false"}],"InvokeScript":["\n      Invoke-ExplorerRefresh -action \"restart\"\n      "],"UndoScript":["\n      Invoke-ExplorerRefresh -action \"restart\"\n      "]},"WPFToggleVerboseLogon":{"Content":"Mensagens Detalhadas de Boot/Logon","Description":"Mostra passo a passo qual servi\u00e7o ou etapa est\u00e1 carregando ao ligar e desligar o PC.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System","Name":"VerboseStatus","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"false"}]},"WPFToggleNewOutlook":{"Content":"Usar Novo Microsoft Outlook","Description":"Alterna o uso da nova vers\u00e3o do cliente Outlook integrada ao Windows.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\SOFTWARE\\Microsoft\\Office\\16.0\\Outlook\\Preferences","Name":"UseNewOutlook","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"true"},{"Path":"HKCU:\\Software\\Microsoft\\Office\\16.0\\Outlook\\Options\\General","Name":"HideNewOutlookToggle","Value":"0","Type":"DWord","OriginalValue":"1","DefaultState":"true"},{"Path":"HKCU:\\Software\\Policies\\Microsoft\\Office\\16.0\\Outlook\\Options\\General","Name":"DoNewOutlookAutoMigration","Value":"0","Type":"DWord","OriginalValue":"0","DefaultState":"false"},{"Path":"HKCU:\\Software\\Policies\\Microsoft\\Office\\16.0\\Outlook\\Preferences","Name":"NewOutlookMigrationUserSetting","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e","DefaultState":"true"}]},"WPFToggleScrollbars":{"Content":"Barras de Rolagem Sempre Vis\u00edveis","Description":"Impede o Windows de esconder automaticamente as barras de rolagem quando o mouse sai da janela.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Control Panel\\Accessibility","Name":"DynamicScrollbars","Value":"0","Type":"DWord","OriginalValue":"1","DefaultState":"false"}]},"WPFMultiplaneOverlay":{"Content":"Multiplane Overlay (MPO - GPU)","Description":"Controla a composi\u00e7\u00e3o de camadas de v\u00eddeo (desativar resolve engasgos/flicker em placas NVIDIA e AMD).","category":"Preferencias","panel":"2","Type":"Combobox","ComboItems":"Enabled|Disabled (Compatibility)|Fully Disabled","ComboDescriptions":{"Enabled":"Uses Windows\u0027 default overlay behavior.","Disabled (Compatibility)":"Disables MPO using OverlayTestMode=5, the less aggressive compatibility method.","Fully Disabled":"Disables MPO using OverlayTestMode=5 and DisableOverlays=1, the more aggressive method."},"registry":[{"Path":"HKLM:\\SOFTWARE\\Microsoft\\Windows\\Dwm","Name":"OverlayTestMode","Type":"DWord","DefaultValue":"0","Values":{"Enabled":"\u003cRemoveEntry\u003e","Disabled (Compatibility)":"5","Fully Disabled":"5"}},{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers","Name":"DisableOverlays","Type":"DWord","DefaultValue":"0","Values":{"Enabled":"\u003cRemoveEntry\u003e","Disabled (Compatibility)":"\u003cRemoveEntry\u003e","Fully Disabled":"1"}}]},"WPFToggleMouseAcceleration":{"Content":"Acelera\u00e7\u00e3o do Mouse (Precis\u00e3o)","Description":"Quando desativado (recomendado em jogos), garante movimento 1:1 fiel ao sensor f\u00edsico do mouse.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Control Panel\\Mouse","Name":"MouseSpeed","Value":"1","Type":"String","OriginalValue":"0","DefaultState":"true"},{"Path":"HKCU:\\Control Panel\\Mouse","Name":"MouseThreshold1","Value":"6","Type":"String","OriginalValue":"0","DefaultState":"true"},{"Path":"HKCU:\\Control Panel\\Mouse","Name":"MouseThreshold2","Value":"10","Type":"String","OriginalValue":"0","DefaultState":"true"}]},"WPFToggleNumLock":{"Content":"Num Lock Ligado ao Iniciar","Description":"Mant\u00e9m a tecla Num Lock automaticamente ativada na tela de login ao ligar o PC.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKU:\\.Default\\Control Panel\\Keyboard","Name":"InitialKeyboardIndicators","Value":"2","Type":"String","OriginalValue":"0","DefaultState":"false"},{"Path":"HKCU:\\Control Panel\\Keyboard","Name":"InitialKeyboardIndicators","Value":"2","Type":"String","OriginalValue":"0","DefaultState":"false"}]},"WPFToggleWindowSnapping":{"Content":"Ajuste Magn\u00e9tico de Janelas (Snap)","Description":"Ativa ou desativa o encaixe autom\u00e1tico de janelas ao arrast\u00e1-las para os cantos da tela.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Control Panel\\Desktop","Name":"WindowArrangementActive","Value":"1","Type":"String","OriginalValue":"0","DefaultState":"true"}]},"WPFToggleStandbyFix":{"Content":"Rede Ativa em Espera Moderna (S0)","Description":"Controla se o Wi-Fi/rede continua conectado durante o modo de espera de baixo consumo em notebooks.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\SOFTWARE\\Policies\\Microsoft\\Power\\PowerSettings\\f15576e8-98b7-4186-b944-eafa664402d9","Name":"ACSettingIndex","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"true"}]},"WPFToggleS3Sleep":{"Content":"Suspens\u00e3o Cl\u00e1ssica S3 (Em vez de Modern Standby)","Description":"Alterna entre espera moderna (S0) e suspens\u00e3o S3 tradicional que corta energia da CPU preservando a RAM.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Power","Name":"PlatformAoAcOverride","Value":"0","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e","DefaultState":"false"}]},"WPFToggleHideSettingsHome":{"Content":"P\u00e1gina Inicial das Configura\u00e7\u00f5es","Description":"Oculta ou exibe a tela inicial de recomenda\u00e7\u00f5es e propagandas no app Configura\u00e7\u00f5es.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer","Name":"SettingsPageVisibility","Value":"show:home","Type":"String","OriginalValue":"hide:home","DefaultState":"true"}]},"WPFToggleBingSearch":{"Content":"Pesquisa Web (Bing) no Menu Iniciar","Description":"Remove ou ativa resultados da internet (Bing) ao digitar no Menu Iniciar.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Search","Name":"BingSearchEnabled","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"true"}]},"WPFToggleLoginBlur":{"Content":"Desfoque Acr\u00edlico na Tela de Login","Description":"Ativa ou desativa o efeito de desfoque (blur) no papel de parede da tela de senha.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System","Name":"DisableAcrylicBackgroundOnLogon","Value":"0","Type":"DWord","OriginalValue":"1","DefaultState":"true"}]},"WPFToggleDisableLockscreen":{"Content":"Desativar Tela de Bloqueio","Description":"Pula a cortina de bloqueio e vai direto para a tela de senha ao ligar ou acordar o PC.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Personalization","Name":"NoLockScreen","Value":"1","Type":"DWord","OriginalValue":"\u003cRemoveEntry\u003e"}]},"WPFToggleStartMenuRecommendations":{"Content":"Recomenda\u00e7\u00f5es no Menu Iniciar","Description":"Controla a se\u00e7\u00e3o de arquivos/apps recomendados no Menu Iniciar do Windows 11.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKLM:\\SOFTWARE\\Microsoft\\PolicyManager\\current\\device\\Start","Name":"HideRecommendedSection","Value":"0","Type":"DWord","OriginalValue":"1","DefaultState":"true"},{"Path":"HKLM:\\SOFTWARE\\Microsoft\\PolicyManager\\current\\device\\Education","Name":"IsEducationEnvironment","Value":"0","Type":"DWord","OriginalValue":"1","DefaultState":"true"},{"Path":"HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Explorer","Name":"HideRecommendedSection","Value":"0","Type":"DWord","OriginalValue":"1","DefaultState":"true"}],"InvokeScript":["\n      Invoke-ExplorerRefresh -action \"restart\"\n      "],"UndoScript":["\n      Invoke-ExplorerRefresh -action \"restart\"\n      "]},"WPFToggleStickyKeys":{"Content":"Teclas de Ader\u00eancia (Sticky Keys)","Description":"Desativa o popup irritante das Teclas de Ader\u00eancia ao pressionar Shift 5 vezes.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Control Panel\\Accessibility\\StickyKeys","Name":"Flags","Value":"506","Type":"DWord","OriginalValue":"58","DefaultState":"true"}]},"WPFToggleTaskbarAlignment":{"Content":"\u00cdcones Centralizados na Barra de Tarefas","Description":"Alinha os \u00edcones da Barra de Tarefas do Windows 11 no Centro (ligado) ou \u00e0 Esquerda (desligado).","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"TaskbarAl","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"true"}],"InvokeScript":["\n      Invoke-ExplorerRefresh -action \"restart\"\n      "],"UndoScript":["\n      Invoke-ExplorerRefresh -action \"restart\"\n      "]},"WPFToggleTaskbarSearch":{"Content":"\u00cdcone de Pesquisa na Barra de Tarefas","Description":"Mostra ou oculta a lupa/caixa de pesquisa na barra de tarefas.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Search","Name":"SearchboxTaskbarMode","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"true"}]},"WPFToggleTaskView":{"Content":"Bot\u00e3o Vis\u00e3o de Tarefas na Barra","Description":"Mostra ou oculta o bot\u00e3o de m\u00faltiplas \u00e1reas de trabalho (Task View) na barra de tarefas.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced","Name":"ShowTaskViewButton","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"true"}]},"WPFToggleGameMode":{"Content":"Modo de Jogo do Windows (Game Mode)","Description":"Prioriza recursos de CPU/GPU e reduz processos em segundo plano enquanto voc\u00ea joga.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKCU:\\Software\\Microsoft\\GameBar","Name":"AllowAutoGameMode","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"true"},{"Path":"HKCU:\\Software\\Microsoft\\GameBar","Name":"AutoGameModeEnabled","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"true"}]},"WPFToggleLongPaths":{"Content":"Habilitar Caminhos Longos (\u003e260 chars)","Description":"Permite que o Windows e softwares manipulem pastas e arquivos com caminhos maiores que 260 caracteres.","category":"Preferencias","panel":"2","Type":"Toggle","registry":[{"Path":"HKLM:\\SYSTEM\\CurrentControlSet\\Control\\FileSystem","Name":"LongPathsEnabled","Value":"1","Type":"DWord","OriginalValue":"0","DefaultState":"false"}]},"WPFOOSUbutton":{"Content":"O\u0026O ShutUp10++ - Run","Description":"Baixa O\u0026O ShutUp10++ (~82 MB) em %LocalAppData%\\WinRepairPro e executa diretamente.","category":"Avancados","panel":"1","Type":"Button"},"WPFchangedns":{"Content":"DNS - Set to:","category":"Avancados","panel":"1","Type":"Combobox","ComboItems":"Default DHCP Fastest Google Cloudflare Cloudflare_Malware Cloudflare_Malware_Adult Open_DNS Quad9 AdGuard_Ads_Trackers AdGuard_Ads_Trackers_Malware_Adult"},"WPFAddUltPerf":{"Content":"Ultimate Performance Profile - Enable","category":"Energia","panel":"2","Type":"Button","ButtonWidth":"300"},"WPFRemoveUltPerf":{"Content":"Ultimate Performance Profile - Disable","category":"Energia","panel":"2","Type":"Button","ButtonWidth":"300"},"TweaksGameDvr":{"Content":"GameDVR \u0026 Grava\u00e7\u00e3o em Fundo - Desativar","Description":"Desativa captura oculta do GameDVR para reduzir input lag e quedas de FPS em jogos.","category":"Essenciais","Type":"CheckBox","InvokeScript":["Disable-GameDvrAndBackgroundRecording"],"UndoScript":["Set-RegistryEntry -Path \u0027HKCU:\\System\\GameConfigStore\u0027 -Name \u0027GameDVR_Enabled\u0027 -Type DWord -Value 1\nSet-RegistryEntry -Path \u0027HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR\u0027 -Name \u0027AllowGameDVR\u0027 -Type DWord -Value 1"]},"TweaksSsdTrim":{"Content":"Otimizar Unidades SSD (Executar TRIM)","Description":"Executa comando ReTrim nos SSDs para manter velocidade m\u00e1xima de escrita e sa\u00fade dos blocos.","category":"Essenciais","Type":"CheckBox","InvokeScript":["Optimize-SsdTrim"],"UndoScript":["Write-ToolLog \u0027TRIM e uma otimizacao pontual e nao requer reversao.\u0027 \u0027INFO\u0027"]},"TweaksFastMenus":{"Content":"Acelerar Menus \u0026 Prioridade de CPU","Description":"Reduz MenuShowDelay para 10ms e ajusta Win32PrioritySeparation=38 para interface instant\u00e2nea.","category":"Essenciais","Type":"CheckBox","InvokeScript":["Optimize-SystemResponsivenessAndVisuals"],"UndoScript":["Set-RegistryEntry -Path \u0027HKCU:\\Control Panel\\Desktop\u0027 -Name \u0027MenuShowDelay\u0027 -Type String -Value \u0027400\u0027\nSet-RegistryEntry -Path \u0027HKLM:\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl\u0027 -Name \u0027Win32PrioritySeparation\u0027 -Type DWord -Value 2"]},"TweaksTakeOwnership":{"Content":"Adicionar \"Obter Acesso Total\" no Bot\u00e3o Direito","Description":"Adiciona atalho Take Ownership no menu de contexto para assumir posse de pastas e arquivos protegidos.","category":"Avancados","Type":"CheckBox","InvokeScript":["Add-TakeOwnershipContextMenu"],"UndoScript":["Remove-Item -Path \u0027HKCR:\\*\\shell\\runas\u0027 -Recurse -Force -ErrorAction SilentlyContinue\nRemove-Item -Path \u0027HKCR:\\Directory\\shell\\runas\u0027 -Recurse -Force -ErrorAction SilentlyContinue"]},"TweaksTcpGaming":{"Content":"Otimizar Lat\u00eancia TCP/IP (AutoTune, RSS, ECN)","Description":"Ajusta par\u00e2metros TCP, RSS, ECN e NetworkThrottlingIndex para menor ping e m\u00e1xima taxa de transfer\u00eancia.","category":"Essenciais","Type":"CheckBox","InvokeScript":["Optimize-TcpLatencyAndThroughput"],"UndoScript":["Set-RegistryEntry -Path \u0027HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\u0027 -Name \u0027NetworkThrottlingIndex\u0027 -Type DWord -Value 10\nSet-RegistryEntry -Path \u0027HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\u0027 -Name \u0027SystemResponsiveness\u0027 -Type DWord -Value 20"]},"TweaksFlushDns":{"Content":"Limpar Cache DNS Local","Description":"Limpa o cache do resolvedor DNS do Windows para corrigir rotas e sites desatualizados.","category":"Essenciais","Type":"CheckBox","InvokeScript":["Invoke-FlushDns"],"UndoScript":["Write-ToolLog \u0027Limpeza de cache DNS nao requer reversao.\u0027 \u0027INFO\u0027"]},"TweaksRenewDhcp":{"Content":"Renovar Concess\u00e3o de IP / DHCP","Description":"Libera o IP local atual e solicita um novo endere\u00e7o IP ao roteador/servidor DHCP.","category":"Avancados","Type":"CheckBox","InvokeScript":["Invoke-RenewDhcp"],"UndoScript":["Write-ToolLog \u0027Renovacao DHCP nao requer reversao.\u0027 \u0027INFO\u0027"]},"TweaksResetNetStack":{"Content":"Redefinir Pilha de Rede Completa","Description":"Executa reset de Winsock, TCP/IP, IPv4/IPv6, Proxy WinHTTP, cache ARP e regras padr\u00e3o de Firewall.","category":"Avancados","Type":"CheckBox","InvokeScript":["Invoke-ResetNetworkStack"],"UndoScript":["Write-ToolLog \u0027Reset de pilha de rede nao possui reversao automatica.\u0027 \u0027WARN\u0027"]}}
 '@ | ConvertFrom-Json
 }
 
@@ -4908,35 +5126,118 @@ Restart-Computer -Force;
 $embeddedXaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="WinRepair &amp; Tweaks Pro"
-        Height="840" Width="1280"
-        MinHeight="680" MinWidth="1060"
+        Title="WinRepair &amp; Tweaks Pro v3.1"
+        Height="860" Width="1300"
+        MinHeight="700" MinWidth="1080"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource BrushBgApp}"
         Foreground="{DynamicResource BrushTextPrimary}"
         FontFamily="Segoe UI, Segoe UI Emoji"
-        FontSize="13">
+        FontSize="13"
+        ToolTipService.InitialShowDelay="150"
+        ToolTipService.BetweenShowDelay="50"
+        ToolTipService.ShowDuration="15000">
 
     <Window.Resources>
-        <!-- Paleta Din&#xE2;mica Inicial (Midnight Dark) -->
-        <SolidColorBrush x:Key="BrushBgApp" Color="#11111B"/>
-        <SolidColorBrush x:Key="BrushBgSidebar" Color="#161624"/>
-        <SolidColorBrush x:Key="BrushBgSurface" Color="#1E1E2E"/>
-        <SolidColorBrush x:Key="BrushBgCard" Color="#24273A"/>
-        <SolidColorBrush x:Key="BrushBgCardAlt" Color="#2A2D42"/>
-        <SolidColorBrush x:Key="BrushBgInput" Color="#181825"/>
-        <SolidColorBrush x:Key="BrushBorder" Color="#363A4F"/>
-        <SolidColorBrush x:Key="BrushBorderHover" Color="#89B4FA"/>
-        <SolidColorBrush x:Key="BrushTextPrimary" Color="#CDD6F4"/>
-        <SolidColorBrush x:Key="BrushTextMuted" Color="#9399B2"/>
-        <SolidColorBrush x:Key="BrushAccent" Color="#89B4FA"/>
-        <SolidColorBrush x:Key="BrushAccentHover" Color="#B4BEFE"/>
-        <SolidColorBrush x:Key="BrushAccentText" Color="#11111B"/>
-        <SolidColorBrush x:Key="BrushSuccess" Color="#A6E3A1"/>
+        <!-- Paleta Verde &#xC1;gua Nocturne (Din&#xE2;mica) -->
+        <SolidColorBrush x:Key="BrushBgApp" Color="#07110D"/>
+        <SolidColorBrush x:Key="BrushBgSidebar" Color="#0A1712"/>
+        <SolidColorBrush x:Key="BrushBgSurface" Color="#0E2019"/>
+        <SolidColorBrush x:Key="BrushBgCard" Color="#12281F"/>
+        <SolidColorBrush x:Key="BrushBgCardAlt" Color="#173428"/>
+        <SolidColorBrush x:Key="BrushBgCardHover" Color="#1D4233"/>
+        <SolidColorBrush x:Key="BrushBgInput" Color="#091510"/>
+        <SolidColorBrush x:Key="BrushBrandStart" Color="#005227"/>
+        <SolidColorBrush x:Key="BrushBrandEnd" Color="#038554"/>
+        <SolidColorBrush x:Key="BrushBorder" Color="#1F4636"/>
+        <SolidColorBrush x:Key="BrushBorderStrong" Color="#038554"/>
+        <SolidColorBrush x:Key="BrushBorderHover" Color="#68DDBD"/>
+        <SolidColorBrush x:Key="BrushTextPrimary" Color="#E9FBF5"/>
+        <SolidColorBrush x:Key="BrushTextSecondary" Color="#A4FFF7"/>
+        <SolidColorBrush x:Key="BrushTextMuted" Color="#83B8A6"/>
+        <SolidColorBrush x:Key="BrushAccent" Color="#03BB85"/>
+        <SolidColorBrush x:Key="BrushAccentHover" Color="#68DDBD"/>
+        <SolidColorBrush x:Key="BrushAccentDeep" Color="#005227"/>
+        <SolidColorBrush x:Key="BrushAccentText" Color="#031A10"/>
+        <SolidColorBrush x:Key="BrushSuccess" Color="#68DDBD"/>
         <SolidColorBrush x:Key="BrushWarning" Color="#F9E2AF"/>
         <SolidColorBrush x:Key="BrushDanger" Color="#F38BA8"/>
-        <SolidColorBrush x:Key="BrushConsoleBg" Color="#0D0D14"/>
-        <SolidColorBrush x:Key="BrushConsoleFg" Color="#A6E3A1"/>
+        <SolidColorBrush x:Key="BrushConsoleBg" Color="#050C09"/>
+        <SolidColorBrush x:Key="BrushConsoleFg" Color="#A4FFF7"/>
+
+        <!-- ToolTip Global Estilizado -->
+        <Style TargetType="ToolTip">
+            <Setter Property="HasDropShadow" Value="True"/>
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Placement" Value="Mouse"/>
+            <Setter Property="VerticalOffset" Value="14"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToolTip">
+                        <Border Background="{DynamicResource BrushBgSurface}"
+                                BorderBrush="{DynamicResource BrushAccent}"
+                                BorderThickness="1.5"
+                                CornerRadius="8"
+                                Padding="12,9"
+                                MaxWidth="360">
+                            <Border.Effect>
+                                <DropShadowEffect Color="#000000" BlurRadius="14" ShadowDepth="4" Opacity="0.55"/>
+                            </Border.Effect>
+                            <ContentPresenter>
+                                <ContentPresenter.Resources>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
+                                        <Setter Property="FontSize" Value="12"/>
+                                        <Setter Property="TextWrapping" Value="Wrap"/>
+                                    </Style>
+                                </ContentPresenter.Resources>
+                            </ContentPresenter>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ScrollBar Slim Verde &#xC1;gua -->
+        <Style TargetType="ScrollBar">
+            <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Width" Value="8"/>
+            <Setter Property="MinWidth" Value="8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Background="Transparent">
+                            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                <Track.Thumb>
+                                    <Thumb Margin="1,0">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border x:Name="ThumbBd"
+                                                        Background="{DynamicResource BrushBorder}"
+                                                        CornerRadius="4"/>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="ThumbBd" Property="Background" Value="{DynamicResource BrushAccent}"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Orientation" Value="Horizontal">
+                                <Setter Property="Height" Value="8"/>
+                                <Setter Property="MinHeight" Value="8"/>
+                                <Setter Property="Width" Value="Auto"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
         <!-- Bot&#xE3;o Padr&#xE3;o -->
         <Style TargetType="Button">
@@ -4956,17 +5257,17 @@ $embeddedXaml = @'
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6"
+                                CornerRadius="7"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
-                                <Setter TargetName="Bd" Property="Opacity" Value="0.92"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushAccentHover}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushBgCardHover}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bd" Property="Opacity" Value="0.78"/>
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.82"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="Bd" Property="Opacity" Value="0.45"/>
@@ -4977,31 +5278,89 @@ $embeddedXaml = @'
             </Setter>
         </Style>
 
-        <!-- Bot&#xE3;o Prim&#xE1;rio Destaque -->
+        <!-- Bot&#xE3;o Prim&#xE1;rio Verde &#xC1;gua -->
         <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Background" Value="{DynamicResource BrushAccent}"/>
             <Setter Property="Foreground" Value="{DynamicResource BrushAccentText}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushAccentHover}"/>
             <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="7"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushAccentHover}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushTextSecondary}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
-        <!-- Bot&#xE3;o Sucesso -->
+        <!-- Bot&#xE3;o Secund&#xE1;rio Destaque Esmeralda Escuro -->
         <Style x:Key="SuccessButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Background" Value="#25382B"/>
-            <Setter Property="Foreground" Value="{DynamicResource BrushSuccess}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource BrushSuccess}"/>
+            <Setter Property="Background" Value="{DynamicResource BrushAccentDeep}"/>
+            <Setter Property="Foreground" Value="{DynamicResource BrushTextSecondary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
         </Style>
 
         <!-- Bot&#xE3;o Perigo -->
         <Style x:Key="DangerButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Background" Value="#3A222B"/>
+            <Setter Property="Background" Value="#3B1A24"/>
             <Setter Property="Foreground" Value="{DynamicResource BrushDanger}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource BrushDanger}"/>
         </Style>
 
+        <!-- Bot&#xE3;o Card para os 3 Perfis (Desktop / Notebook / All) -->
+        <Style x:Key="PresetCardButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource BrushBgCardAlt}"/>
+            <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushBorderStrong}"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
+            <Setter Property="Padding" Value="14,9"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="9"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushTextSecondary}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushBgCardHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.84"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Chip / P&#xED;lula de Filtro -->
         <Style x:Key="PillButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Padding" Value="11,4"/>
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="Margin" Value="2"/>
             <Setter Property="Template">
@@ -5011,13 +5370,14 @@ $embeddedXaml = @'
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="1"
-                                CornerRadius="13"
+                                CornerRadius="14"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushAccentHover}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushBgCardHover}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -5029,21 +5389,22 @@ $embeddedXaml = @'
         <Style x:Key="NavRadioButtonStyle" TargetType="RadioButton">
             <Setter Property="Foreground" Value="{DynamicResource BrushTextMuted}"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontSize" Value="12.5"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="12,10"/>
-            <Setter Property="Margin" Value="6,2"/>
+            <Setter Property="Padding" Value="11,9"/>
+            <Setter Property="Margin" Value="2,2"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
                         <Border x:Name="Bd"
                                 Background="{TemplateBinding Background}"
-                                CornerRadius="7"
+                                CornerRadius="8"
                                 BorderThickness="3,0,0,0"
                                 BorderBrush="Transparent"
                                 Padding="{TemplateBinding Padding}">
-                            <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -5051,9 +5412,9 @@ $embeddedXaml = @'
                                 <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushBgCardAlt}"/>
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
-                                <Setter Property="Foreground" Value="{DynamicResource BrushAccent}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushAccentDeep}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushTextSecondary}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource BrushTextSecondary}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -5069,7 +5430,7 @@ $embeddedXaml = @'
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="9,6"/>
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="CaretBrush" Value="{DynamicResource BrushAccent}"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource BrushAccentHover}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
@@ -5077,7 +5438,7 @@ $embeddedXaml = @'
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6">
+                                CornerRadius="7">
                             <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -5090,42 +5451,65 @@ $embeddedXaml = @'
             </Setter>
         </Style>
 
-        <!-- CheckBox Moderno com Vetor Check -->
+        <!-- CheckBox Interativo com Linha de Destaque no Hover + Indicador (?) -->
         <Style TargetType="CheckBox">
             <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
-            <Setter Property="FontSize" Value="12.5"/>
-            <Setter Property="Margin" Value="2,4"/>
+            <Setter Property="FontSize" Value="12.2"/>
+            <Setter Property="Margin" Value="0,1"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="CheckBox">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <Border x:Name="Box"
-                                    Width="17" Height="17"
-                                    CornerRadius="4"
-                                    Background="{DynamicResource BrushBgInput}"
-                                    BorderBrush="{DynamicResource BrushBorder}"
-                                    BorderThickness="1.5"
-                                    Margin="0,0,8,0"
-                                    VerticalAlignment="Center">
-                                <Path x:Name="CheckMark"
-                                      Data="M 3 8 L 6.5 11.5 L 13 4.5"
-                                      Stroke="{DynamicResource BrushAccentText}"
-                                      StrokeThickness="2.2"
-                                      StrokeStartLineCap="Round"
-                                      StrokeEndLineCap="Round"
-                                      Visibility="Collapsed"/>
-                            </Border>
-                            <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True"/>
-                        </StackPanel>
+                        <Border x:Name="RowBd"
+                                Background="Transparent"
+                                CornerRadius="6"
+                                Padding="7,5">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Border x:Name="Box"
+                                        Grid.Column="0"
+                                        Width="18" Height="18"
+                                        CornerRadius="4"
+                                        Background="{DynamicResource BrushBgInput}"
+                                        BorderBrush="{DynamicResource BrushBorder}"
+                                        BorderThickness="1.5"
+                                        Margin="0,0,9,0"
+                                        VerticalAlignment="Center">
+                                    <Path x:Name="CheckMark"
+                                          Data="M 3.5 8.5 L 7 12 L 13.5 4.5"
+                                          Stroke="{DynamicResource BrushAccentText}"
+                                          StrokeThickness="2.4"
+                                          StrokeStartLineCap="Round"
+                                          StrokeEndLineCap="Round"
+                                          Visibility="Collapsed"/>
+                                </Border>
+                                <ContentPresenter Grid.Column="1" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                                <TextBlock x:Name="HintBadge"
+                                           Grid.Column="2"
+                                           Text="?"
+                                           FontSize="10.5"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource BrushAccentHover}"
+                                           VerticalAlignment="Center"
+                                           Margin="8,0,2,0"
+                                           Opacity="0"/>
+                            </Grid>
+                        </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="Box" Property="Background" Value="{DynamicResource BrushAccent}"/>
-                                <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                                <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource BrushAccentHover}"/>
                                 <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                                <Setter TargetName="RowBd" Property="Background" Value="{DynamicResource BrushBgCardHover}"/>
+                                <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource BrushAccentHover}"/>
+                                <Setter TargetName="HintBadge" Property="Opacity" Value="0.85"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -5133,45 +5517,48 @@ $embeddedXaml = @'
             </Setter>
         </Style>
 
-        <!-- Toggle Switch Deslizante -->
+        <!-- Toggle Switch Deslizante com Linha de Destaque no Hover -->
         <Style x:Key="ToggleSwitchStyle" TargetType="CheckBox">
             <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Margin" Value="0,4"/>
+            <Setter Property="Margin" Value="0,1"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="CheckBox">
-                        <Grid Margin="0,1">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <ContentPresenter Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <Border x:Name="Track"
-                                    Grid.Column="1"
-                                    Width="40" Height="20"
-                                    CornerRadius="10"
-                                    Background="{DynamicResource BrushBgInput}"
-                                    BorderBrush="{DynamicResource BrushBorder}"
-                                    BorderThickness="1"
-                                    Padding="2">
-                                <Border x:Name="Thumb"
-                                        Width="14" Height="14"
-                                        CornerRadius="7"
-                                        Background="{DynamicResource BrushTextMuted}"
-                                        HorizontalAlignment="Left"/>
-                            </Border>
-                        </Grid>
+                        <Border x:Name="RowBd" Background="Transparent" CornerRadius="6" Padding="7,5">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <Border x:Name="Track"
+                                        Grid.Column="1"
+                                        Width="42" Height="22"
+                                        CornerRadius="11"
+                                        Background="{DynamicResource BrushBgInput}"
+                                        BorderBrush="{DynamicResource BrushBorder}"
+                                        BorderThickness="1.2"
+                                        Padding="2.5">
+                                    <Border x:Name="Thumb"
+                                            Width="15" Height="15"
+                                            CornerRadius="7.5"
+                                            Background="{DynamicResource BrushTextMuted}"
+                                            HorizontalAlignment="Left"/>
+                                </Border>
+                            </Grid>
+                        </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="Track" Property="Background" Value="{DynamicResource BrushAccent}"/>
-                                <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                                <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource BrushAccentHover}"/>
                                 <Setter TargetName="Thumb" Property="Background" Value="{DynamicResource BrushAccentText}"/>
                                 <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                                <Setter TargetName="RowBd" Property="Background" Value="{DynamicResource BrushBgCardHover}"/>
+                                <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource BrushAccentHover}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -5179,11 +5566,11 @@ $embeddedXaml = @'
             </Setter>
         </Style>
 
-        <!-- ComboBox Moderno Dark/Light -->
+        <!-- ComboBox Estilizado -->
         <Style TargetType="ComboBoxItem">
             <Setter Property="Background" Value="{DynamicResource BrushBgCard}"/>
             <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
-            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Padding" Value="9,6"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Style.Triggers>
                 <Trigger Property="IsHighlighted" Value="True">
@@ -5199,7 +5586,7 @@ $embeddedXaml = @'
             <Setter Property="BorderBrush" Value="{DynamicResource BrushBorder}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="8,5"/>
-            <Setter Property="Height" Value="32"/>
+            <Setter Property="Height" Value="34"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -5215,14 +5602,14 @@ $embeddedXaml = @'
                                                 Background="{DynamicResource BrushBgInput}"
                                                 BorderBrush="{DynamicResource BrushBorder}"
                                                 BorderThickness="1"
-                                                CornerRadius="6">
+                                                CornerRadius="7">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="26"/>
+                                                    <ColumnDefinition Width="28"/>
                                                 </Grid.ColumnDefinitions>
-                                                <Path Grid.Column="1" Data="M 0 0 L 4 4 L 8 0 Z"
-                                                      Fill="{DynamicResource BrushTextMuted}"
+                                                <Path Grid.Column="1" Data="M 0 0 L 4.5 4.5 L 9 0 Z"
+                                                      Fill="{DynamicResource BrushAccentHover}"
                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </Grid>
                                         </Border>
@@ -5238,7 +5625,7 @@ $embeddedXaml = @'
                                               IsHitTestVisible="False"
                                               Content="{TemplateBinding SelectionBoxItem}"
                                               ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
-                                              Margin="10,4,28,4"
+                                              Margin="10,4,30,4"
                                               VerticalAlignment="Center"
                                               HorizontalAlignment="Left"/>
                             <Popup x:Name="Popup"
@@ -5253,9 +5640,9 @@ $embeddedXaml = @'
                                       MaxHeight="{TemplateBinding MaxDropDownHeight}">
                                     <Border x:Name="DropDownBorder"
                                             Background="{DynamicResource BrushBgCard}"
-                                            BorderThickness="1"
-                                            CornerRadius="6"
-                                            BorderBrush="{DynamicResource BrushBorder}">
+                                            BorderThickness="1.5"
+                                            CornerRadius="7"
+                                            BorderBrush="{DynamicResource BrushAccent}">
                                         <ScrollViewer Margin="2" SnapsToDevicePixels="True">
                                             <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
                                         </ScrollViewer>
@@ -5268,7 +5655,7 @@ $embeddedXaml = @'
             </Setter>
         </Style>
 
-        <!-- Expander Estilizado -->
+        <!-- Expander Limpo Verde &#xC1;gua -->
         <Style TargetType="Expander">
             <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
             <Setter Property="Background" Value="{DynamicResource BrushBgCard}"/>
@@ -5276,6 +5663,61 @@ $embeddedXaml = @'
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Margin" Value="0,0,0,8"/>
             <Setter Property="IsExpanded" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Expander">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="9">
+                            <DockPanel>
+                                <ToggleButton x:Name="HeaderToggle"
+                                              DockPanel.Dock="Top"
+                                              IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                              Cursor="Hand">
+                                    <ToggleButton.Template>
+                                        <ControlTemplate TargetType="ToggleButton">
+                                            <Border x:Name="HdrBd" Background="{DynamicResource BrushBgCardAlt}" CornerRadius="8,8,0,0" Padding="10,7">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <ContentPresenter Grid.Column="0"
+                                                                      Content="{Binding Header, RelativeSource={RelativeSource AncestorType=Expander}}"
+                                                                      VerticalAlignment="Center"/>
+                                                    <Path x:Name="Arrow"
+                                                          Grid.Column="1"
+                                                          Data="M 0 0 L 5 5 L 10 0"
+                                                          Stroke="{DynamicResource BrushAccentHover}"
+                                                          StrokeThickness="2"
+                                                          StrokeStartLineCap="Round"
+                                                          StrokeEndLineCap="Round"
+                                                          VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="HdrBd" Property="Background" Value="{DynamicResource BrushBgCardHover}"/>
+                                                </Trigger>
+                                                <Trigger Property="IsChecked" Value="False">
+                                                    <Setter TargetName="HdrBd" Property="CornerRadius" Value="8"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </ToggleButton.Template>
+                                </ToggleButton>
+                                <ContentPresenter x:Name="ExpandSite" Visibility="Collapsed"/>
+                            </DockPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="True">
+                                <Setter TargetName="ExpandSite" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <!-- Card Base -->
@@ -5291,7 +5733,7 @@ $embeddedXaml = @'
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="232"/>
+            <ColumnDefinition Width="244"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
@@ -5299,62 +5741,110 @@ $embeddedXaml = @'
         <!-- SIDEBAR FIXA                                                     -->
         <!-- ================================================================ -->
         <Border Grid.Column="0" Background="{DynamicResource BrushBgSidebar}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="0,0,1,0">
-            <Grid Margin="10,14">
+            <Grid Margin="10,12">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Logo & Badges -->
-                <StackPanel Grid.Row="0" Margin="6,2,6,16">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="&#x26A1; WinRepair Pro" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}"/>
-                        <Border Background="{DynamicResource BrushBgCardAlt}" CornerRadius="5" Padding="6,2" Margin="8,0,0,0" VerticalAlignment="Center">
-                            <TextBlock Text="v3.0" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrushSuccess}"/>
+                <!-- Cart&#xE3;o da Marca com Gradiente Verde &#xC1;gua -->
+                <Border Grid.Row="0" CornerRadius="10" Padding="12,11" Margin="2,0,2,14" BorderBrush="{DynamicResource BrushAccent}" BorderThickness="1">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#005227" Offset="0"/>
+                            <GradientStop Color="#038554" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="&#x26A1; WinRepair Pro" FontSize="17" FontWeight="Bold" Foreground="#A4FFF7"/>
+                            <Border Grid.Column="1" Background="#005227" BorderBrush="#68DDBD" BorderThickness="1" CornerRadius="5" Padding="6,1" VerticalAlignment="Center">
+                                <TextBlock Text="v3.1" FontSize="10" FontWeight="Bold" Foreground="#A4FFF7"/>
+                            </Border>
+                        </Grid>
+                        <TextBlock Text="Otimiza&#xE7;&#xE3;o, Rede &amp; Diagn&#xF3;stico" FontSize="11" Foreground="#E9FBF5" Opacity="0.9" Margin="0,3,0,7"/>
+                        <Border Background="#07110D" Opacity="0.9" CornerRadius="5" Padding="7,3" HorizontalAlignment="Left">
+                            <TextBlock Text="&#x1F6E1; Administrador Ativo" FontSize="10.5" FontWeight="SemiBold" Foreground="#68DDBD"/>
                         </Border>
                     </StackPanel>
-                    <TextBlock Text="Su&#xED;te Completa de Sistema" FontSize="11" Foreground="{DynamicResource BrushTextMuted}" Margin="0,3,0,8"/>
-                    <Border Background="#1B2E25" BorderBrush="{DynamicResource BrushSuccess}" BorderThickness="1" CornerRadius="5" Padding="7,3" HorizontalAlignment="Left">
-                        <TextBlock Text="&#x1F6E1; Modo Administrador" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource BrushSuccess}"/>
-                    </Border>
-                </StackPanel>
+                </Border>
 
-                <!-- Menu de Navega&#xE7;&#xE3;o -->
-                <StackPanel Grid.Row="1">
-                    <TextBlock Text="FERRAMENTAS" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrushTextMuted}" Margin="12,0,0,6"/>
-                    <RadioButton x:Name="navInstall" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x1F4E6;  Softwares (239)"/>
-                    <RadioButton x:Name="navTweaks" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x26A1;  Tweaks &amp; Perfis" IsChecked="True"/>
-                    <RadioButton x:Name="navAppx" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x1F9F9;  AppX &amp; Bloatware"/>
-                    <RadioButton x:Name="navNetwork" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x1F310;  Rede &amp; Diagn&#xF3;stico"/>
-                    <RadioButton x:Name="navConfig" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x2699;  Recursos &amp; Reparos"/>
-                    <RadioButton x:Name="navUpdates" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x1F504;  Windows Update"/>
-                    <RadioButton x:Name="navIso" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x1F4BF;  Criador de ISO &amp; USB"/>
-                </StackPanel>
+                <!-- Menu de Navega&#xE7;&#xE3;o Agrupado -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="OTIMIZA&#xC7;&#xC3;O &amp; APPS" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrushTextMuted}" Margin="10,2,0,4"/>
+                        <RadioButton x:Name="navTweaks" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" IsChecked="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="&#x26A1;  Tweaks &amp; Perfis"/>
+                                <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" CornerRadius="8" Padding="6,1"><TextBlock Text="73" FontSize="10" Foreground="{DynamicResource BrushAccentHover}"/></Border>
+                            </Grid>
+                        </RadioButton>
+                        <RadioButton x:Name="navInstall" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="&#x1F4E6;  Softwares"/>
+                                <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" CornerRadius="8" Padding="6,1"><TextBlock Text="239" FontSize="10" Foreground="{DynamicResource BrushAccentHover}"/></Border>
+                            </Grid>
+                        </RadioButton>
+                        <RadioButton x:Name="navAppx" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="&#x1F9F9;  AppX &amp; Bloatware"/>
+                                <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" CornerRadius="8" Padding="6,1"><TextBlock Text="34" FontSize="10" Foreground="{DynamicResource BrushAccentHover}"/></Border>
+                            </Grid>
+                        </RadioButton>
+
+                        <TextBlock Text="REDE &amp; MANUTEN&#xC7;&#xC3;O" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrushTextMuted}" Margin="10,12,0,4"/>
+                        <RadioButton x:Name="navNetwork" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="&#x1F310;  Rede &amp; Diagn&#xF3;stico"/>
+                                <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" CornerRadius="8" Padding="6,1"><TextBlock Text="14+" FontSize="10" Foreground="{DynamicResource BrushAccentHover}"/></Border>
+                            </Grid>
+                        </RadioButton>
+                        <RadioButton x:Name="navConfig" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}">
+                            <TextBlock Text="&#x2699;  Recursos &amp; Reparos"/>
+                        </RadioButton>
+                        <RadioButton x:Name="navUpdates" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}">
+                            <TextBlock Text="&#x1F504;  Windows Update"/>
+                        </RadioButton>
+
+                        <TextBlock Text="IMAGEM DO WINDOWS" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrushTextMuted}" Margin="10,12,0,4"/>
+                        <RadioButton x:Name="navIso" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}">
+                            <TextBlock Text="&#x1F4BF;  Criador de ISO &amp; USB"/>
+                        </RadioButton>
+                    </StackPanel>
+                </ScrollViewer>
 
                 <!-- Rodap&#xE9; da Sidebar -->
                 <StackPanel Grid.Row="2" Margin="2,8,2,0">
-                    <Border Background="{DynamicResource BrushBgCard}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="8">
+                    <Border Background="{DynamicResource BrushBgCard}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1" CornerRadius="9" Padding="8">
                         <StackPanel>
-                            <TextBlock Text="CONFIGURA&#xC7;&#xD5;ES &amp; VISUAL" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrushTextMuted}" Margin="2,0,0,6"/>
+                            <TextBlock Text="PERFIL &amp; APAR&#xCA;NCIA" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrushTextMuted}" Margin="3,0,0,5"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <Button x:Name="btnImportConfig" Grid.Column="0" Content="&#x1F4E5; Importar" FontSize="11" Padding="6,5" ToolTip="Importa sele&#xE7;&#xE3;o (.json) sem executar"/>
-                                <Button x:Name="btnExportConfig" Grid.Column="1" Content="&#x1F4E4; Exportar" FontSize="11" Padding="6,5" ToolTip="Exporta sele&#xE7;&#xF5;es atuais para .json"/>
+                                <Button x:Name="btnImportConfig" Grid.Column="0" Content="&#x1F4E5; Importar" FontSize="11" Padding="6,5"/>
+                                <Button x:Name="btnExportConfig" Grid.Column="1" Content="&#x1F4E4; Exportar" FontSize="11" Padding="6,5"/>
                             </Grid>
                             <Button x:Name="btnEnvReport" Content="&#x1F4CB; Relat&#xF3;rio do Ambiente" FontSize="11" Padding="6,5"/>
-                            <Grid Margin="0,4,0,0">
+                            <Grid Margin="0,2,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <Button x:Name="btnToggleTheme" Grid.Column="0" Content="&#x1F317; Tema Claro/Escuro" FontSize="11" Padding="6,5"/>
-                                <Button x:Name="btnFontDown" Grid.Column="1" Content="A-" FontSize="11" Padding="8,5" ToolTip="Diminuir Fonte"/>
-                                <Button x:Name="btnFontUp" Grid.Column="2" Content="A+" FontSize="11" Padding="8,5" ToolTip="Aumentar Fonte"/>
+                                <Button x:Name="btnToggleTheme" Grid.Column="0" Content="&#x1F317; Alternar Tema" FontSize="11" Padding="6,5"/>
+                                <Button x:Name="btnFontDown" Grid.Column="1" Content="A-" FontSize="11" Padding="8,5"/>
+                                <Button x:Name="btnFontUp" Grid.Column="2" Content="A+" FontSize="11" Padding="8,5"/>
                             </Grid>
                         </StackPanel>
                     </Border>
@@ -5363,14 +5853,15 @@ $embeddedXaml = @'
         </Border>
 
         <!-- ================================================================ -->
-        <!-- &#xC1;REA PRINCIPAL (HEADER + CONTE&#xDA;DO + SPLITTER + CONSOLE)          -->
+        <!-- &#xC1;REA PRINCIPAL (HEADER + VIEWS + HOVER BAR + SPLITTER + CONSOLE) -->
         <!-- ================================================================ -->
         <Grid Grid.Column="1" Background="{DynamicResource BrushBgApp}">
             <Grid.RowDefinitions>
-                <RowDefinition Height="64"/>
+                <RowDefinition Height="66"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="5"/>
-                <RowDefinition x:Name="rowConsole" Height="175" MinHeight="38"/>
+                <RowDefinition x:Name="rowConsole" Height="155" MinHeight="38"/>
             </Grid.RowDefinitions>
 
             <!-- HEADER TOPBAR -->
@@ -5378,44 +5869,45 @@ $embeddedXaml = @'
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="260"/>
+                        <ColumnDefinition Width="270"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                        <TextBlock x:Name="txtSectionTitle" Text="Tweaks &amp; Perfis Recomendados" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource BrushTextPrimary}"/>
-                        <TextBlock x:Name="txtSectionSubtitle" Text="Selecione um perfil para marcar as op&#xE7;&#xF5;es ou ajuste manualmente antes de aplicar" FontSize="11.5" Foreground="{DynamicResource BrushTextMuted}"/>
+                        <TextBlock x:Name="txtSectionTitle" Text="Tweaks &amp; Perfis Recomendados" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}"/>
+                        <TextBlock x:Name="txtSectionSubtitle" Text="Passe o mouse em qualquer op&#xE7;&#xE3;o para ler o que ela faz ou escolha um perfil abaixo" FontSize="11.5" Foreground="{DynamicResource BrushTextMuted}"/>
                     </StackPanel>
 
-                    <!-- Busca Contextual -->
-                    <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1" CornerRadius="6" Margin="10,4" Padding="8,0">
+                    <!-- Busca Contextual com Placeholder -->
+                    <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1" CornerRadius="7" Margin="10,4" Padding="9,0">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="&#x1F50D;" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="12"/>
-                            <TextBox x:Name="txtGlobalSearch" Grid.Column="1" BorderThickness="0" Background="Transparent" Padding="0,6" VerticalAlignment="Center" ToolTip="Filtrar itens da aba atual..."/>
+                            <TextBlock Grid.Column="0" Text="&#x1F50D;" VerticalAlignment="Center" Margin="0,0,7,0" FontSize="12"/>
+                            <TextBlock x:Name="txtSearchPlaceholder" Grid.Column="1" Text="Filtrar op&#xE7;&#xF5;es desta aba..." VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource BrushTextMuted}" Opacity="0.7" IsHitTestVisible="False"/>
+                            <TextBox x:Name="txtGlobalSearch" Grid.Column="1" BorderThickness="0" Background="Transparent" Padding="0,6" VerticalAlignment="Center"/>
                             <Button x:Name="btnClearSearch" Grid.Column="2" Content="&#x2715;" Padding="4,1" Margin="0" FontSize="10" Background="Transparent" BorderThickness="0"/>
                         </Grid>
                     </Border>
 
                     <!-- Info Hardware -->
-                    <Border Grid.Column="2" Background="{DynamicResource BrushBgCard}" CornerRadius="6" Padding="10,5" Margin="6,4" VerticalAlignment="Center" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1">
+                    <Border Grid.Column="2" Background="{DynamicResource BrushBgCard}" CornerRadius="7" Padding="10,5" Margin="6,4" VerticalAlignment="Center" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1">
                         <TextBlock x:Name="txtSystemInfo" Text="Carregando hardware..." FontSize="11" Foreground="{DynamicResource BrushTextMuted}"/>
                     </Border>
 
                     <!-- P&#xED;lula de Status -->
-                    <Border x:Name="borderStatusPill" Grid.Column="3" Background="{DynamicResource BrushBgCard}" CornerRadius="6" Padding="10,5" Margin="4,4,0,4" VerticalAlignment="Center" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1">
+                    <Border x:Name="borderStatusPill" Grid.Column="3" Background="{DynamicResource BrushBgCard}" CornerRadius="7" Padding="10,5" Margin="4,4,0,4" VerticalAlignment="Center" BorderBrush="{DynamicResource BrushBorderStrong}" BorderThickness="1">
                         <TextBlock x:Name="txtTaskStatus" Text="&#x25CF; Pronto" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource BrushSuccess}"/>
                     </Border>
                 </Grid>
             </Border>
 
             <!-- CONTAINER DE P&#xC1;GINAS -->
-            <Grid Grid.Row="1" Margin="16,12,16,6">
+            <Grid Grid.Row="1" Margin="16,12,16,4">
 
                 <!-- ==================================================== -->
                 <!-- VIEW 1: SOFTWARES (WINGET / CHOCO - 239 APPS)         -->
@@ -5427,7 +5919,6 @@ $embeddedXaml = @'
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Barra de A&#xE7;&#xF5;es -->
                     <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}" Padding="10,8">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -5451,16 +5942,14 @@ $embeddedXaml = @'
                                 <Button x:Name="btnCollapseAllApps" Content="Recolher Tudo"/>
                             </WrapPanel>
 
-                            <Border Grid.Column="2" Background="{DynamicResource BrushBgInput}" CornerRadius="6" Padding="10,5" VerticalAlignment="Center">
-                                <TextBlock x:Name="txtAppsSelectedCount" Text="Selecionados: 0" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" FontSize="12"/>
+                            <Border Grid.Column="2" Background="{DynamicResource BrushBgInput}" BorderBrush="{DynamicResource BrushBorderStrong}" BorderThickness="1" CornerRadius="7" Padding="10,5" VerticalAlignment="Center">
+                                <TextBlock x:Name="txtAppsSelectedCount" Text="Selecionados: 0" FontWeight="Bold" Foreground="{DynamicResource BrushAccentHover}" FontSize="12"/>
                             </Border>
                         </Grid>
                     </Border>
 
-                    <!-- Filter Chips -->
                     <WrapPanel x:Name="panelAppCategoryChips" Grid.Row="1" Margin="0,0,0,8"/>
 
-                    <!-- Grade de Apps -->
                     <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -5487,7 +5976,7 @@ $embeddedXaml = @'
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Barra de Perfis (Apenas Desktop, Notebook, All) -->
+                    <!-- Card de Perfis Cards-Bot&#xE3;o (Desktop, Notebook, All) -->
                     <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}" Padding="12,10">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -5495,21 +5984,36 @@ $embeddedXaml = @'
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
-                                <TextBlock Text="Perfis Recomendados (Pr&#xE9;-Sele&#xE7;&#xE3;o)" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}"/>
-                                <TextBlock Text="Clique para marcar as op&#xE7;&#xF5;es recomendadas e revisar antes de aplicar" FontSize="11" Foreground="{DynamicResource BrushTextMuted}"/>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,14,0">
+                                <TextBlock Text="Perfis Recomendados" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}"/>
+                                <TextBlock Text="Clique para pr&#xE9;-selecionar e revisar" FontSize="11" Foreground="{DynamicResource BrushTextMuted}"/>
                             </StackPanel>
                             <WrapPanel Grid.Column="1" VerticalAlignment="Center">
-                                <Button x:Name="btnPresetDesktop" Content="&#x1F5A5;  Desktop" Padding="16,8" Foreground="{DynamicResource BrushSuccess}"/>
-                                <Button x:Name="btnPresetNotebook" Content="&#x1F4BB;  Notebook" Padding="16,8" Foreground="{DynamicResource BrushAccent}"/>
-                                <Button x:Name="btnPresetAll" Content="&#x1F31F;  All (Marcar Todos)" Padding="16,8" Foreground="{DynamicResource BrushWarning}"/>
+                                <Button x:Name="btnPresetDesktop" Style="{StaticResource PresetCardButtonStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="&#x1F5A5;  Desktop" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}"/>
+                                        <TextBlock Text="PC de Mesa &#x2022; Sem hiberna&#xE7;&#xE3;o" FontSize="10.5" Foreground="{DynamicResource BrushTextMuted}"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="btnPresetNotebook" Style="{StaticResource PresetCardButtonStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="&#x1F4BB;  Notebook" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource BrushAccentHover}"/>
+                                        <TextBlock Text="Bateria segura &#x2022; Equilibrado" FontSize="10.5" Foreground="{DynamicResource BrushTextMuted}"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="btnPresetAll" Style="{StaticResource PresetCardButtonStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="&#x1F31F;  All (Marcar Tudo)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource BrushWarning}"/>
+                                        <TextBlock Text="Seleciona todas as 48 op&#xE7;&#xF5;es" FontSize="10.5" Foreground="{DynamicResource BrushTextMuted}"/>
+                                    </StackPanel>
+                                </Button>
                             </WrapPanel>
-                            <Button x:Name="btnCreateRestorePoint" Grid.Column="2" Content="&#x1F6E1; Criar Ponto de Restaura&#xE7;&#xE3;o"/>
+                            <Button x:Name="btnCreateRestorePoint" Grid.Column="2" Style="{StaticResource SuccessButtonStyle}" Content="&#x1F6E1; Criar Ponto de Restaura&#xE7;&#xE3;o" VerticalAlignment="Center"/>
                         </Grid>
                     </Border>
 
-                    <!-- Card de Resumo em Tempo Real das Op&#xE7;&#xF5;es Selecionadas -->
-                    <Border x:Name="borderSelectionPreview" Grid.Row="1" Style="{StaticResource CardBorderStyle}" Background="{DynamicResource BrushBgSurface}" Padding="12,10">
+                    <!-- Painel de Resumo e Confirma&#xE7;&#xE3;o antes de Executar -->
+                    <Border x:Name="borderSelectionPreview" Grid.Row="1" Style="{StaticResource CardBorderStyle}" Background="{DynamicResource BrushBgSurface}" BorderBrush="{DynamicResource BrushBorderStrong}" Padding="12,10">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -5522,24 +6026,24 @@ $embeddedXaml = @'
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Border Background="{DynamicResource BrushBgCardAlt}" CornerRadius="5" Padding="8,3" Margin="0,0,10,0">
-                                        <TextBlock x:Name="txtActivePresetBadge" Text="Perfil: Nenhum" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}"/>
+                                    <Border Background="{DynamicResource BrushAccentDeep}" BorderBrush="{DynamicResource BrushAccent}" BorderThickness="1" CornerRadius="6" Padding="9,3" Margin="0,0,10,0">
+                                        <TextBlock x:Name="txtActivePresetBadge" Text="Perfil: Nenhum" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}"/>
                                     </Border>
-                                    <TextBlock x:Name="txtTweaksSelectedCount" Text="0 op&#xE7;&#xF5;es selecionadas" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource BrushTextPrimary}" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="txtTweaksSelectedCount" Text="0 op&#xE7;&#xF5;es selecionadas" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource BrushTextPrimary}" VerticalAlignment="Center"/>
                                 </StackPanel>
                                 <WrapPanel Grid.Column="2" VerticalAlignment="Center">
-                                    <Button x:Name="btnApplyTweaks" Style="{StaticResource PrimaryButtonStyle}" Content="&#x1F680; Aplicar Tweaks Selecionados" Padding="14,7"/>
+                                    <Button x:Name="btnApplyTweaks" Style="{StaticResource PrimaryButtonStyle}" Content="&#x1F680; Aplicar Tweaks Selecionados" Padding="15,7"/>
                                     <Button x:Name="btnUndoTweaks" Content="&#x21A9; Desfazer Selecionados" Padding="12,7"/>
-                                    <Button x:Name="btnClearTweaks" Content="&#x2715; Limpar Sele&#xE7;&#xE3;o" Padding="10,7"/>
+                                    <Button x:Name="btnClearTweaks" Content="&#x2715; Limpar" Padding="10,7"/>
                                 </WrapPanel>
                             </Grid>
-                            <ScrollViewer Grid.Row="1" MaxHeight="76" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+                            <ScrollViewer Grid.Row="1" MaxHeight="74" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
                                 <WrapPanel x:Name="panelSelectedTweaksChips"/>
                             </ScrollViewer>
                         </Grid>
                     </Border>
 
-                    <!-- Grade de 3 Colunas: Essenciais | Avan&#xE7;ados | Prefer&#xEA;ncias Instant&#xE2;neas -->
+                    <!-- Grade de 3 Colunas -->
                     <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -5553,20 +6057,28 @@ $embeddedXaml = @'
                             <!-- Coluna 1: Essenciais -->
                             <Border Grid.Column="0" Style="{StaticResource CardBorderStyle}">
                                 <StackPanel>
-                                    <TextBlock Text="Tweaks Essenciais" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Tweaks Essenciais" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}"/>
+                                        <Border Grid.Column="1" Background="{DynamicResource BrushAccentDeep}" CornerRadius="5" Padding="6,2"><TextBlock Text="Seguro" FontSize="10" Foreground="{DynamicResource BrushSuccess}"/></Border>
+                                    </Grid>
                                     <StackPanel x:Name="panelTweaksEssential"/>
                                 </StackPanel>
                             </Border>
 
-                            <!-- Coluna 2: Avan&#xE7;ados + Energia + O&O -->
+                            <!-- Coluna 2: Avan&#xE7;ados -->
                             <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
                                 <StackPanel>
-                                    <TextBlock Text="Tweaks Avan&#xE7;ados (Cuidado)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushWarning}" Margin="0,0,0,8"/>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Tweaks Avan&#xE7;ados" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushWarning}"/>
+                                        <Border Grid.Column="1" Background="#3B2F1A" CornerRadius="5" Padding="6,2"><TextBlock Text="Cuidado" FontSize="10" Foreground="{DynamicResource BrushWarning}"/></Border>
+                                    </Grid>
                                     <StackPanel x:Name="panelTweaksAdvanced"/>
-                                    <Border Background="{DynamicResource BrushBgSurface}" CornerRadius="8" Padding="10" Margin="0,10,0,0" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1">
+                                    <Border Background="{DynamicResource BrushBgSurface}" CornerRadius="8" Padding="10" Margin="0,10,0,0" BorderBrush="{DynamicResource BrushBorderStrong}" BorderThickness="1">
                                         <StackPanel>
-                                            <TextBlock Text="Energia &amp; Privacidade Extra" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,6"/>
-                                            <Button x:Name="btnEnableUltPerf" Content="&#x26A1; Ativar Plano Desempenho M&#xE1;ximo"/>
+                                            <TextBlock Text="Energia &amp; Privacidade Extra" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,6"/>
+                                            <Button x:Name="btnEnableUltPerf" Style="{StaticResource SuccessButtonStyle}" Content="&#x26A1; Ativar Plano Desempenho M&#xE1;ximo"/>
                                             <Button x:Name="btnDisableUltPerf" Content="&#x21A9; Restaurar Planos de Energia Padr&#xE3;o"/>
                                             <Button x:Name="btnRunOOSU" Content="&#x1F6E1; Executar O&amp;O ShutUp10++"/>
                                         </StackPanel>
@@ -5577,7 +6089,11 @@ $embeddedXaml = @'
                             <!-- Coluna 3: Prefer&#xEA;ncias Instant&#xE2;neas -->
                             <Border Grid.Column="4" Style="{StaticResource CardBorderStyle}">
                                 <StackPanel>
-                                    <TextBlock Text="Prefer&#xEA;ncias (Aplica&#xE7;&#xE3;o Instant&#xE2;nea)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushSuccess}" Margin="0,0,0,8"/>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Prefer&#xEA;ncias R&#xE1;pidas" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushSuccess}"/>
+                                        <Border Grid.Column="1" Background="{DynamicResource BrushBgCardAlt}" CornerRadius="5" Padding="6,2"><TextBlock Text="Instant&#xE2;neo" FontSize="10" Foreground="{DynamicResource BrushAccentHover}"/></Border>
+                                    </Grid>
                                     <StackPanel x:Name="panelTweaksPrefs"/>
                                 </StackPanel>
                             </Border>
@@ -5601,15 +6117,15 @@ $embeddedXaml = @'
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <WrapPanel Grid.Column="0" VerticalAlignment="Center">
-                                <Button x:Name="btnAppxDefault" Content="&#x2B50; Marcar Bloatwares Padr&#xE3;o (18)"/>
+                                <Button x:Name="btnAppxDefault" Style="{StaticResource SuccessButtonStyle}" Content="&#x2B50; Marcar Bloatwares Padr&#xE3;o (18)"/>
                                 <Button x:Name="btnAppxSelectAll" Content="&#x2611; Marcar Todos"/>
                                 <Button x:Name="btnAppxClear" Content="&#x2715; Limpar"/>
                                 <Button x:Name="btnAppxDetectInstalled" Content="&#x1F50D; Destacar Instalados"/>
                                 <Button x:Name="btnAppxRemove" Style="{StaticResource DangerButtonStyle}" Content="&#x1F5D1; Remover Selecionados"/>
-                                <Button x:Name="btnAppxInstall" Style="{StaticResource SuccessButtonStyle}" Content="&#x1F4E5; Reinstalar Selecionados (Store)"/>
+                                <Button x:Name="btnAppxInstall" Style="{StaticResource PrimaryButtonStyle}" Content="&#x1F4E5; Reinstalar Selecionados (Store)"/>
                             </WrapPanel>
-                            <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" CornerRadius="6" Padding="10,5" VerticalAlignment="Center">
-                                <TextBlock x:Name="txtAppxSelectedCount" Text="Selecionados: 0" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" FontSize="12"/>
+                            <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" BorderBrush="{DynamicResource BrushBorderStrong}" BorderThickness="1" CornerRadius="7" Padding="10,5" VerticalAlignment="Center">
+                                <TextBlock x:Name="txtAppxSelectedCount" Text="Selecionados: 0" FontWeight="Bold" Foreground="{DynamicResource BrushAccentHover}" FontSize="12"/>
                             </Border>
                         </Grid>
                     </Border>
@@ -5631,7 +6147,7 @@ $embeddedXaml = @'
                 </Grid>
 
                 <!-- ==================================================== -->
-                <!-- VIEW 4: REDE, 14 FERRAMENTAS .BAT, DNS BENCHMARK      -->
+                <!-- VIEW 4: REDE, DIAGN&#xD3;STICO COMPLETO & DNS              -->
                 <!-- ==================================================== -->
                 <ScrollViewer x:Name="viewNetwork" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
@@ -5652,7 +6168,7 @@ $embeddedXaml = @'
 
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Diagn&#xF3;stico &amp; Testes de Conectividade (Op&#xE7;&#xF5;es 1 a 8)" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="Diagn&#xF3;stico &amp; Testes de Conectividade (Op&#xE7;&#xF5;es 1 a 8)" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <WrapPanel>
                                     <Button x:Name="btnNetQuickDiag" Style="{StaticResource PrimaryButtonStyle}" Content="[1] Diagn&#xF3;stico R&#xE1;pido Integrado" Width="230"/>
                                     <Button x:Name="btnNetDetailed" Content="[2] Teste Detalhado (Ping + HTTPS + DNS)" Width="260"/>
@@ -5669,7 +6185,7 @@ $embeddedXaml = @'
 
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Monitoramento, Varredura &amp; Dispositivos Locais (Op&#xE7;&#xF5;es 9 a 11)" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="Monitoramento, Varredura &amp; Dispositivos Locais (Op&#xE7;&#xF5;es 9 a 11)" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <WrapPanel>
                                     <Button x:Name="btnNetstatEst" Content="[9a] Netstat: Conex&#xF5;es Ativas" Width="210"/>
                                     <Button x:Name="btnNetstatList" Content="[9b] Netstat: Portas Escutando" Width="210"/>
@@ -5682,7 +6198,7 @@ $embeddedXaml = @'
 
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Reparo, Reset de Pilha, TCP Gaming &amp; Relat&#xF3;rio Forense (Op&#xE7;&#xF5;es 12 a 14)" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="Reparo, Reset de Pilha, TCP Gaming &amp; Relat&#xF3;rio Forense (Op&#xE7;&#xF5;es 12 a 14)" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <WrapPanel>
                                     <Button x:Name="btnNetSimpleRepair" Content="[12] Reparar Conex&#xE3;o (DNS/DHCP/NetBIOS)" Width="270"/>
                                     <Button x:Name="btnNetResetDeep" Style="{StaticResource DangerButtonStyle}" Content="[13] Reset Completo Pilha (Winsock/TCP/FW)" Width="280"/>
@@ -5695,7 +6211,7 @@ $embeddedXaml = @'
 
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Servidores DNS (IPv4 + IPv6 + DoH) &amp; Benchmark de Lat&#xEA;ncia" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="Servidores DNS (IPv4 + IPv6 + DoH) &amp; Benchmark de Lat&#xEA;ncia" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <Grid Margin="0,0,0,8">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
@@ -5721,7 +6237,7 @@ $embeddedXaml = @'
                 </ScrollViewer>
 
                 <!-- ==================================================== -->
-                <!-- VIEW 5: RECURSOS, FIXES, PAIN&#xC9;IS & REPARO DO SO       -->
+                <!-- VIEW 5: RECURSOS, CORRE&#xC7;&#xD5;ES & PAIN&#xC9;IS DO SISTEMA      -->
                 <!-- ==================================================== -->
                 <ScrollViewer x:Name="viewConfig" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
                     <Grid>
@@ -5735,19 +6251,17 @@ $embeddedXaml = @'
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <!-- Recursos Opcionais -->
                         <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Recursos Opcionais do Windows" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="Recursos Opcionais do Windows" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <StackPanel x:Name="panelFeaturesContainer"/>
                                 <Button x:Name="btnInstallFeatures" Style="{StaticResource PrimaryButtonStyle}" Content="&#x2699; Instalar / Aplicar Recursos Selecionados" Margin="0,10,0,0"/>
                             </StackPanel>
                         </Border>
 
-                        <!-- Corre&#xE7;&#xF5;es & Reparos -->
                         <Border Grid.Row="0" Grid.Column="2" Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Corre&#xE7;&#xF5;es &amp; Reparos do Sistema" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="Corre&#xE7;&#xF5;es &amp; Reparos do Sistema" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <WrapPanel>
                                     <Button x:Name="btnFixFullCorruption" Style="{StaticResource PrimaryButtonStyle}" Content="&#x1F6E0; Verifica&#xE7;&#xE3;o Completa (DISM + SFC)" Width="265"/>
                                     <Button x:Name="btnSfcScan" Content="SFC /scannow" Width="125"/>
@@ -5765,18 +6279,16 @@ $embeddedXaml = @'
                             </StackPanel>
                         </Border>
 
-                        <!-- Pain&#xE9;is Cl&#xE1;ssicos do Windows -->
                         <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Pain&#xE9;is Cl&#xE1;ssicos do Windows (14)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="Pain&#xE9;is Cl&#xE1;ssicos do Windows (14)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <WrapPanel x:Name="panelLegacyPanelsContainer"/>
                             </StackPanel>
                         </Border>
 
-                        <!-- Acesso Remoto & Terminal -->
                         <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Acesso Remoto &amp; Perfil PowerShell 7+" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="Acesso Remoto &amp; Perfil PowerShell 7+" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <TextBlock Text="Habilite o servidor SSH nativo no Windows (porta 22) ou instale o perfil aprimorado para PowerShell 7 com hist&#xF3;rico preditivo." TextWrapping="Wrap" FontSize="11.5" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,10"/>
                                 <WrapPanel>
                                     <Button x:Name="btnEnableSshServer" Style="{StaticResource SuccessButtonStyle}" Content="&#x1F510; Habilitar Servidor OpenSSH"/>
@@ -5789,7 +6301,7 @@ $embeddedXaml = @'
                 </ScrollViewer>
 
                 <!-- ==================================================== -->
-                <!-- VIEW 6: WINDOWS UPDATE (4 POL&#xCD;TICAS)                  -->
+                <!-- VIEW 6: WINDOWS UPDATE                                -->
                 <!-- ==================================================== -->
                 <ScrollViewer x:Name="viewUpdates" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
                     <Grid>
@@ -5805,8 +6317,8 @@ $embeddedXaml = @'
 
                         <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="&#x1F504; Padr&#xE3;o Original (Microsoft)" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,6"/>
-                                <TextBlock Text="Remove todas as pol&#xED;ticas personalizadas, libera ACLs bloqueadas e restaura as configura&#xE7;&#xF5;es originais de f&#xE1;brica do Windows Update." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
+                                <TextBlock Text="&#x1F504; Padr&#xE3;o Original (Microsoft)" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,6"/>
+                                <TextBlock Text="Remove pol&#xED;ticas personalizadas, libera permiss&#xF5;es bloqueadas e restaura as configura&#xE7;&#xF5;es originais de f&#xE1;brica do Windows Update." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
                                 <Button x:Name="btnWuDefault" Content="Restaurar Configura&#xE7;&#xF5;es Padr&#xE3;o"/>
                             </StackPanel>
                         </Border>
@@ -5814,7 +6326,7 @@ $embeddedXaml = @'
                         <Border Grid.Row="0" Grid.Column="2" Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
                                 <TextBlock Text="&#x1F6E1; Modo Recomendado (Seguran&#xE7;a Est&#xE1;vel)" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BrushSuccess}" Margin="0,0,0,6"/>
-                                <TextBlock Text="Desativa atualiza&#xE7;&#xE3;o autom&#xE1;tica de drivers via Update, adia atualiza&#xE7;&#xF5;es de recursos por 365 dias e qualidade por 4 dias para m&#xE1;xima estabilidade." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
+                                <TextBlock Text="Bloqueia atualiza&#xE7;&#xE3;o autom&#xE1;tica de drivers via Update, adia atualiza&#xE7;&#xF5;es de recursos por 365 dias e qualidade por 4 dias." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
                                 <Button x:Name="btnWuRecommended" Style="{StaticResource SuccessButtonStyle}" Content="Aplicar Modo Recomendado"/>
                             </StackPanel>
                         </Border>
@@ -5822,7 +6334,7 @@ $embeddedXaml = @'
                         <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
                                 <TextBlock Text="&#x23F8; Pausar Atualiza&#xE7;&#xF5;es (At&#xE9; 2042)" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BrushWarning}" Margin="0,0,0,6"/>
-                                <TextBlock Text="Estende a pausa oficial da interface do Windows Update at&#xE9; 2042 sem desativar servi&#xE7;os cr&#xED;ticos do sistema ou da Microsoft Store." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
+                                <TextBlock Text="Estende a pausa oficial do Windows Update at&#xE9; 2042 sem desativar servi&#xE7;os cr&#xED;ticos do sistema ou da Microsoft Store." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
                                 <Button x:Name="btnWuPause" Content="Pausar Atualiza&#xE7;&#xF5;es at&#xE9; 2042"/>
                             </StackPanel>
                         </Border>
@@ -5830,7 +6342,7 @@ $embeddedXaml = @'
                         <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
                                 <TextBlock Text="&#x26A0; Desativar Todas as Atualiza&#xE7;&#xF5;es (Avan&#xE7;ado)" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BrushDanger}" Margin="0,0,0,6"/>
-                                <TextBlock Text="Para e desabilita BITS, wuauserv, UsoSvc e tarefas agendadas do Windows Update. Recomendado apenas para m&#xE1;quinas dedicadas/isoladas." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
+                                <TextBlock Text="Para e desabilita BITS, wuauserv, UsoSvc e tarefas agendadas de update. Recomendado apenas para ambientes isolados." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
                                 <Button x:Name="btnWuDisable" Style="{StaticResource DangerButtonStyle}" Content="Desativar Windows Update"/>
                             </StackPanel>
                         </Border>
@@ -5844,7 +6356,7 @@ $embeddedXaml = @'
                     <StackPanel>
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="1. Imagem ISO Oficial &amp; Sele&#xE7;&#xE3;o de Edi&#xE7;&#xE3;o" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="1. Imagem ISO Oficial &amp; Sele&#xE7;&#xE3;o de Edi&#xE7;&#xE3;o" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <Grid Margin="0,0,0,8">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="135"/>
@@ -5870,7 +6382,7 @@ $embeddedXaml = @'
 
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="2. Destino, Drivers &amp; Customiza&#xE7;&#xF5;es" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="2. Destino, Drivers &amp; Customiza&#xE7;&#xF5;es" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
                                 <Grid Margin="0,0,0,8">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="135"/>
@@ -5921,11 +6433,32 @@ $embeddedXaml = @'
                 </ScrollViewer>
             </Grid>
 
+            <!-- BARRA DE INSPE&#xC7;&#xC3;O AO VIVO (HOVER INFO INSTANT&#xC2;NEO) -->
+            <Border x:Name="borderHoverInfo" Grid.Row="2" Background="{DynamicResource BrushBgSurface}" BorderBrush="{DynamicResource BrushBorderStrong}" BorderThickness="1" CornerRadius="8" Margin="16,2,16,4">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="4"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Background="{DynamicResource BrushAccent}" CornerRadius="6,0,0,6"/>
+                    <TextBlock Grid.Column="1" Text="&#x1F4A1;" FontSize="14" VerticalAlignment="Center" Margin="10,0,8,0"/>
+                    <Border x:Name="borderHoverBadge" Grid.Column="2" Background="{DynamicResource BrushAccentDeep}" BorderBrush="{DynamicResource BrushAccent}" BorderThickness="1" CornerRadius="6" Padding="8,2" VerticalAlignment="Center" Margin="0,0,10,0">
+                        <TextBlock x:Name="txtHoverBadge" Text="Dica" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}"/>
+                    </Border>
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,6,12,6">
+                        <TextBlock x:Name="txtHoverTitle" Text="Inspe&#xE7;&#xE3;o R&#xE1;pida" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtHoverDesc" Text="Passe o mouse sobre qualquer op&#xE7;&#xE3;o ou bot&#xE3;o para ver o que ele faz antes de clicar." FontSize="12" Foreground="{DynamicResource BrushTextPrimary}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
             <!-- SPLITTER REDIMENSION&#xC1;VEL DO CONSOLE -->
-            <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" Background="{DynamicResource BrushBorder}" Cursor="SizeNS"/>
+            <GridSplitter Grid.Row="3" Height="5" HorizontalAlignment="Stretch" Background="{DynamicResource BrushBorder}" Cursor="SizeNS"/>
 
             <!-- CONSOLE DRAWER INFERIOR -->
-            <Border Grid.Row="3" Background="{DynamicResource BrushConsoleBg}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="0,1,0,0" Padding="14,6">
+            <Border Grid.Row="4" Background="{DynamicResource BrushConsoleBg}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="0,1,0,0" Padding="14,6">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -5938,7 +6471,7 @@ $embeddedXaml = @'
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="&#x1F4DC; Console de Execu&#xE7;&#xE3;o &amp; Logs" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" VerticalAlignment="Center" Margin="0,0,14,0"/>
+                        <TextBlock Grid.Column="0" Text="&#x1F4DC; Console de Execu&#xE7;&#xE3;o &amp; Logs" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccentHover}" VerticalAlignment="Center" Margin="0,0,14,0"/>
                         <ProgressBar x:Name="pbTaskProgress" Grid.Column="1" Height="6" IsIndeterminate="True" Visibility="Collapsed" VerticalAlignment="Center" Foreground="{DynamicResource BrushAccent}" Background="{DynamicResource BrushBgCard}"/>
                         <StackPanel Grid.Column="3" Orientation="Horizontal">
                             <Button x:Name="btnToggleConsole" Content="&#x25BC; Minimizar" Padding="8,3" FontSize="11"/>

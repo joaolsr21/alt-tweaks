@@ -1,5 +1,5 @@
 ﻿# ==============================================================================
-# Módulo de Interface: Controlador Unificado WPF + Runspaces Assíncronos
+# Módulo de Interface: Controlador Unificado WPF + Hover Info + Runspaces
 # ==============================================================================
 
 function Start-AsyncAction {
@@ -42,6 +42,56 @@ $($Action.ToString())
     })
 }
 
+function Register-HoverHelp {
+    param(
+        [Parameter(Mandatory=$true)]$Control,
+        [Parameter(Mandatory=$true)][string]$Title,
+        [Parameter(Mandatory=$true)][string]$Description,
+        [string]$Badge = "Dica",
+        [switch]$NoToolTip
+    )
+
+    if ($null -eq $Control) { return }
+
+    $Control.Resources["HoverHelpInfo"] = [pscustomobject]@{
+        Title       = $Title
+        Description = $Description
+        Badge       = $Badge
+    }
+
+    if (-not $NoToolTip) {
+        $tipPanel = New-Object System.Windows.Controls.StackPanel
+        $tTitle = New-Object System.Windows.Controls.TextBlock
+        $tTitle.Text = $Title
+        $tTitle.FontWeight = [System.Windows.FontWeights]::Bold
+        $tTitle.FontSize = 12
+        $tTitle.Margin = New-Object System.Windows.Thickness(0, 0, 0, 3)
+        $tTitle.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, "BrushTextSecondary")
+        [void]$tipPanel.Children.Add($tTitle)
+
+        $tDesc = New-Object System.Windows.Controls.TextBlock
+        $tDesc.Text = $Description
+        $tDesc.FontSize = 11.5
+        $tDesc.TextWrapping = [System.Windows.TextWrapping]::Wrap
+        $tDesc.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, "BrushTextPrimary")
+        [void]$tipPanel.Children.Add($tDesc)
+
+        $Control.ToolTip = $tipPanel
+    }
+
+    $Control.Add_MouseEnter({
+        param($sender, $e)
+        $ui = $global:WinRepairUi
+        if (-not $ui -or -not $ui.Window) { return }
+        $info = $sender.Resources["HoverHelpInfo"]
+        if ($null -eq $info) { return }
+
+        $ui.Window.FindName("txtHoverBadge").Text = $info.Badge
+        $ui.Window.FindName("txtHoverTitle").Text = "$($info.Title):"
+        $ui.Window.FindName("txtHoverDesc").Text  = $info.Description
+    })
+}
+
 function Set-HudTheme {
     param([ValidateSet("Dark", "Light", "Auto")][string]$Mode = "Dark")
 
@@ -57,47 +107,60 @@ function Set-HudTheme {
         $target = $Mode
     }
 
+    # Paleta Verde Agua (#A4FFF7, #68DDBD, #03BB85, #038554, #005227)
     $palette = if ($target -eq "Light") {
         @{
-            BrushBgApp       = "#EFF1F5"
-            BrushBgSidebar   = "#E6E9EF"
-            BrushBgSurface   = "#F7F8FC"
-            BrushBgCard      = "#FFFFFF"
-            BrushBgCardAlt   = "#DCE0E8"
-            BrushBgInput     = "#EFF1F5"
-            BrushBorder      = "#BCC0CC"
-            BrushBorderHover = "#1E66F5"
-            BrushTextPrimary = "#4C4F69"
-            BrushTextMuted   = "#6C6F85"
-            BrushAccent      = "#1E66F5"
-            BrushAccentHover = "#209FB5"
-            BrushAccentText  = "#FFFFFF"
-            BrushSuccess     = "#40A02B"
-            BrushWarning     = "#DF8E1D"
-            BrushDanger      = "#D20F39"
-            BrushConsoleBg   = "#1E2030"
-            BrushConsoleFg   = "#A6E3A1"
+            BrushBgApp         = "#F0FBF7"
+            BrushBgSidebar     = "#E2F5EE"
+            BrushBgSurface     = "#FFFFFF"
+            BrushBgCard        = "#FFFFFF"
+            BrushBgCardAlt     = "#D7EFE6"
+            BrushBgCardHover   = "#C2E8DA"
+            BrushBgInput       = "#F6FCFA"
+            BrushBrandStart    = "#005227"
+            BrushBrandEnd      = "#038554"
+            BrushBorder        = "#9FD4C1"
+            BrushBorderStrong  = "#038554"
+            BrushBorderHover   = "#03BB85"
+            BrushTextPrimary   = "#042919"
+            BrushTextSecondary = "#005227"
+            BrushTextMuted     = "#2C6B53"
+            BrushAccent        = "#038554"
+            BrushAccentHover   = "#03BB85"
+            BrushAccentDeep    = "#005227"
+            BrushAccentText    = "#FFFFFF"
+            BrushSuccess       = "#038554"
+            BrushWarning       = "#B45309"
+            BrushDanger        = "#BE123C"
+            BrushConsoleBg     = "#050C09"
+            BrushConsoleFg     = "#A4FFF7"
         }
     } else {
         @{
-            BrushBgApp       = "#11111B"
-            BrushBgSidebar   = "#161624"
-            BrushBgSurface   = "#1E1E2E"
-            BrushBgCard      = "#24273A"
-            BrushBgCardAlt   = "#2A2D42"
-            BrushBgInput     = "#181825"
-            BrushBorder      = "#363A4F"
-            BrushBorderHover = "#89B4FA"
-            BrushTextPrimary = "#CDD6F4"
-            BrushTextMuted   = "#9399B2"
-            BrushAccent      = "#89B4FA"
-            BrushAccentHover = "#B4BEFE"
-            BrushAccentText  = "#11111B"
-            BrushSuccess     = "#A6E3A1"
-            BrushWarning     = "#F9E2AF"
-            BrushDanger      = "#F38BA8"
-            BrushConsoleBg   = "#0D0D14"
-            BrushConsoleFg   = "#A6E3A1"
+            BrushBgApp         = "#07110D"
+            BrushBgSidebar     = "#0A1712"
+            BrushBgSurface     = "#0E2019"
+            BrushBgCard        = "#12281F"
+            BrushBgCardAlt     = "#173428"
+            BrushBgCardHover   = "#1D4233"
+            BrushBgInput       = "#091510"
+            BrushBrandStart    = "#005227"
+            BrushBrandEnd      = "#038554"
+            BrushBorder        = "#1F4636"
+            BrushBorderStrong  = "#038554"
+            BrushBorderHover   = "#68DDBD"
+            BrushTextPrimary   = "#E9FBF5"
+            BrushTextSecondary = "#A4FFF7"
+            BrushTextMuted     = "#83B8A6"
+            BrushAccent        = "#03BB85"
+            BrushAccentHover   = "#68DDBD"
+            BrushAccentDeep    = "#005227"
+            BrushAccentText    = "#031A10"
+            BrushSuccess       = "#68DDBD"
+            BrushWarning       = "#F9E2AF"
+            BrushDanger        = "#F38BA8"
+            BrushConsoleBg     = "#050C09"
+            BrushConsoleFg     = "#A4FFF7"
         }
     }
 
@@ -111,11 +174,37 @@ function Set-HudTheme {
     if ($global:WinRepairSync) { $global:WinRepairSync.ThemeMode = $Mode }
 }
 
+function Update-PresetCardVisuals {
+    param([string]$ActivePreset = "Nenhum")
+
+    $ui = $global:WinRepairUi
+    if (-not $ui -or -not $ui.Window) { return }
+
+    $map = @{
+        Desktop  = $ui.Window.FindName("btnPresetDesktop")
+        Notebook = $ui.Window.FindName("btnPresetNotebook")
+        All      = $ui.Window.FindName("btnPresetAll")
+    }
+
+    foreach ($k in $map.Keys) {
+        $btn = $map[$k]
+        if (-not $btn) { continue }
+        if ($k -eq $ActivePreset) {
+            $btn.SetResourceReference([System.Windows.Controls.Control]::BackgroundProperty, "BrushAccentDeep")
+            $btn.SetResourceReference([System.Windows.Controls.Control]::BorderBrushProperty, "BrushTextSecondary")
+        } else {
+            $btn.SetResourceReference([System.Windows.Controls.Control]::BackgroundProperty, "BrushBgCardAlt")
+            $btn.SetResourceReference([System.Windows.Controls.Control]::BorderBrushProperty, "BrushBorderStrong")
+        }
+    }
+}
+
 function Update-TweaksSelectionPreview {
     $ui = $global:WinRepairUi
     if (-not $ui) { return }
 
     $ui.Window.FindName("txtActivePresetBadge").Text = "Perfil: $($ui.ActivePreset)"
+    Update-PresetCardVisuals -ActivePreset $ui.ActivePreset
 
     $selected = New-Object System.Collections.Generic.List[object]
     foreach ($k in $ui.TweakCheckBoxes.Keys) {
@@ -180,7 +269,7 @@ function Select-TweakPreset {
     Update-TweaksSelectionPreview
 
     $checkedCount = @($ui.TweakCheckBoxes.Values | Where-Object { $_.IsChecked }).Count
-    Write-ToolLog "Perfil [$PresetName] selecionado ($checkedCount opções marcadas). Revise no painel superior e clique em 'Aplicar Tweaks Selecionados' quando estiver pronto." "INFO"
+    Write-ToolLog "Perfil [$PresetName] selecionado ($checkedCount opções marcadas). Revise no painel superior e clique em 'Aplicar Tweaks Selecionados' para executar." "INFO"
 }
 
 function Update-AppsSelectionCounter {
@@ -200,14 +289,21 @@ function Update-AppxSelectionCounter {
 function Apply-GlobalSearchFilter {
     $ui = $global:WinRepairUi
     if (-not $ui) { return }
-    $q = $ui.Window.FindName("txtGlobalSearch").Text.Trim().ToLowerInvariant()
+    $rawText = $ui.Window.FindName("txtGlobalSearch").Text
+    $ui.Window.FindName("txtSearchPlaceholder").Visibility = if ([string]::IsNullOrEmpty($rawText)) {
+        [System.Windows.Visibility]::Visible
+    } else {
+        [System.Windows.Visibility]::Collapsed
+    }
 
-    # Apps tab
+    $q = $rawText.Trim().ToLowerInvariant()
+
     foreach ($catInfo in $ui.AppCategoryExpanders) {
         $anyVisible = $false
         $catMatchesFilter = ($ui.SelectedAppCategory -eq "Todas" -or $catInfo.Category -eq $ui.SelectedAppCategory)
         foreach ($cb in $catInfo.CheckBoxes) {
-            $match = ([string]::IsNullOrEmpty($q)) -or (([string]$cb.Content).ToLowerInvariant().Contains($q)) -or (([string]$cb.ToolTip).ToLowerInvariant().Contains($q))
+            $descTxt = if ($cb.Resources["HoverHelpInfo"]) { $cb.Resources["HoverHelpInfo"].Description } else { "" }
+            $match = ([string]::IsNullOrEmpty($q)) -or (([string]$cb.Content).ToLowerInvariant().Contains($q)) -or ($descTxt.ToLowerInvariant().Contains($q))
             if ($catMatchesFilter -and $match) {
                 $cb.Visibility = [System.Windows.Visibility]::Visible
                 $anyVisible = $true
@@ -218,26 +314,12 @@ function Apply-GlobalSearchFilter {
         $catInfo.Expander.Visibility = if ($catMatchesFilter -and $anyVisible) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
     }
 
-    # Tweaks
-    foreach ($cb in $ui.TweakCheckBoxes.Values) {
-        $match = ([string]::IsNullOrEmpty($q)) -or (([string]$cb.Content).ToLowerInvariant().Contains($q)) -or (([string]$cb.ToolTip).ToLowerInvariant().Contains($q))
-        $cb.Visibility = if ($match) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
-    }
-    foreach ($cb in $ui.ToggleBoxes.Values) {
-        $match = ([string]::IsNullOrEmpty($q)) -or (([string]$cb.Content).ToLowerInvariant().Contains($q)) -or (([string]$cb.ToolTip).ToLowerInvariant().Contains($q))
-        $cb.Visibility = if ($match) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
-    }
-
-    # AppX
-    foreach ($cb in $ui.AppxCheckBoxes.Values) {
-        $match = ([string]::IsNullOrEmpty($q)) -or (([string]$cb.Content).ToLowerInvariant().Contains($q)) -or (([string]$cb.ToolTip).ToLowerInvariant().Contains($q))
-        $cb.Visibility = if ($match) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
-    }
-
-    # Features
-    foreach ($cb in $ui.FeatureCheckBoxes.Values) {
-        $match = ([string]::IsNullOrEmpty($q)) -or (([string]$cb.Content).ToLowerInvariant().Contains($q)) -or (([string]$cb.ToolTip).ToLowerInvariant().Contains($q))
-        $cb.Visibility = if ($match) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+    foreach ($map in @($ui.TweakCheckBoxes, $ui.ToggleBoxes, $ui.AppxCheckBoxes, $ui.FeatureCheckBoxes)) {
+        foreach ($cb in $map.Values) {
+            $descTxt = if ($cb.Resources["HoverHelpInfo"]) { $cb.Resources["HoverHelpInfo"].Description } else { "" }
+            $match = ([string]::IsNullOrEmpty($q)) -or (([string]$cb.Content).ToLowerInvariant().Contains($q)) -or ($descTxt.ToLowerInvariant().Contains($q))
+            $cb.Visibility = if ($match) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+        }
     }
 }
 
@@ -248,10 +330,10 @@ function Set-ActiveHudView {
     if (-not $ui) { return }
 
     $meta = @{
-        Install = @{ Title = "Catálogo de Softwares"; Sub = "Instale, atualize ou desinstale mais de 230 aplicativos via WinGet ou Chocolatey" }
-        Tweaks  = @{ Title = "Tweaks & Perfis Recomendados"; Sub = "Escolha Desktop, Notebook ou All para pré-selecionar e revisar antes de executar" }
-        Appx    = @{ Title = "Gerenciador de AppX & Bloatware"; Sub = "Remova bloatwares pré-instalados ou reinstale aplicativos originais pela Store" }
-        Network = @{ Title = "Rede, Diagnóstico & DNS"; Sub = "Todas as 14 ferramentas completas de rede, varredura de sub-rede, TCP e Benchmark DNS" }
+        Install = @{ Title = "Catálogo de Softwares"; Sub = "Passe o mouse em qualquer software para ver descrição e instale via WinGet ou Chocolatey" }
+        Tweaks  = @{ Title = "Tweaks & Perfis Recomendados"; Sub = "Escolha Desktop, Notebook ou All para pré-selecionar e revisar antes de aplicar" }
+        Appx    = @{ Title = "Gerenciador de AppX & Bloatware"; Sub = "Remova aplicativos pré-instalados do Windows ou reinstale via Microsoft Store" }
+        Network = @{ Title = "Rede, Diagnóstico & DNS"; Sub = "14 ferramentas integradas de diagnóstico, varredura de rede local, TCP e Benchmark DNS" }
         Config  = @{ Title = "Recursos, Correções & Painéis do Sistema"; Sub = "Recursos opcionais, reparo DISM/SFC/Update, 14 painéis clássicos e OpenSSH" }
         Updates = @{ Title = "Políticas do Windows Update"; Sub = "Controle completo sobre atualizações automáticas, drivers e adiamento" }
         Iso     = @{ Title = "Criador de ISO Customizada & Pendrive USB"; Sub = "Injete bypasses, autounattend, drivers locais e grave direto no pendrive" }
@@ -266,6 +348,110 @@ function Set-ActiveHudView {
         $ui.Window.FindName("txtSectionSubtitle").Text = $meta[$ViewKey].Sub
     }
     $ui.ActiveView = $ViewKey
+}
+
+function Initialize-StaticHoverHelp {
+    $ui = $global:WinRepairUi
+    $w = $ui.Window
+
+    $entries = @(
+        @("navTweaks", "Tweaks & Perfis", "Abre os perfis recomendados (Desktop, Notebook, All), otimizações do sistema e preferências instantâneas.", "Navegação"),
+        @("navInstall", "Catálogo de Softwares", "Instale, desinstale ou atualize 239 programas populares silenciosamente via WinGet ou Chocolatey.", "Navegação"),
+        @("navAppx", "AppX & Bloatware", "Remova ou reinstale aplicativos universais pré-instalados da Microsoft Store.", "Navegação"),
+        @("navNetwork", "Rede & Diagnóstico", "Diagnóstico de rede em 14 ferramentas, varredura de IPs locais, otimização TCP e Benchmark DNS.", "Navegação"),
+        @("navConfig", "Recursos & Reparos", "Recursos opcionais (WSL 2, Sandbox, Hyper-V), SFC/DISM, OpenSSH e 14 painéis clássicos.", "Navegação"),
+        @("navUpdates", "Windows Update", "Escolha entre Padrão Microsoft, Recomendado (Estável), Pausa até 2042 ou Desativar.", "Navegação"),
+        @("navIso", "Criador de ISO & USB", "Gere ISOs do Windows 10/11 sem TPM/Conta Microsoft e grave em pendrive FAT32 bootável.", "Navegação"),
+
+        @("btnImportConfig", "Importar Seleção (.json)", "Carrega um arquivo .json e apenas marca os itens correspondentes para você revisar.", "Arquivo"),
+        @("btnExportConfig", "Exportar Seleção (.json)", "Salva todas as opções marcadas atualmente em um arquivo .json reutilizável.", "Arquivo"),
+        @("btnEnvReport", "Relatório do Ambiente", "Gera arquivo .txt na Área de Trabalho com hardware, versões de gerenciadores e status atual.", "Relatório"),
+        @("btnToggleTheme", "Alternar Tema", "Alterna entre a paleta Verde Água Nocturne (Escuro) e Verde Água Breeze (Claro).", "Aparência"),
+        @("btnFontDown", "Diminuir Fonte", "Reduz o tamanho do texto da interface para exibir mais itens por tela.", "Aparência"),
+        @("btnFontUp", "Aumentar Fonte", "Amplia o tamanho do texto da interface para facilitar a leitura.", "Aparência"),
+
+        @("btnPresetDesktop", "Perfil Desktop (Pré-Seleção)", "Marca 21 otimizações ideais para PCs de mesa (inclui desativar hibernação, TCP Gaming e TRIM). Não executa sozinho.", "Perfil"),
+        @("btnPresetNotebook", "Perfil Notebook (Pré-Seleção)", "Marca 19 otimizações seguras para laptops, preservando hibernação e economia de energia Wi-Fi. Não executa sozinho.", "Perfil"),
+        @("btnPresetAll", "Perfil All (Marcar Tudo)", "Marca todas as 48 opções de Tweaks Essenciais e Avançados no painel para revisão antes de executar.", "Perfil"),
+        @("btnCreateRestorePoint", "Criar Ponto de Restauração", "Cria um ponto de segurança nativo do Windows para reverter alterações caso precise.", "Segurança"),
+        @("btnApplyTweaks", "Aplicar Tweaks Selecionados", "Executa em segundo plano apenas as opções marcadas na lista abaixo.", "Execução"),
+        @("btnUndoTweaks", "Desfazer Selecionados", "Reverte as modificações de registro/serviços das opções marcadas atualmente.", "Reverter"),
+        @("btnClearTweaks", "Limpar Seleção", "Desmarca todas as caixas de Tweaks e limpa a lista de pré-visualização.", "Seleção"),
+        @("btnEnableUltPerf", "Plano Desempenho Máximo", "Desbloqueia e ativa o esquema oculto Ultimate Performance (maior resposta de CPU).", "Energia"),
+        @("btnDisableUltPerf", "Restaurar Planos de Energia", "Restaura os esquemas de energia padrão de fábrica do Windows.", "Energia"),
+        @("btnRunOOSU", "Executar O&O ShutUp10++", "Baixa e abre a ferramenta portátil oficial O&O ShutUp10++ para ajustes extras de privacidade.", "Privacidade"),
+
+        @("btnInstallApps", "Instalar / Atualizar Selecionados", "Instala ou atualiza todos os programas marcados usando WinGet ou Chocolatey.", "Softwares"),
+        @("btnUninstallApps", "Desinstalar Selecionados", "Remove silenciosamente do sistema todos os programas marcados no catálogo.", "Softwares"),
+        @("btnUpgradeAllApps", "Atualizar Todos os Apps", "Executa atualização geral de todos os programas instalados no computador.", "Softwares"),
+        @("btnDetectInstalledApps", "Mostrar Instalados", "Destaca em verde Água os softwares do catálogo que já estão instalados neste PC.", "Softwares"),
+        @("btnClearApps", "Limpar Seleção de Apps", "Desmarca todos os checkboxes da lista de softwares.", "Seleção"),
+
+        @("btnAppxDefault", "Marcar Bloatwares Padrão", "Marca automaticamente os 18 aplicativos pré-instalados mais comuns para remoção (apenas seleciona).", "AppX"),
+        @("btnAppxSelectAll", "Marcar Todos AppX", "Marca todos os 34 pacotes AppX listados abaixo.", "AppX"),
+        @("btnAppxClear", "Limpar Seleção AppX", "Desmarca todos os checkboxes de AppX.", "AppX"),
+        @("btnAppxDetectInstalled", "Destacar AppX Instalados", "Verifica no sistema e destaca em destaque os AppX atualmente instalados.", "AppX"),
+        @("btnAppxRemove", "Remover Selecionados", "Remove os pacotes AppX selecionados para todos os usuários e da imagem provisionada.", "Cuidado"),
+        @("btnAppxInstall", "Reinstalar Selecionados (Store)", "Baixa e reinstala os pacotes selecionados diretamente da Microsoft Store via WinGet.", "Restaurar"),
+
+        @("btnNetQuickDiag", "[1] Diagnóstico Rápido Integrado", "Testa placa local (127.0.0.1), Gateway/roteador, saída IP direta e resolução DNS em sequência.", "Rede"),
+        @("btnNetDetailed", "[2] Teste Detalhado (Ping + HTTPS + DNS)", "Mede latência média/perda ICMP, valida acesso Web HTTPS porta 443 e resolução de domínios.", "Rede"),
+        @("btnNetSpeedtest", "[3] Teste Velocidade Download", "Baixa bloco de 5 MB via CDN Cloudflare para medir a taxa real de download em Mbps.", "Rede"),
+        @("btnNetWifi", "[4] Diagnóstico Wi-Fi", "Exibe interface sem fio atual, força do sinal em %, canal, SSID e redes próximas.", "Rede"),
+        @("btnNetWifiReport", "[4b] Gerar Relatório Wi-Fi (HTML)", "Gera relatório oficial netsh wlanreport detalhado com histórico de quedas de Wi-Fi.", "Rede"),
+        @("btnNetTestPort", "[5] Testar Porta TCP Alvo", "Verifica se o Host/IP e Porta informados acima estão acessíveis e abertos.", "Rede"),
+        @("btnNetPathping", "[6] Perda de Pacotes (Pathping)", "Analisa perda de pacotes em cada salto até o destino informado.", "Rede"),
+        @("btnNetTracert", "[7] Rastrear Rota (Tracert)", "Lista todos os roteadores (hops) entre seu PC e o destino para achar gargalos.", "Rede"),
+        @("btnNetPingCont", "[8] Ping Contínuo (-t)", "Abre janela separada executando ping -t contínuo no alvo para monitorar estabilidade.", "Rede"),
+        @("btnNetstatEst", "[9a] Netstat: Conexões Ativas", "Lista conexões TCP ativas (ESTABLISHED) com portas e PID do processo.", "Monitor"),
+        @("btnNetstatList", "[9b] Netstat: Portas Escutando", "Lista serviços e portas abertas aguardando conexões (LISTENING) no sistema.", "Monitor"),
+        @("btnNetstatAll", "[9c] Netstat: Tudo Detalhado", "Exibe todas as conexões e sockets ativos com PIDs.", "Monitor"),
+        @("btnNetSubnetScan", "[10] Varredura Rede Local", "Escaneia IPs ativos na sub-rede local, coleta MAC/ARP, lista blocos de IPs livres e salva no Desktop.", "Rede Local"),
+        @("btnNetIpConfig", "[11] Exibir ipconfig /all", "Mostra detalhes completos de IPv4, IPv6, DHCP, Gateway e servidores DNS atuais.", "Rede"),
+        @("btnNetSimpleRepair", "[12] Reparar Conexão", "Executa Flush DNS, renova IP via DHCP (release/renew) e recarrega tabela NetBIOS.", "Reparo"),
+        @("btnNetResetDeep", "[13] Reset Completo Pilha TCP/IP", "Reseta Winsock, IPv4, IPv6, WinHTTP Proxy, cache ARP e regras do Firewall do Windows.", "Cuidado"),
+        @("btnNetForensicReport", "[14] Relatório Forense Completo (.TXT)", "Coleta 8 diagnósticos completos de rede e salva arquivo .txt na Área de Trabalho.", "Relatório"),
+        @("btnRestartAdapters", "Reiniciar Placas de Rede", "Desativa e reativa adaptadores físicos Ethernet/Wi-Fi conectados.", "Rede"),
+        @("btnOptimizeTcpTab", "Otimizar TCP Baixa Latência", "Ativa AutoTuning normal, RSS, ECN e remove limite multimídia NetworkThrottlingIndex.", "Gaming"),
+        @("btnDnsBenchmark", "Benchmark DNS (Latência)", "Testa tempo de resposta TCP/53 em todos os provedores DNS para encontrar o mais rápido na sua rede.", "DNS"),
+        @("btnApplyDns", "Aplicar DNS Selecionado", "Aplica IPv4, IPv6 e DNS-over-HTTPS (DoH) do provedor escolhido no ComboBox.", "DNS"),
+
+        @("btnInstallFeatures", "Instalar Recursos Selecionados", "Habilita os recursos opcionais marcados acima usando DISM / Recursos do Windows.", "Sistema"),
+        @("btnFixFullCorruption", "Verificação Completa (DISM + SFC)", "Executa DISM /RestoreHealth seguido de SFC /scannow para reparar arquivos corrompidos do Windows.", "Reparo"),
+        @("btnSfcScan", "SFC /scannow", "Verifica e corrige arquivos protegidos do Windows corrompidos.", "Reparo"),
+        @("btnDismRepair", "DISM /RestoreHealth", "Repara a imagem base do sistema Windows via Windows Update.", "Reparo"),
+        @("btnDismCleanup", "Limpar WinSxS", "Remove versões antigas obsoletas de componentes da pasta WinSxS (/ResetBase).", "Limpeza"),
+        @("btnFixWuReset", "Resetar Windows Update", "Limpa cache SoftwareDistribution, re-registra DLLs e reinicia serviços de atualização.", "Update"),
+        @("btnFixWuResetAggressive", "Resetar WU (Agressivo)", "Além do reset padrão, executa DISM+SFC e redefine permissões SDSET de segurança dos serviços.", "Cuidado"),
+        @("btnFixNetwork", "Resetar Rede Completa", "Reseta Winsock, TCP/IP, Proxy e Firewall para corrigir internet sem conexão.", "Rede"),
+        @("btnFixWinget", "Reinstalar / Reparar WinGet", "Usa Microsoft.WinGet.Client para instalar ou consertar o gerenciador WinGet.", "Reparo"),
+        @("btnFixNtpPool", "Sincronizar NTP (pool.ntp.org)", "Substitui o servidor de horário padrão por pool.ntp.org para maior precisão.", "Sistema"),
+        @("btnFixAutologon", "Executar Autologon (Sysinternals)", "Baixa e abre o utilitário oficial Sysinternals para configurar login automático seguro.", "Sistema"),
+        @("btnRestartSpooler", "Destravar Spooler Impressão", "Limpa documentos travados da fila de impressão e reinicia o serviço Spooler.", "Reparo"),
+        @("btnScheduleChkdsk", "Agendar CHKDSK (Disco C:)", "Agenda verificação e reparo de erros no sistema de arquivos do disco C: na próxima reinicialização.", "Disco"),
+        @("btnEnableSshServer", "Habilitar Servidor OpenSSH", "Instala OpenSSH Server, libera porta TCP 22 no Firewall e configura chaves administrativas.", "Remoto"),
+        @("btnInstallPsProfile", "Instalar Perfil PowerShell 7", "Configura histórico preditivo PSReadLine e atalhos úteis no perfil do PowerShell 7.", "Terminal"),
+        @("btnUninstallPsProfile", "Remover Perfil PowerShell 7", "Remove o perfil personalizado e restaura o backup anterior (.bak) se existir.", "Terminal"),
+
+        @("btnWuDefault", "Restaurar Windows Update Padrão", "Remove todas as políticas de adiamento e devolve o controle automático padrão da Microsoft.", "Update"),
+        @("btnWuRecommended", "Aplicar Modo Recomendado", "Evita drivers automáticos e adia recursos grandes por 365 dias mantendo segurança em dia.", "Recomendado"),
+        @("btnWuPause", "Pausar Atualizações até 2042", "Estende o limite oficial de pausa do Windows Update até o ano de 2042.", "Update"),
+        @("btnWuDisable", "Desativar Windows Update", "Para e desativa serviços/tarefas de atualização. Requer confirmação explícita.", "Cuidado"),
+
+        @("btnBrowseIso", "Procurar ISO", "Seleciona o arquivo .iso oficial do Windows 10 ou Windows 11 no computador.", "ISO"),
+        @("btnInspectIso", "Analisar Edições", "Monta a ISO temporariamente para listar todas as edições disponíveis (Home, Pro, etc.).", "ISO"),
+        @("btnBuildCustomIso", "Preparar e Gerar ISO Otimizada", "Injeta bypasses, debloat, autounattend.xml, drivers locais e prepara a ISO/mídia.", "ISO"),
+        @("btnRefreshUsb", "Atualizar USBs", "Lista pendrives USB removíveis conectados prontos para receber a instalação bootável.", "USB"),
+        @("btnWriteUsb", "Formatar e Gravar Pendrive", "Formata o pendrive em FAT32 UEFI (dividindo install.wim >4GB se necessário) e grava os arquivos.", "Cuidado")
+    )
+
+    foreach ($item in $entries) {
+        $ctrl = $w.FindName($item[0])
+        if ($ctrl) {
+            $noTip = ($item[0] -like "nav*")
+            Register-HoverHelp -Control $ctrl -Title $item[1] -Description $item[2] -Badge $item[3] -NoToolTip:$noTip
+        }
+    }
 }
 
 function Start-WinRepairUI {
@@ -345,18 +531,33 @@ function Start-WinRepairUI {
         $window.FindName("txtSystemInfo").Text = "Windows | $($env:COMPUTERNAME)"
     }
 
+    # Tradução PT-BR das categorias de Softwares
+    $appCatNames = @{
+        "Browsers"         = "Navegadores"
+        "Communications"   = "Comunicação"
+        "Development"      = "Desenvolvimento"
+        "Document"         = "Documentos & PDF"
+        "Games"            = "Jogos & Launchers"
+        "Microsoft Tools"  = "Ferramentas Microsoft"
+        "Multimedia Tools" = "Multimídia & Vídeo"
+        "Pro Tools"        = "Ferramentas Pro"
+        "Selfhosted Tools" = "Selfhosted & Rede"
+        "Utilities"        = "Utilitários Essenciais"
+    }
+
     # ==========================================================================
-    # POPULAR CONTROLES DINÂMICOS A PARTIR DOS JSONS
+    # POPULAR CONTROLES DINÂMICOS + HOVER HELP INSTANTÂNEO
     # ==========================================================================
 
     # 1. SOFTWARES (239 Apps)
     $appsByCategory = [ordered]@{}
     foreach ($p in $Configs.Applications.PSObject.Properties) {
-        $cat = if ($p.Value.category) { $p.Value.category } else { "Outros" }
+        $rawCat = if ($p.Value.category) { $p.Value.category } else { "Utilities" }
+        $cat = if ($appCatNames.ContainsKey($rawCat)) { $appCatNames[$rawCat] } else { $rawCat }
         if (-not $appsByCategory.Contains($cat)) {
             $appsByCategory[$cat] = New-Object System.Collections.Generic.List[object]
         }
-        [void]$appsByCategory[$cat].Add([pscustomobject]@{ Key = $p.Name; Data = $p.Value })
+        [void]$appsByCategory[$cat].Add([pscustomobject]@{ Key = $p.Name; Data = $p.Value; CatLabel = $cat })
     }
 
     $chipsWrap = $window.FindName("panelAppCategoryChips")
@@ -367,6 +568,7 @@ function Start-WinRepairUI {
         $global:WinRepairUi.SelectedAppCategory = "Todas"
         Apply-GlobalSearchFilter
     })
+    Register-HoverHelp -Control $allChip -Title "Mostrar Todas" -Description "Exibe todas as categorias do catálogo de softwares." -Badge "Filtro" -NoToolTip
     [void]$chipsWrap.Children.Add($allChip)
 
     $appCols = @($window.FindName("panelAppsCol0"), $window.FindName("panelAppsCol1"), $window.FindName("panelAppsCol2"))
@@ -383,6 +585,7 @@ function Start-WinRepairUI {
             $global:WinRepairUi.SelectedAppCategory = [string]$s.Tag
             Apply-GlobalSearchFilter
         })
+        Register-HoverHelp -Control $chip -Title "Categoria: $catName" -Description "Filtra apenas os $($items.Count) aplicativo(s) de $catName." -Badge "Filtro" -NoToolTip
         [void]$chipsWrap.Children.Add($chip)
 
         $exp = New-Object System.Windows.Controls.Expander
@@ -391,7 +594,7 @@ function Start-WinRepairUI {
         $exp.FontWeight = [System.Windows.FontWeights]::Bold
 
         $stack = New-Object System.Windows.Controls.StackPanel
-        $stack.Margin = New-Object System.Windows.Thickness(8, 4, 8, 8)
+        $stack.Margin = New-Object System.Windows.Thickness(6, 6, 6, 8)
         $catCheckBoxes = New-Object System.Collections.Generic.List[object]
 
         foreach ($appEntry in $items) {
@@ -400,7 +603,12 @@ function Start-WinRepairUI {
             $cb.Content = "$($appEntry.Data.content)$fossTag"
             $cb.Tag = $appEntry.Key
             $cb.FontWeight = [System.Windows.FontWeights]::Normal
-            if ($appEntry.Data.description) { $cb.ToolTip = $appEntry.Data.description }
+
+            $wgTxt = if ($appEntry.Data.winget -and $appEntry.Data.winget -ne "na") { $appEntry.Data.winget } else { "-" }
+            $desc = if ($appEntry.Data.description) { "$($appEntry.Data.description) (WinGet: $wgTxt)" } else { "WinGet: $wgTxt" }
+            $badge = if ($appEntry.Data.foss -eq $true) { "FOSS • $catName" } else { $catName }
+            Register-HoverHelp -Control $cb -Title $appEntry.Data.content -Description $desc -Badge $badge
+
             $cb.Add_Checked({ Update-AppsSelectionCounter })
             $cb.Add_Unchecked({ Update-AppsSelectionCounter })
             [void]$stack.Children.Add($cb)
@@ -431,13 +639,16 @@ function Start-WinRepairUI {
 
         if ($key -in @("WPFOOSUbutton", "WPFchangedns", "WPFAddUltPerf", "WPFRemoveUltPerf")) { continue }
 
+        $descText = if ($item.Description) { $item.Description } else { $item.Content }
+
         if ($typ -eq "Toggle") {
             $tg = New-Object System.Windows.Controls.CheckBox
             $tg.Content = $item.Content
             $tg.Tag = $key
             $tg.Style = $window.FindResource("ToggleSwitchStyle")
-            if ($item.Description) { $tg.ToolTip = $item.Description }
             try { $tg.IsChecked = (Get-ToggleCurrentState -TweakObj $item) } catch { $tg.IsChecked = $false }
+
+            Register-HoverHelp -Control $tg -Title $item.Content -Description $descText -Badge "Instantâneo"
 
             $tg.Add_Click({
                 param($sender, $e)
@@ -455,13 +666,15 @@ function Start-WinRepairUI {
             $lbl.Text = "$($item.Content):"
             $lbl.FontSize = 11.5
             $lbl.FontWeight = [System.Windows.FontWeights]::SemiBold
-            $lbl.Margin = New-Object System.Windows.Thickness(0, 8, 0, 3)
+            $lbl.Margin = New-Object System.Windows.Thickness(7, 10, 0, 3)
             $lbl.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, "BrushTextMuted")
             [void]$pPrefs.Children.Add($lbl)
 
             $cmb = New-Object System.Windows.Controls.ComboBox
             $cmb.Tag = $key
-            if ($item.Description) { $cmb.ToolTip = $item.Description }
+            $cmb.Margin = New-Object System.Windows.Thickness(7, 0, 7, 4)
+            Register-HoverHelp -Control $cmb -Title $item.Content -Description $descText -Badge "GPU / Vídeo"
+
             $comboOpts = @($item.ComboItems -split '\|')
             foreach ($opt in $comboOpts) { [void]$cmb.Items.Add($opt) }
             try {
@@ -488,7 +701,9 @@ function Start-WinRepairUI {
             $cb = New-Object System.Windows.Controls.CheckBox
             $cb.Content = $item.Content
             $cb.Tag = $key
-            if ($item.Description) { $cb.ToolTip = $item.Description }
+            $badgeLbl = if ($cat -eq "Avancados") { "Avançado (Cuidado)" } else { "Essencial" }
+            Register-HoverHelp -Control $cb -Title $item.Content -Description $descText -Badge $badgeLbl
+
             $cb.Add_Checked({
                 if (-not $global:WinRepairUi.SuppressPresetReset) { $global:WinRepairUi.ActivePreset = "Personalizado" }
                 Update-TweaksSelectionPreview
@@ -529,14 +744,17 @@ function Start-WinRepairUI {
         $hdrTxt.FontSize = 13.5
         $hdrTxt.FontWeight = [System.Windows.FontWeights]::Bold
         $hdrTxt.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
-        $hdrTxt.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, "BrushAccent")
+        $hdrTxt.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, "BrushTextSecondary")
         [void]$sp.Children.Add($hdrTxt)
 
         foreach ($ax in ($appxByCat[$catName] | Sort-Object { $_.Data.Content })) {
             $cb = New-Object System.Windows.Controls.CheckBox
             $cb.Content = $ax.Data.Content
             $cb.Tag = $ax.Key
-            if ($ax.Data.Description) { $cb.ToolTip = $ax.Data.Description }
+            $axDesc = if ($ax.Data.Description) { $ax.Data.Description } else { $ax.Data.PackageId }
+            $axBadge = if ($ax.Data.DefaultDebloat -eq $true) { "Bloatware Padrão" } else { $catName }
+            Register-HoverHelp -Control $cb -Title $ax.Data.Content -Description $axDesc -Badge $axBadge
+
             $cb.Add_Checked({ Update-AppxSelectionCounter })
             $cb.Add_Unchecked({ Update-AppxSelectionCounter })
             [void]$sp.Children.Add($cb)
@@ -556,6 +774,7 @@ function Start-WinRepairUI {
     }
     [void]$cmbDns.Items.Add("Automático (DHCP)")
     $cmbDns.SelectedIndex = 0
+    Register-HoverHelp -Control $cmbDns -Title "Seletor de Provedor DNS" -Description "Escolha Cloudflare, Google, Quad9, OpenDNS, AdGuard ou deixe no modo Benchmark automático." -Badge "DNS"
 
     # 5. RECURSOS OPCIONAIS & 14 PAINÉIS CLÁSSICOS
     $pFeat = $window.FindName("panelFeaturesContainer")
@@ -564,18 +783,20 @@ function Start-WinRepairUI {
     foreach ($p in $Configs.Features.PSObject.Properties) {
         $key = $p.Name
         $f = $p.Value
+        $fDesc = if ($f.Description) { $f.Description } else { $f.Content }
         if ($f.category -eq "Features" -and $key -ne "WPFFeatureInstall") {
             $cb = New-Object System.Windows.Controls.CheckBox
             $cb.Content = $f.Content
             $cb.Tag = $key
-            if ($f.Description) { $cb.ToolTip = $f.Description }
+            Register-HoverHelp -Control $cb -Title $f.Content -Description $fDesc -Badge "Recurso Windows"
             [void]$pFeat.Children.Add($cb)
             $global:WinRepairUi.FeatureCheckBoxes[$key] = $cb
         } elseif ($f.category -eq "Legacy Windows Panels") {
             $btn = New-Object System.Windows.Controls.Button
             $btn.Content = $f.Content
             $btn.Tag = $key
-            $btn.MinWidth = 175
+            $btn.MinWidth = 178
+            Register-HoverHelp -Control $btn -Title $f.Content -Description $fDesc -Badge "Painel Clássico"
             $btn.Add_Click({
                 param($sender, $e)
                 $lKey = [string]$sender.Tag
@@ -590,11 +811,13 @@ function Start-WinRepairUI {
         }
     }
 
+    # Hover help em todos os botões e elementos estáticos
+    Initialize-StaticHoverHelp
+
     # ==========================================================================
     # VINCULAÇÃO DE EVENTOS PRINCIPAIS
     # ==========================================================================
 
-    # Navegação Sidebar
     $window.FindName("navInstall").Add_Checked({ Set-ActiveHudView "Install" })
     $window.FindName("navTweaks").Add_Checked({ Set-ActiveHudView "Tweaks" })
     $window.FindName("navAppx").Add_Checked({ Set-ActiveHudView "Appx" })
@@ -603,13 +826,11 @@ function Start-WinRepairUI {
     $window.FindName("navUpdates").Add_Checked({ Set-ActiveHudView "Updates" })
     $window.FindName("navIso").Add_Checked({ Set-ActiveHudView "Iso" })
 
-    # Busca Global
     $window.FindName("txtGlobalSearch").Add_TextChanged({ Apply-GlobalSearchFilter })
     $window.FindName("btnClearSearch").Add_Click({
         $global:WinRepairUi.Window.FindName("txtGlobalSearch").Text = ""
     })
 
-    # Tema & Escala de Fonte
     $window.FindName("btnToggleTheme").Add_Click({
         $next = if ($global:WinRepairUi.CurrentTheme -eq "Dark") { "Light" } else { "Dark" }
         Set-HudTheme -Mode $next
@@ -623,7 +844,6 @@ function Start-WinRepairUI {
         if ($w.FontSize -gt 11) { $w.FontSize -= 1 }
     })
 
-    # Importar / Exportar JSON (Importação SOMENTE marca checkboxes, nunca executa)
     $window.FindName("btnExportConfig").Add_Click({
         $dlg = New-Object System.Windows.Forms.SaveFileDialog
         $dlg.Filter = "Configuração JSON (*.json)|*.json"
@@ -682,13 +902,12 @@ function Start-WinRepairUI {
         Start-AsyncAction -Label "Gerando Relatório do Ambiente..." -Action { Export-EnvironmentReport }
     })
 
-    # Console drawer buttons
     $window.FindName("btnToggleConsole").Add_Click({
         $ui = $global:WinRepairUi
         $row = $ui.Window.FindName("rowConsole")
         $btn = $ui.Window.FindName("btnToggleConsole")
         if ($ui.ConsoleCollapsed) {
-            $row.Height = New-Object System.Windows.GridLength(175)
+            $row.Height = New-Object System.Windows.GridLength(155)
             $btn.Content = "$([char]0x25BC) Minimizar"
             $ui.ConsoleCollapsed = $false
         } else {
@@ -787,7 +1006,7 @@ function Start-WinRepairUI {
                     $cb.SetResourceReference([System.Windows.Controls.CheckBox]::ForegroundProperty, "BrushTextPrimary")
                 }
             }
-            Write-ToolLog "Verificação concluída: $found aplicativo(s) do catálogo detectado(s) em verde." "SUCCESS"
+            Write-ToolLog "Verificação concluída: $found aplicativo(s) do catálogo detectado(s)." "SUCCESS"
         }
     })
 
@@ -881,7 +1100,7 @@ function Start-WinRepairUI {
                     $cb.SetResourceReference([System.Windows.Controls.CheckBox]::ForegroundProperty, "BrushTextMuted")
                 }
             }
-            Write-ToolLog "$found pacote(s) AppX do catálogo estão instalados atualmente (destacados em verde)." "SUCCESS"
+            Write-ToolLog "$found pacote(s) AppX do catálogo estão instalados atualmente (destacados)." "SUCCESS"
         }
     })
     $window.FindName("btnAppxRemove").Add_Click({
@@ -1138,7 +1357,6 @@ function Start-WinRepairUI {
         }
     })
 
-    # Timer da UI para drenar LogQueue, atualizar status pill / progressbar e completar Runspaces
     $uiTimer = New-Object System.Windows.Threading.DispatcherTimer
     $uiTimer.Interval = [TimeSpan]::FromMilliseconds(150)
     $uiTimer.Add_Tick({
@@ -1196,8 +1414,8 @@ function Start-WinRepairUI {
 
     $global:WinRepairUi.Initializing = $false
 
-    Write-ToolLog "WinRepair & Tweaks Pro v3.0 carregado com sucesso!" "SUCCESS"
-    Write-ToolLog "Escolha um perfil (Desktop / Notebook / All) ou navegue pelas abas laterais." "INFO"
+    Write-ToolLog "WinRepair & Tweaks Pro v3.1 carregado com sucesso!" "SUCCESS"
+    Write-ToolLog "Passe o mouse em qualquer opção para ler o resumo instantâneo antes de executar." "INFO"
 
     $window.Add_Closed({ $uiTimer.Stop() })
     $window.ShowDialog() | Out-Null
