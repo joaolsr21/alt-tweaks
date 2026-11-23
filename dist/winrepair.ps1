@@ -3204,60 +3204,60 @@ function Set-HudTheme {
         $target = $Mode
     }
 
-    # Paleta Verde Agua (#A4FFF7, #68DDBD, #03BB85, #038554, #005227)
+    # Paleta Crimson Noir (#0B0B0D, #1F1F24, #C1121F, #FF4D4D, #F2F2F2)
     $palette = if ($target -eq "Light") {
         @{
-            BrushBgApp         = "#F0FBF7"
-            BrushBgSidebar     = "#E2F5EE"
+            BrushBgApp         = "#F2F2F2"
+            BrushBgSidebar     = "#E8E8EC"
             BrushBgSurface     = "#FFFFFF"
             BrushBgCard        = "#FFFFFF"
-            BrushBgCardAlt     = "#D7EFE6"
-            BrushBgCardHover   = "#C2E8DA"
-            BrushBgInput       = "#F6FCFA"
-            BrushBrandStart    = "#005227"
-            BrushBrandEnd      = "#038554"
-            BrushBorder        = "#9FD4C1"
-            BrushBorderStrong  = "#038554"
-            BrushBorderHover   = "#03BB85"
-            BrushTextPrimary   = "#042919"
-            BrushTextSecondary = "#005227"
-            BrushTextMuted     = "#2C6B53"
-            BrushAccent        = "#038554"
-            BrushAccentHover   = "#03BB85"
-            BrushAccentDeep    = "#005227"
-            BrushAccentText    = "#FFFFFF"
-            BrushSuccess       = "#038554"
+            BrushBgCardAlt     = "#ECECF0"
+            BrushBgCardHover   = "#FCE8EA"
+            BrushBgInput       = "#F7F7F9"
+            BrushBrandStart    = "#1F1F24"
+            BrushBrandEnd      = "#C1121F"
+            BrushBorder        = "#D4D4DC"
+            BrushBorderStrong  = "#C1121F"
+            BrushBorderHover   = "#FF4D4D"
+            BrushTextPrimary   = "#0B0B0D"
+            BrushTextSecondary = "#C1121F"
+            BrushTextMuted     = "#52525E"
+            BrushAccent        = "#C1121F"
+            BrushAccentHover   = "#FF4D4D"
+            BrushAccentDeep    = "#FCE8EA"
+            BrushAccentText    = "#F2F2F2"
+            BrushSuccess       = "#15803D"
             BrushWarning       = "#B45309"
-            BrushDanger        = "#BE123C"
-            BrushConsoleBg     = "#050C09"
-            BrushConsoleFg     = "#A4FFF7"
+            BrushDanger        = "#C1121F"
+            BrushConsoleBg     = "#0B0B0D"
+            BrushConsoleFg     = "#F2F2F2"
         }
     } else {
         @{
-            BrushBgApp         = "#07110D"
-            BrushBgSidebar     = "#0A1712"
-            BrushBgSurface     = "#0E2019"
-            BrushBgCard        = "#12281F"
-            BrushBgCardAlt     = "#173428"
-            BrushBgCardHover   = "#1D4233"
-            BrushBgInput       = "#091510"
-            BrushBrandStart    = "#005227"
-            BrushBrandEnd      = "#038554"
-            BrushBorder        = "#1F4636"
-            BrushBorderStrong  = "#038554"
-            BrushBorderHover   = "#68DDBD"
-            BrushTextPrimary   = "#E9FBF5"
-            BrushTextSecondary = "#A4FFF7"
-            BrushTextMuted     = "#83B8A6"
-            BrushAccent        = "#03BB85"
-            BrushAccentHover   = "#68DDBD"
-            BrushAccentDeep    = "#005227"
-            BrushAccentText    = "#031A10"
-            BrushSuccess       = "#68DDBD"
-            BrushWarning       = "#F9E2AF"
-            BrushDanger        = "#F38BA8"
-            BrushConsoleBg     = "#050C09"
-            BrushConsoleFg     = "#A4FFF7"
+            BrushBgApp         = "#0B0B0D"
+            BrushBgSidebar     = "#101014"
+            BrushBgSurface     = "#16161A"
+            BrushBgCard        = "#1F1F24"
+            BrushBgCardAlt     = "#28282F"
+            BrushBgCardHover   = "#322024"
+            BrushBgInput       = "#121216"
+            BrushBrandStart    = "#1F1F24"
+            BrushBrandEnd      = "#C1121F"
+            BrushBorder        = "#2F2F38"
+            BrushBorderStrong  = "#C1121F"
+            BrushBorderHover   = "#FF4D4D"
+            BrushTextPrimary   = "#F2F2F2"
+            BrushTextSecondary = "#FF4D4D"
+            BrushTextMuted     = "#A3A3AE"
+            BrushAccent        = "#C1121F"
+            BrushAccentHover   = "#FF4D4D"
+            BrushAccentDeep    = "#4A0D13"
+            BrushAccentText    = "#F2F2F2"
+            BrushSuccess       = "#4ADE80"
+            BrushWarning       = "#FBBF24"
+            BrushDanger        = "#FF4D4D"
+            BrushConsoleBg     = "#08080A"
+            BrushConsoleFg     = "#F2F2F2"
         }
     }
 
@@ -3463,7 +3463,7 @@ function Initialize-StaticHoverHelp {
         @("btnImportConfig", "Importar Seleção (.json)", "Carrega um arquivo .json e apenas marca os itens correspondentes para você revisar.", "Arquivo"),
         @("btnExportConfig", "Exportar Seleção (.json)", "Salva todas as opções marcadas atualmente em um arquivo .json reutilizável.", "Arquivo"),
         @("btnEnvReport", "Relatório do Ambiente", "Gera arquivo .txt na Área de Trabalho com hardware, versões de gerenciadores e status atual.", "Relatório"),
-        @("btnToggleTheme", "Alternar Tema", "Alterna entre a paleta Verde Água Nocturne (Escuro) e Verde Água Breeze (Claro).", "Aparência"),
+        @("btnToggleTheme", "Alternar Tema", "Alterna entre a paleta Crimson Noir (Escuro) e Crimson Light (Claro).", "Aparência"),
         @("btnFontDown", "Diminuir Fonte", "Reduz o tamanho do texto da interface para exibir mais itens por tela.", "Aparência"),
         @("btnFontUp", "Aumentar Fonte", "Amplia o tamanho do texto da interface para facilitar a leitura.", "Aparência"),
 
@@ -3481,7 +3481,7 @@ function Initialize-StaticHoverHelp {
         @("btnInstallApps", "Instalar / Atualizar Selecionados", "Instala ou atualiza todos os programas marcados usando WinGet ou Chocolatey.", "Softwares"),
         @("btnUninstallApps", "Desinstalar Selecionados", "Remove silenciosamente do sistema todos os programas marcados no catálogo.", "Softwares"),
         @("btnUpgradeAllApps", "Atualizar Todos os Apps", "Executa atualização geral de todos os programas instalados no computador.", "Softwares"),
-        @("btnDetectInstalledApps", "Mostrar Instalados", "Destaca em verde Água os softwares do catálogo que já estão instalados neste PC.", "Softwares"),
+        @("btnDetectInstalledApps", "Mostrar Instalados", "Destaca os softwares do catálogo que já estão instalados neste PC.", "Softwares"),
         @("btnClearApps", "Limpar Seleção de Apps", "Desmarca todos os checkboxes da lista de softwares.", "Seleção"),
 
         @("btnAppxDefault", "Marcar Bloatwares Padrão", "Marca automaticamente os 18 aplicativos pré-instalados mais comuns para remoção (apenas seleciona).", "AppX"),
@@ -5139,31 +5139,31 @@ $embeddedXaml = @'
         ToolTipService.ShowDuration="15000">
 
     <Window.Resources>
-        <!-- Paleta Verde &#xC1;gua Nocturne (Din&#xE2;mica) -->
-        <SolidColorBrush x:Key="BrushBgApp" Color="#07110D"/>
-        <SolidColorBrush x:Key="BrushBgSidebar" Color="#0A1712"/>
-        <SolidColorBrush x:Key="BrushBgSurface" Color="#0E2019"/>
-        <SolidColorBrush x:Key="BrushBgCard" Color="#12281F"/>
-        <SolidColorBrush x:Key="BrushBgCardAlt" Color="#173428"/>
-        <SolidColorBrush x:Key="BrushBgCardHover" Color="#1D4233"/>
-        <SolidColorBrush x:Key="BrushBgInput" Color="#091510"/>
-        <SolidColorBrush x:Key="BrushBrandStart" Color="#005227"/>
-        <SolidColorBrush x:Key="BrushBrandEnd" Color="#038554"/>
-        <SolidColorBrush x:Key="BrushBorder" Color="#1F4636"/>
-        <SolidColorBrush x:Key="BrushBorderStrong" Color="#038554"/>
-        <SolidColorBrush x:Key="BrushBorderHover" Color="#68DDBD"/>
-        <SolidColorBrush x:Key="BrushTextPrimary" Color="#E9FBF5"/>
-        <SolidColorBrush x:Key="BrushTextSecondary" Color="#A4FFF7"/>
-        <SolidColorBrush x:Key="BrushTextMuted" Color="#83B8A6"/>
-        <SolidColorBrush x:Key="BrushAccent" Color="#03BB85"/>
-        <SolidColorBrush x:Key="BrushAccentHover" Color="#68DDBD"/>
-        <SolidColorBrush x:Key="BrushAccentDeep" Color="#005227"/>
-        <SolidColorBrush x:Key="BrushAccentText" Color="#031A10"/>
-        <SolidColorBrush x:Key="BrushSuccess" Color="#68DDBD"/>
-        <SolidColorBrush x:Key="BrushWarning" Color="#F9E2AF"/>
-        <SolidColorBrush x:Key="BrushDanger" Color="#F38BA8"/>
-        <SolidColorBrush x:Key="BrushConsoleBg" Color="#050C09"/>
-        <SolidColorBrush x:Key="BrushConsoleFg" Color="#A4FFF7"/>
+        <!-- Paleta Crimson Noir (Din&#xE2;mica) -->
+        <SolidColorBrush x:Key="BrushBgApp" Color="#0B0B0D"/>
+        <SolidColorBrush x:Key="BrushBgSidebar" Color="#101014"/>
+        <SolidColorBrush x:Key="BrushBgSurface" Color="#16161A"/>
+        <SolidColorBrush x:Key="BrushBgCard" Color="#1F1F24"/>
+        <SolidColorBrush x:Key="BrushBgCardAlt" Color="#28282F"/>
+        <SolidColorBrush x:Key="BrushBgCardHover" Color="#322024"/>
+        <SolidColorBrush x:Key="BrushBgInput" Color="#121216"/>
+        <SolidColorBrush x:Key="BrushBrandStart" Color="#1F1F24"/>
+        <SolidColorBrush x:Key="BrushBrandEnd" Color="#C1121F"/>
+        <SolidColorBrush x:Key="BrushBorder" Color="#2F2F38"/>
+        <SolidColorBrush x:Key="BrushBorderStrong" Color="#C1121F"/>
+        <SolidColorBrush x:Key="BrushBorderHover" Color="#FF4D4D"/>
+        <SolidColorBrush x:Key="BrushTextPrimary" Color="#F2F2F2"/>
+        <SolidColorBrush x:Key="BrushTextSecondary" Color="#FF4D4D"/>
+        <SolidColorBrush x:Key="BrushTextMuted" Color="#A3A3AE"/>
+        <SolidColorBrush x:Key="BrushAccent" Color="#C1121F"/>
+        <SolidColorBrush x:Key="BrushAccentHover" Color="#FF4D4D"/>
+        <SolidColorBrush x:Key="BrushAccentDeep" Color="#4A0D13"/>
+        <SolidColorBrush x:Key="BrushAccentText" Color="#F2F2F2"/>
+        <SolidColorBrush x:Key="BrushSuccess" Color="#4ADE80"/>
+        <SolidColorBrush x:Key="BrushWarning" Color="#FBBF24"/>
+        <SolidColorBrush x:Key="BrushDanger" Color="#FF4D4D"/>
+        <SolidColorBrush x:Key="BrushConsoleBg" Color="#08080A"/>
+        <SolidColorBrush x:Key="BrushConsoleFg" Color="#F2F2F2"/>
 
         <!-- ToolTip Global Estilizado -->
         <Style TargetType="ToolTip">
@@ -5309,18 +5309,18 @@ $embeddedXaml = @'
             </Setter>
         </Style>
 
-        <!-- Bot&#xE3;o Secund&#xE1;rio Destaque Esmeralda Escuro -->
+        <!-- Bot&#xE3;o Secund&#xE1;rio Destaque Crimson -->
         <Style x:Key="SuccessButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Background" Value="{DynamicResource BrushAccentDeep}"/>
-            <Setter Property="Foreground" Value="{DynamicResource BrushTextSecondary}"/>
+            <Setter Property="Background" Value="{DynamicResource BrushBgCardAlt}"/>
+            <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
         </Style>
 
         <!-- Bot&#xE3;o Perigo -->
         <Style x:Key="DangerButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Background" Value="#3B1A24"/>
-            <Setter Property="Foreground" Value="{DynamicResource BrushDanger}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource BrushDanger}"/>
+            <Setter Property="Background" Value="#3D0C12"/>
+            <Setter Property="Foreground" Value="#FF4D4D"/>
+            <Setter Property="BorderBrush" Value="#FF4D4D"/>
         </Style>
 
         <!-- Bot&#xE3;o Card para os 3 Perfis (Desktop / Notebook / All) -->
@@ -5748,12 +5748,12 @@ $embeddedXaml = @'
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Cart&#xE3;o da Marca com Gradiente Verde &#xC1;gua -->
-                <Border Grid.Row="0" CornerRadius="10" Padding="12,11" Margin="2,0,2,14" BorderBrush="{DynamicResource BrushAccent}" BorderThickness="1">
+                <!-- Cart&#xE3;o da Marca com Gradiente Crimson Noir -->
+                <Border Grid.Row="0" CornerRadius="10" Padding="12,11" Margin="2,0,2,14" BorderBrush="#FF4D4D" BorderThickness="1">
                     <Border.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                            <GradientStop Color="#005227" Offset="0"/>
-                            <GradientStop Color="#038554" Offset="1"/>
+                            <GradientStop Color="#1F1F24" Offset="0"/>
+                            <GradientStop Color="#C1121F" Offset="1"/>
                         </LinearGradientBrush>
                     </Border.Background>
                     <StackPanel>
@@ -5762,14 +5762,14 @@ $embeddedXaml = @'
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="&#x26A1; WinRepair Pro" FontSize="17" FontWeight="Bold" Foreground="#A4FFF7"/>
-                            <Border Grid.Column="1" Background="#005227" BorderBrush="#68DDBD" BorderThickness="1" CornerRadius="5" Padding="6,1" VerticalAlignment="Center">
-                                <TextBlock Text="v3.1" FontSize="10" FontWeight="Bold" Foreground="#A4FFF7"/>
+                            <TextBlock Grid.Column="0" Text="&#x26A1; WinRepair Pro" FontSize="17" FontWeight="Bold" Foreground="#F2F2F2"/>
+                            <Border Grid.Column="1" Background="#0B0B0D" BorderBrush="#FF4D4D" BorderThickness="1" CornerRadius="5" Padding="6,1" VerticalAlignment="Center">
+                                <TextBlock Text="v3.1" FontSize="10" FontWeight="Bold" Foreground="#FF4D4D"/>
                             </Border>
                         </Grid>
-                        <TextBlock Text="Otimiza&#xE7;&#xE3;o, Rede &amp; Diagn&#xF3;stico" FontSize="11" Foreground="#E9FBF5" Opacity="0.9" Margin="0,3,0,7"/>
-                        <Border Background="#07110D" Opacity="0.9" CornerRadius="5" Padding="7,3" HorizontalAlignment="Left">
-                            <TextBlock Text="&#x1F6E1; Administrador Ativo" FontSize="10.5" FontWeight="SemiBold" Foreground="#68DDBD"/>
+                        <TextBlock Text="Otimiza&#xE7;&#xE3;o, Rede &amp; Diagn&#xF3;stico" FontSize="11" Foreground="#F2F2F2" Opacity="0.92" Margin="0,3,0,7"/>
+                        <Border Background="#0B0B0D" Opacity="0.92" CornerRadius="5" Padding="7,3" HorizontalAlignment="Left">
+                            <TextBlock Text="&#x1F6E1; Administrador Ativo" FontSize="10.5" FontWeight="SemiBold" Foreground="#F2F2F2"/>
                         </Border>
                     </StackPanel>
                 </Border>

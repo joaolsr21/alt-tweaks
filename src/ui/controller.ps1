@@ -107,60 +107,60 @@ function Set-HudTheme {
         $target = $Mode
     }
 
-    # Paleta Verde Agua (#A4FFF7, #68DDBD, #03BB85, #038554, #005227)
+    # Paleta Crimson Noir (#0B0B0D, #1F1F24, #C1121F, #FF4D4D, #F2F2F2)
     $palette = if ($target -eq "Light") {
         @{
-            BrushBgApp         = "#F0FBF7"
-            BrushBgSidebar     = "#E2F5EE"
+            BrushBgApp         = "#F2F2F2"
+            BrushBgSidebar     = "#E8E8EC"
             BrushBgSurface     = "#FFFFFF"
             BrushBgCard        = "#FFFFFF"
-            BrushBgCardAlt     = "#D7EFE6"
-            BrushBgCardHover   = "#C2E8DA"
-            BrushBgInput       = "#F6FCFA"
-            BrushBrandStart    = "#005227"
-            BrushBrandEnd      = "#038554"
-            BrushBorder        = "#9FD4C1"
-            BrushBorderStrong  = "#038554"
-            BrushBorderHover   = "#03BB85"
-            BrushTextPrimary   = "#042919"
-            BrushTextSecondary = "#005227"
-            BrushTextMuted     = "#2C6B53"
-            BrushAccent        = "#038554"
-            BrushAccentHover   = "#03BB85"
-            BrushAccentDeep    = "#005227"
-            BrushAccentText    = "#FFFFFF"
-            BrushSuccess       = "#038554"
+            BrushBgCardAlt     = "#ECECF0"
+            BrushBgCardHover   = "#FCE8EA"
+            BrushBgInput       = "#F7F7F9"
+            BrushBrandStart    = "#1F1F24"
+            BrushBrandEnd      = "#C1121F"
+            BrushBorder        = "#D4D4DC"
+            BrushBorderStrong  = "#C1121F"
+            BrushBorderHover   = "#FF4D4D"
+            BrushTextPrimary   = "#0B0B0D"
+            BrushTextSecondary = "#C1121F"
+            BrushTextMuted     = "#52525E"
+            BrushAccent        = "#C1121F"
+            BrushAccentHover   = "#FF4D4D"
+            BrushAccentDeep    = "#FCE8EA"
+            BrushAccentText    = "#F2F2F2"
+            BrushSuccess       = "#15803D"
             BrushWarning       = "#B45309"
-            BrushDanger        = "#BE123C"
-            BrushConsoleBg     = "#050C09"
-            BrushConsoleFg     = "#A4FFF7"
+            BrushDanger        = "#C1121F"
+            BrushConsoleBg     = "#0B0B0D"
+            BrushConsoleFg     = "#F2F2F2"
         }
     } else {
         @{
-            BrushBgApp         = "#07110D"
-            BrushBgSidebar     = "#0A1712"
-            BrushBgSurface     = "#0E2019"
-            BrushBgCard        = "#12281F"
-            BrushBgCardAlt     = "#173428"
-            BrushBgCardHover   = "#1D4233"
-            BrushBgInput       = "#091510"
-            BrushBrandStart    = "#005227"
-            BrushBrandEnd      = "#038554"
-            BrushBorder        = "#1F4636"
-            BrushBorderStrong  = "#038554"
-            BrushBorderHover   = "#68DDBD"
-            BrushTextPrimary   = "#E9FBF5"
-            BrushTextSecondary = "#A4FFF7"
-            BrushTextMuted     = "#83B8A6"
-            BrushAccent        = "#03BB85"
-            BrushAccentHover   = "#68DDBD"
-            BrushAccentDeep    = "#005227"
-            BrushAccentText    = "#031A10"
-            BrushSuccess       = "#68DDBD"
-            BrushWarning       = "#F9E2AF"
-            BrushDanger        = "#F38BA8"
-            BrushConsoleBg     = "#050C09"
-            BrushConsoleFg     = "#A4FFF7"
+            BrushBgApp         = "#0B0B0D"
+            BrushBgSidebar     = "#101014"
+            BrushBgSurface     = "#16161A"
+            BrushBgCard        = "#1F1F24"
+            BrushBgCardAlt     = "#28282F"
+            BrushBgCardHover   = "#322024"
+            BrushBgInput       = "#121216"
+            BrushBrandStart    = "#1F1F24"
+            BrushBrandEnd      = "#C1121F"
+            BrushBorder        = "#2F2F38"
+            BrushBorderStrong  = "#C1121F"
+            BrushBorderHover   = "#FF4D4D"
+            BrushTextPrimary   = "#F2F2F2"
+            BrushTextSecondary = "#FF4D4D"
+            BrushTextMuted     = "#A3A3AE"
+            BrushAccent        = "#C1121F"
+            BrushAccentHover   = "#FF4D4D"
+            BrushAccentDeep    = "#4A0D13"
+            BrushAccentText    = "#F2F2F2"
+            BrushSuccess       = "#4ADE80"
+            BrushWarning       = "#FBBF24"
+            BrushDanger        = "#FF4D4D"
+            BrushConsoleBg     = "#08080A"
+            BrushConsoleFg     = "#F2F2F2"
         }
     }
 
@@ -366,7 +366,7 @@ function Initialize-StaticHoverHelp {
         @("btnImportConfig", "Importar Seleção (.json)", "Carrega um arquivo .json e apenas marca os itens correspondentes para você revisar.", "Arquivo"),
         @("btnExportConfig", "Exportar Seleção (.json)", "Salva todas as opções marcadas atualmente em um arquivo .json reutilizável.", "Arquivo"),
         @("btnEnvReport", "Relatório do Ambiente", "Gera arquivo .txt na Área de Trabalho com hardware, versões de gerenciadores e status atual.", "Relatório"),
-        @("btnToggleTheme", "Alternar Tema", "Alterna entre a paleta Verde Água Nocturne (Escuro) e Verde Água Breeze (Claro).", "Aparência"),
+        @("btnToggleTheme", "Alternar Tema", "Alterna entre a paleta Crimson Noir (Escuro) e Crimson Light (Claro).", "Aparência"),
         @("btnFontDown", "Diminuir Fonte", "Reduz o tamanho do texto da interface para exibir mais itens por tela.", "Aparência"),
         @("btnFontUp", "Aumentar Fonte", "Amplia o tamanho do texto da interface para facilitar a leitura.", "Aparência"),
 
@@ -384,7 +384,7 @@ function Initialize-StaticHoverHelp {
         @("btnInstallApps", "Instalar / Atualizar Selecionados", "Instala ou atualiza todos os programas marcados usando WinGet ou Chocolatey.", "Softwares"),
         @("btnUninstallApps", "Desinstalar Selecionados", "Remove silenciosamente do sistema todos os programas marcados no catálogo.", "Softwares"),
         @("btnUpgradeAllApps", "Atualizar Todos os Apps", "Executa atualização geral de todos os programas instalados no computador.", "Softwares"),
-        @("btnDetectInstalledApps", "Mostrar Instalados", "Destaca em verde Água os softwares do catálogo que já estão instalados neste PC.", "Softwares"),
+        @("btnDetectInstalledApps", "Mostrar Instalados", "Destaca os softwares do catálogo que já estão instalados neste PC.", "Softwares"),
         @("btnClearApps", "Limpar Seleção de Apps", "Desmarca todos os checkboxes da lista de softwares.", "Seleção"),
 
         @("btnAppxDefault", "Marcar Bloatwares Padrão", "Marca automaticamente os 18 aplicativos pré-instalados mais comuns para remoção (apenas seleciona).", "AppX"),
