@@ -1,19 +1,42 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="WinRepair &amp; Tweaks Pro"
-        Height="820" Width="1060"
+        Height="840" Width="1280"
+        MinHeight="680" MinWidth="1060"
         WindowStartupLocation="CenterScreen"
-        Background="#181825"
-        Foreground="#CDD6F4"
-        FontFamily="Segoe UI, Segoe UI Emoji">
+        Background="{DynamicResource BrushBgApp}"
+        Foreground="{DynamicResource BrushTextPrimary}"
+        FontFamily="Segoe UI, Segoe UI Emoji"
+        FontSize="13">
 
     <Window.Resources>
+        <!-- Paleta Dinâmica Inicial (Midnight Dark) -->
+        <SolidColorBrush x:Key="BrushBgApp" Color="#11111B"/>
+        <SolidColorBrush x:Key="BrushBgSidebar" Color="#161624"/>
+        <SolidColorBrush x:Key="BrushBgSurface" Color="#1E1E2E"/>
+        <SolidColorBrush x:Key="BrushBgCard" Color="#24273A"/>
+        <SolidColorBrush x:Key="BrushBgCardAlt" Color="#2A2D42"/>
+        <SolidColorBrush x:Key="BrushBgInput" Color="#181825"/>
+        <SolidColorBrush x:Key="BrushBorder" Color="#363A4F"/>
+        <SolidColorBrush x:Key="BrushBorderHover" Color="#89B4FA"/>
+        <SolidColorBrush x:Key="BrushTextPrimary" Color="#CDD6F4"/>
+        <SolidColorBrush x:Key="BrushTextMuted" Color="#9399B2"/>
+        <SolidColorBrush x:Key="BrushAccent" Color="#89B4FA"/>
+        <SolidColorBrush x:Key="BrushAccentHover" Color="#B4BEFE"/>
+        <SolidColorBrush x:Key="BrushAccentText" Color="#11111B"/>
+        <SolidColorBrush x:Key="BrushSuccess" Color="#A6E3A1"/>
+        <SolidColorBrush x:Key="BrushWarning" Color="#F9E2AF"/>
+        <SolidColorBrush x:Key="BrushDanger" Color="#F38BA8"/>
+        <SolidColorBrush x:Key="BrushConsoleBg" Color="#0D0D14"/>
+        <SolidColorBrush x:Key="BrushConsoleFg" Color="#A6E3A1"/>
+
+        <!-- Botão Padrão -->
         <Style TargetType="Button">
-            <Setter Property="Background" Value="#313244"/>
-            <Setter Property="Foreground" Value="#CDD6F4"/>
-            <Setter Property="BorderBrush" Value="#45475A"/>
+            <Setter Property="Background" Value="{DynamicResource BrushBgCardAlt}"/>
+            <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushBorder}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Padding" Value="12,7"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -21,47 +44,24 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="5"
+                                CornerRadius="6"
                                 Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#45475A"/>
-                    <Setter Property="BorderBrush" Value="#89B4FA"/>
-                </Trigger>
-                <Trigger Property="IsPressed" Value="True">
-                    <Setter Property="Background" Value="#585B70"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style TargetType="TabItem">
-            <Setter Property="Foreground" Value="#A6ADC8"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="12,8"/>
-            <Setter Property="Background" Value="#1E1E2E"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TabItem">
-                        <Border Name="Border" Background="{TemplateBinding Background}" BorderThickness="0,0,0,3" BorderBrush="Transparent" Margin="2,0">
-                            <ContentPresenter ContentSource="Header" Margin="{TemplateBinding Padding}"/>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Border" Property="BorderBrush" Value="#89B4FA"/>
-                                <Setter TargetName="Border" Property="Background" Value="#24273A"/>
-                                <Setter Property="Foreground" Value="#89B4FA"/>
-                            </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Foreground" Value="#CDD6F4"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.92"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.78"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.45"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -69,442 +69,990 @@
             </Setter>
         </Style>
 
-        <Style TargetType="TextBox">
-            <Setter Property="Background" Value="#1E1E2E"/>
-            <Setter Property="Foreground" Value="#CDD6F4"/>
-            <Setter Property="BorderBrush" Value="#45475A"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="8,5"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="CaretBrush" Value="#89B4FA"/>
+        <!-- Botão Primário Destaque -->
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="{DynamicResource BrushAccent}"/>
+            <Setter Property="Foreground" Value="{DynamicResource BrushAccentText}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
         </Style>
 
-        <Style TargetType="CheckBox">
-            <Setter Property="Foreground" Value="#CDD6F4"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Margin" Value="4,3"/>
-            <Setter Property="Cursor" Value="Hand"/>
+        <!-- Botão Sucesso -->
+        <Style x:Key="SuccessButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="#25382B"/>
+            <Setter Property="Foreground" Value="{DynamicResource BrushSuccess}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushSuccess}"/>
         </Style>
 
-        <Style TargetType="GroupBox">
-            <Setter Property="BorderBrush" Value="#313244"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="#89B4FA"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Margin" Value="3,3,3,8"/>
-            <Setter Property="Padding" Value="8"/>
+        <!-- Botão Perigo -->
+        <Style x:Key="DangerButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="#3A222B"/>
+            <Setter Property="Foreground" Value="{DynamicResource BrushDanger}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushDanger}"/>
         </Style>
-    </Window.Resources>
 
-    <Grid Margin="12">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="160"/>
-        </Grid.RowDefinitions>
-
-        <!-- Cabeçalho Principal -->
-        <Border Grid.Row="0" Background="#1E1E2E" CornerRadius="8" Padding="14,10" Margin="0,0,0,8" BorderBrush="#313244" BorderThickness="1">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="⚡ WinRepair &amp; Tweaks Pro" FontSize="20" FontWeight="Bold" Foreground="#89B4FA"/>
-                    <TextBlock Text="Suíte Completa: Otimizações, Diagnóstico de Rede, Recursos, ISO e Reparos" FontSize="11" Foreground="#A6ADC8" Margin="0,2,0,0"/>
-                </StackPanel>
-                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Name="txtSystemInfo" Text="Identificando máquina..." FontSize="12" Foreground="#94E2D5" HorizontalAlignment="Right"/>
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <!-- Abas Principais -->
-        <TabControl Grid.Row="1" Background="#1E1E2E" BorderBrush="#313244" BorderThickness="1">
-            
-            <!-- ABA 1: TWEAKS & PERFIS -->
-            <TabItem Header="⚡ Tweaks &amp; Otimização">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="8">
-                        <!-- Barra de Perfis com 1 Clique -->
-                        <Border Background="#24273A" CornerRadius="6" Padding="10" Margin="2,0,2,8" BorderBrush="#45475A" BorderThickness="1">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Perfis Recomendados (1 Clique):" FontWeight="Bold" Foreground="#89B4FA" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <WrapPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <Button Name="btnProfileDesktop" Content="🖥️ Perfil Desktop" Padding="12,6" Background="#313244" Foreground="#A6E3A1"/>
-                                    <Button Name="btnProfileLaptop" Content="💻 Perfil Notebook" Padding="12,6" Background="#313244" Foreground="#89B4FA"/>
-                                    <Button Name="btnProfileGamer" Content="🎮 Perfil Gamer Extremo" Padding="12,6" Background="#313244" Foreground="#F38BA8"/>
-                                </WrapPanel>
-                                <Button Name="btnCreateRestorePoint" Grid.Column="2" Content="🛡️ Criar Ponto de Restauração" Padding="10,6" Background="#45475A"/>
-                            </Grid>
+        <!-- Chip / Pílula de Filtro -->
+        <Style x:Key="PillButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="13"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-                        <!-- Grade de Tweaks Granulares -->
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+        <!-- Navegação Lateral (Sidebar) -->
+        <Style x:Key="NavRadioButtonStyle" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource BrushTextMuted}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="Margin" Value="6,2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="7"
+                                BorderThickness="3,0,0,0"
+                                BorderBrush="Transparent"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushBgCard}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushBgCardAlt}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource BrushAccent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-                            <!-- Coluna 1: Essenciais & Desempenho -->
-                            <GroupBox Grid.Column="0" Header="Essenciais &amp; Desempenho">
-                                <StackPanel>
-                                    <CheckBox Name="chkCleanTemp" Content="Limpar Arquivos Temporários" IsChecked="True"/>
-                                    <CheckBox Name="chkDisableTelemetry" Content="Desativar Telemetria &amp; CEIP" IsChecked="True"/>
-                                    <CheckBox Name="chkDisableBingSearch" Content="Desativar Bing no Menu Iniciar" IsChecked="True"/>
-                                    <CheckBox Name="chkDisableGameDvr" Content="Desativar GameDVR (Input Lag)" IsChecked="True"/>
-                                    <CheckBox Name="chkOptimizeServices" Content="Serviços Pesados em Manual" IsChecked="True"/>
-                                    <CheckBox Name="chkUltimatePower" Content="Plano 'Desempenho Máximo'" IsChecked="True"/>
-                                    <CheckBox Name="chkDisableHibernation" Content="Desativar Hibernação (Desktop)" IsChecked="False"/>
-                                    <CheckBox Name="chkFastVisuals" Content="Acelerar Menus (MenuShowDelay)" IsChecked="True"/>
-                                    <CheckBox Name="chkSsdTrim" Content="Otimizar SSDs (Executar TRIM)" IsChecked="True"/>
-                                </StackPanel>
-                            </GroupBox>
+        <!-- TextBox Estilizado -->
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{DynamicResource BrushBgInput}"/>
+            <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="9,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource BrushAccent}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-                            <!-- Coluna 2: Interface & Usabilidade -->
-                            <GroupBox Grid.Column="1" Header="Interface &amp; Usabilidade">
-                                <StackPanel>
-                                    <CheckBox Name="chkShowFileExt" Content="Mostrar Extensões de Arquivo" IsChecked="True"/>
-                                    <CheckBox Name="chkShowHiddenFiles" Content="Mostrar Arquivos Ocultos" IsChecked="True"/>
-                                    <CheckBox Name="chkExplorerThisPc" Content="Explorer abre em 'Este Computador'" IsChecked="True"/>
-                                    <CheckBox Name="chkDarkMode" Content="Ativar Tema Escuro (Dark Mode)" IsChecked="True"/>
-                                    <CheckBox Name="chkDisableMouseAccel" Content="Desativar Aceleração do Mouse (1:1)" IsChecked="True"/>
-                                    <CheckBox Name="chkCleanWin11Taskbar" Content="Limpar Barra Tarefas (Widgets/Copilot)" IsChecked="True"/>
-                                    <CheckBox Name="chkTakeOwnership" Content="Adicionar 'Take Ownership' no Menu" IsChecked="True"/>
-                                    <CheckBox Name="chkUninstallOneDrive" Content="Desinstalar e Purgar OneDrive" IsChecked="False"/>
-                                </StackPanel>
-                            </GroupBox>
+        <!-- CheckBox Moderno com Vetor Check -->
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="Margin" Value="2,4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border x:Name="Box"
+                                    Width="17" Height="17"
+                                    CornerRadius="4"
+                                    Background="{DynamicResource BrushBgInput}"
+                                    BorderBrush="{DynamicResource BrushBorder}"
+                                    BorderThickness="1.5"
+                                    Margin="0,0,8,0"
+                                    VerticalAlignment="Center">
+                                <Path x:Name="CheckMark"
+                                      Data="M 3 8 L 6.5 11.5 L 13 4.5"
+                                      Stroke="{DynamicResource BrushAccentText}"
+                                      StrokeThickness="2.2"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      Visibility="Collapsed"/>
+                            </Border>
+                            <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Box" Property="Background" Value="{DynamicResource BrushAccent}"/>
+                                <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-                            <!-- Coluna 3: Rede & TCP Gaming -->
-                            <GroupBox Grid.Column="2" Header="Rede &amp; Conectividade">
-                                <StackPanel>
-                                    <CheckBox Name="chkOptimizeTcp" Content="Otimizar Latência TCP (AutoTune, RSS)" IsChecked="True"/>
-                                    <CheckBox Name="chkFlushDns" Content="Limpar Cache DNS" IsChecked="True"/>
-                                    <CheckBox Name="chkRenewDhcp" Content="Renovar Concessão de IP / DHCP" IsChecked="False"/>
-                                    <CheckBox Name="chkResetNetwork" Content="Redefinir Pilha de Rede Completa" IsChecked="False"/>
-                                </StackPanel>
-                            </GroupBox>
-                        </Grid>
-
-                        <!-- Botão Aplicar Selecionados -->
-                        <Button Name="btnApplySelectedTweaks" Content="🚀 Aplicar Todos os Tweaks Selecionados" Height="42" FontSize="14" FontWeight="Bold" Background="#89B4FA" Foreground="#11111B" Margin="2,8,2,2"/>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-
-            <!-- ABA 2: REDE, DIAGNÓSTICO COMPLETO & DNS -->
-            <TabItem Header="🌐 Rede &amp; Conectividade">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="8">
-                        <GroupBox Header="Alvo para Testes Avançados (Porta TCP, Pathping, Tracert e Ping Contínuo)">
-                            <Grid Margin="0,2">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="100"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="90"/>
-                                    <ColumnDefinition Width="90"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Host / IP Alvo:" VerticalAlignment="Center" Foreground="#A6ADC8"/>
-                                <TextBox Name="txtNetTarget" Grid.Column="1" Margin="0,0,10,0" Text="8.8.8.8"/>
-                                <TextBlock Grid.Column="2" Text="Porta TCP:" VerticalAlignment="Center" Foreground="#A6ADC8" HorizontalAlignment="Right" Margin="0,0,8,0"/>
-                                <TextBox Name="txtNetPort" Grid.Column="3" Text="443"/>
-                            </Grid>
-                        </GroupBox>
-
-                        <GroupBox Header="Diagnóstico e Testes de Conectividade (Opções 1 a 8)">
-                            <WrapPanel>
-                                <Button Name="btnNetQuickDiag" Content="[1] Diagnóstico Rápido Integrado" Width="230" Height="34"/>
-                                <Button Name="btnNetDetailed" Content="[2] Teste Detalhado (Ping + HTTPS + DNS)" Width="270" Height="34"/>
-                                <Button Name="btnNetSpeedtest" Content="[3] Teste Velocidade Download (Mbps)" Width="250" Height="34"/>
-                                <Button Name="btnNetWifi" Content="[4] Diagnóstico Wi-Fi (Sinal/Redes)" Width="230" Height="34"/>
-                                <Button Name="btnNetWifiReport" Content="[4b] Gerar Relatório Wi-Fi (HTML)" Width="230" Height="34"/>
-                                <Button Name="btnNetTestPort" Content="[5] Testar Porta TCP Alvo" Width="190" Height="34"/>
-                                <Button Name="btnNetPathping" Content="[6] Perda de Pacotes (Pathping)" Width="220" Height="34"/>
-                                <Button Name="btnNetTracert" Content="[7] Rastrear Rota (Tracert)" Width="200" Height="34"/>
-                                <Button Name="btnNetPingCont" Content="[8] Ping Contínuo (-t)" Width="180" Height="34"/>
-                            </WrapPanel>
-                        </GroupBox>
-
-                        <GroupBox Header="Monitoramento, Varredura &amp; Dispositivos (Opções 9 a 11)">
-                            <WrapPanel>
-                                <Button Name="btnNetstatEst" Content="[9a] Netstat: Conexões Ativas" Width="210" Height="34"/>
-                                <Button Name="btnNetstatList" Content="[9b] Netstat: Portas Escutando" Width="210" Height="34"/>
-                                <Button Name="btnNetstatAll" Content="[9c] Netstat: Tudo Detalhado" Width="200" Height="34"/>
-                                <Button Name="btnNetSubnetScan" Content="[10] Varredura Rede Local (IPs Livres/Ocupados)" Width="310" Height="34" Background="#313244" Foreground="#A6E3A1"/>
-                                <Button Name="btnNetIpConfig" Content="[11] Exibir ipconfig /all" Width="170" Height="34"/>
-                            </WrapPanel>
-                        </GroupBox>
-
-                        <GroupBox Header="Reparo, Reset, Relatório Forense &amp; Otimização TCP (Opções 12 a 14)">
-                            <WrapPanel>
-                                <Button Name="btnNetSimpleRepair" Content="[12] Reparar Conexão (DNS/DHCP/NetBIOS)" Width="270" Height="34"/>
-                                <Button Name="btnNetResetDeep" Content="[13] Reset Completo Pilha (Winsock/TCP/FW)" Width="280" Height="34"/>
-                                <Button Name="btnNetForensicReport" Content="[14] Gerar Relatório Forense Completo (.TXT)" Width="290" Height="34" Background="#313244" Foreground="#89B4FA"/>
-                                <Button Name="btnRestartAdapters" Content="Reiniciar Placas de Rede" Width="190" Height="34"/>
-                                <Button Name="btnOptimizeTcpTab" Content="🚀 Otimizar TCP Baixa Latência" Width="220" Height="34"/>
-                            </WrapPanel>
-                        </GroupBox>
-
-                        <GroupBox Header="Troca Rápida de Servidores DNS">
-                            <WrapPanel>
-                                <Button Name="btnDnsCloudflare" Content="Cloudflare (1.1.1.1) - Veloz" Width="200" Height="34"/>
-                                <Button Name="btnDnsGoogle" Content="Google (8.8.8.8) - Confiável" Width="200" Height="34"/>
-                                <Button Name="btnDnsQuad9" Content="Quad9 (9.9.9.9) - Anti-Malware" Width="210" Height="34"/>
-                                <Button Name="btnDnsAdGuard" Content="AdGuard - Bloqueia Anúncios" Width="200" Height="34"/>
-                                <Button Name="btnDnsDhcp" Content="Restaurar Automático (DHCP)" Width="200" Height="34"/>
-                            </WrapPanel>
-                        </GroupBox>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-
-            <!-- ABA 3: RECURSOS & UPDATES -->
-            <TabItem Header="⚙️ Recursos &amp; Updates">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="8">
-                        <GroupBox Header="Gerenciamento do Windows Update">
-                            <StackPanel>
-                                <TextBlock Text="Controle como o Windows Update lida com atualizações para evitar travamentos e reinicializações forçadas:" FontSize="11" Foreground="#A6ADC8" Margin="4,0,0,6"/>
-                                <WrapPanel>
-                                    <Button Name="btnWuRecommended" Content="🛡️ Modo Recomendado (Segurança Estável &amp; Sem Reinício Forçado)" Width="460" Height="36"/>
-                                    <Button Name="btnWuDefault" Content="🔄 Restaurar Padrão da Microsoft" Width="240" Height="36"/>
-                                    <Button Name="btnWuPause" Content="⏸️ Pausar Atualizações (Até 2042)" Width="230" Height="36"/>
-                                </WrapPanel>
-                            </StackPanel>
-                        </GroupBox>
-
-                        <GroupBox Header="Recursos Opcionais do Windows (Ativação com 1 Clique)">
-                            <WrapPanel>
-                                <Button Name="btnEnableWsl" Content="Ativar WSL 2 (Subsistema Linux)" Width="240" Height="36"/>
-                                <Button Name="btnEnableSandbox" Content="Ativar Windows Sandbox" Width="210" Height="36"/>
-                                <Button Name="btnEnableHyperV" Content="Ativar Hyper-V" Width="180" Height="36"/>
-                                <Button Name="btnEnableNet35" Content="Ativar .NET Framework 3.5" Width="220" Height="36"/>
-                            </WrapPanel>
-                        </GroupBox>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-
-            <!-- ABA 4: MICROWIN / CRIADOR DE ISO -->
-            <TabItem Header="💿 MicroWin (Criador de ISO)">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="8">
-                        <GroupBox Header="1. Seleção da Imagem ISO Oficial">
-                            <Grid Margin="0,4">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="130"/>
-                                    <ColumnDefinition Width="140"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Arquivo ISO Origem:" VerticalAlignment="Center" Foreground="#A6ADC8"/>
-                                <TextBox Name="txtIsoPath" Grid.Column="1" Margin="0,0,8,0" Text="" ToolTip="Selecione um arquivo .iso oficial do Windows 10 ou 11"/>
-                                <Button Name="btnBrowseIso" Grid.Column="2" Content="Procurar ISO..." Width="120" Height="32"/>
-                                <Button Name="btnInspectIso" Grid.Column="3" Content="Analisar Edições" Width="130" Height="32"/>
-                            </Grid>
-                        </GroupBox>
-
-                        <GroupBox Header="2. Destino e Edição">
-                            <Grid Margin="0,4">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="130"/>
-                                    <ColumnDefinition Width="100"/>
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Pasta de Destino:" VerticalAlignment="Center" Foreground="#A6ADC8"/>
-                                <TextBox Name="txtOutputIsoDir" Grid.Row="0" Grid.Column="1" Margin="0,0,8,4" Text="C:\ISO_Work"/>
-                                <Button Name="btnBrowseOutputDir" Grid.Row="0" Grid.Column="2" Content="Selecionar Pasta..." Width="120" Height="32" Margin="0,0,0,4"/>
-
-                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Nome do Arquivo:" VerticalAlignment="Center" Foreground="#A6ADC8"/>
-                                <TextBox Name="txtOutputIsoName" Grid.Row="1" Grid.Column="1" Margin="0,0,8,0" Text="Windows_MicroWin_Custom.iso"/>
-
-                                <TextBlock Grid.Row="1" Grid.Column="2" Text="Índice da Edição:" VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="#A6ADC8" Margin="0,0,6,0"/>
-                                <TextBox Name="txtEditionIndex" Grid.Row="1" Grid.Column="3" Text="1" Width="50" HorizontalAlignment="Left"/>
-                            </Grid>
-                        </GroupBox>
-
-                        <GroupBox Header="3. Modificações MicroWin a Injetar">
-                            <StackPanel>
-                                <CheckBox Name="chkIsoBypassHw" Content="Bypass de Requisitos Win 11 (Ignora TPM 2.0, Secure Boot, RAM e CPU)" IsChecked="True"/>
-                                <CheckBox Name="chkIsoBypassAcc" Content="Bypass de Conta Microsoft Obrigatória (Permite criar Conta Local offline - BypassNRO)" IsChecked="True"/>
-                                <CheckBox Name="chkIsoDisableBitLocker" Content="Desativar Criptografia Automática do BitLocker no primeiro boot" IsChecked="True"/>
-                                <CheckBox Name="chkIsoDebloat" Content="Remover Bloatware AppX na raiz da imagem (Xbox overlays, Clipchamp, Notícias, Jogos)" IsChecked="True"/>
-                                <CheckBox Name="chkIsoUnattend" Content="Injetar autounattend.xml (Pula telas de termos, diagnóstico e anúncios no primeiro boot)" IsChecked="True"/>
-                            </StackPanel>
-                        </GroupBox>
-
-                        <Button Name="btnBuildCustomIso" Content="🚀 Gerar Nova ISO MicroWin Otimizada!" Height="44" FontSize="14" FontWeight="Bold" Background="#89B4FA" Foreground="#11111B" Margin="2,4,2,2"/>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-
-            <!-- ABA 5: SOFTWARES (WINGET) -->
-            <TabItem Header="📦 Softwares">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="8">
-                        <Grid Margin="0,0,0,6">
+        <!-- Toggle Switch Deslizante -->
+        <Style x:Key="ToggleSwitchStyle" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,4"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid Margin="0,1">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="Instale ou atualize silenciosamente os softwares essenciais via Winget:" FontSize="11" Foreground="#A6ADC8" VerticalAlignment="Center"/>
-                            <Button Name="btnUpgradeAllSoftware" Grid.Column="1" Content="🔄 Atualizar Todos os Apps (winget upgrade --all)" Padding="10,5"/>
+                            <ContentPresenter Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <Border x:Name="Track"
+                                    Grid.Column="1"
+                                    Width="40" Height="20"
+                                    CornerRadius="10"
+                                    Background="{DynamicResource BrushBgInput}"
+                                    BorderBrush="{DynamicResource BrushBorder}"
+                                    BorderThickness="1"
+                                    Padding="2">
+                                <Border x:Name="Thumb"
+                                        Width="14" Height="14"
+                                        CornerRadius="7"
+                                        Background="{DynamicResource BrushTextMuted}"
+                                        HorizontalAlignment="Left"/>
+                            </Border>
                         </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Track" Property="Background" Value="{DynamicResource BrushAccent}"/>
+                                <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                                <Setter TargetName="Thumb" Property="Background" Value="{DynamicResource BrushAccentText}"/>
+                                <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
+        <!-- ComboBox Moderno Dark/Light -->
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Background" Value="{DynamicResource BrushBgCard}"/>
+            <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource BrushAccent}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource BrushAccentText}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="{DynamicResource BrushBgInput}"/>
+            <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,5"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
                         <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-
-                            <GroupBox Grid.Column="0" Header="Navegadores">
-                                <StackPanel>
-                                    <CheckBox Name="chkSoftwareChrome" Content="Google Chrome" Tag="Google.Chrome"/>
-                                    <CheckBox Name="chkSoftwareFirefox" Content="Mozilla Firefox" Tag="Mozilla.Firefox"/>
-                                    <CheckBox Name="chkSoftwareBrave" Content="Brave Browser" Tag="Brave.Brave"/>
-                                </StackPanel>
-                            </GroupBox>
-
-                            <GroupBox Grid.Column="1" Header="Utilitários Essenciais">
-                                <StackPanel>
-                                    <CheckBox Name="chkSoftware7zip" Content="7-Zip" Tag="7zip.7zip" IsChecked="True"/>
-                                    <CheckBox Name="chkSoftwareNotepad" Content="Notepad++" Tag="Notepad++.Notepad++"/>
-                                    <CheckBox Name="chkSoftwareAnyDesk" Content="AnyDesk" Tag="AnyDeskSoftwareGmbH.AnyDesk"/>
-                                    <CheckBox Name="chkSoftwarePowerToys" Content="Microsoft PowerToys" Tag="Microsoft.PowerToys"/>
-                                </StackPanel>
-                            </GroupBox>
-
-                            <GroupBox Grid.Column="2" Header="Mídia &amp; Dev/Jogos">
-                                <StackPanel>
-                                    <CheckBox Name="chkSoftwareVlc" Content="VLC Media Player" Tag="VideoLAN.VLC"/>
-                                    <CheckBox Name="chkSoftwareVsCode" Content="Visual Studio Code" Tag="Microsoft.VisualStudioCode"/>
-                                    <CheckBox Name="chkSoftwareSteam" Content="Steam" Tag="Valve.Steam"/>
-                                    <CheckBox Name="chkSoftwareDiscord" Content="Discord" Tag="Discord.Discord"/>
-                                </StackPanel>
-                            </GroupBox>
+                            <ToggleButton x:Name="ToggleButton"
+                                          Focusable="False"
+                                          IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                          ClickMode="Press">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="Bd"
+                                                Background="{DynamicResource BrushBgInput}"
+                                                BorderBrush="{DynamicResource BrushBorder}"
+                                                BorderThickness="1"
+                                                CornerRadius="6">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="26"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Path Grid.Column="1" Data="M 0 0 L 4 4 L 8 0 Z"
+                                                      Fill="{DynamicResource BrushTextMuted}"
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter x:Name="ContentSite"
+                                              IsHitTestVisible="False"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              Margin="10,4,28,4"
+                                              VerticalAlignment="Center"
+                                              HorizontalAlignment="Left"/>
+                            <Popup x:Name="Popup"
+                                   Placement="Bottom"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   PopupAnimation="Slide">
+                                <Grid x:Name="DropDown"
+                                      SnapsToDevicePixels="True"
+                                      MinWidth="{TemplateBinding ActualWidth}"
+                                      MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <Border x:Name="DropDownBorder"
+                                            Background="{DynamicResource BrushBgCard}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            BorderBrush="{DynamicResource BrushBorder}">
+                                        <ScrollViewer Margin="2" SnapsToDevicePixels="True">
+                                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Grid>
+                            </Popup>
                         </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-                        <Button Name="btnInstallSelectedSoftware" Content="Baixar e Instalar Softwares Selecionados" Height="38" Margin="2,8,2,2"/>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
+        <!-- Expander Estilizado -->
+        <Style TargetType="Expander">
+            <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
+            <Setter Property="Background" Value="{DynamicResource BrushBgCard}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="IsExpanded" Value="True"/>
+        </Style>
 
-            <!-- ABA 6: REPAROS DO SISTEMA -->
-            <TabItem Header="🛠️ Reparo do SO">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="8">
-                        <GroupBox Header="Integridade de Arquivos e Componentes">
-                            <WrapPanel>
-                                <Button Name="btnSfcScan" Content="Verificação de Integridade (SFC /scannow)" Width="270" Height="36"/>
-                                <Button Name="btnDismRepair" Content="Reparar Imagem do Windows (DISM)" Width="260" Height="36"/>
-                                <Button Name="btnDismCleanup" Content="Limpar Component Store (WinSxS)" Width="250" Height="36"/>
-                                <Button Name="btnRestartSpooler" Content="Destravar Spooler de Impressão" Width="230" Height="36"/>
-                                <Button Name="btnScheduleChkdsk" Content="Agendar CHKDSK no Disco C:" Width="230" Height="36"/>
-                            </WrapPanel>
-                        </GroupBox>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
+        <!-- Card Base -->
+        <Style x:Key="CardBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource BrushBgCard}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="14"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+    </Window.Resources>
 
-            <!-- ABA 7: LICENCIAMENTO -->
-            <TabItem Header="🔑 Licenciamento">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="8">
-                        <GroupBox Header="Licença do Windows">
-                            <StackPanel>
-                                <WrapPanel Margin="0,0,0,6">
-                                    <Button Name="btnCheckWinLicense" Content="Verificar Status da Licença" Width="210" Height="34"/>
-                                </WrapPanel>
-                                <Grid Margin="0,2">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="130"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="Chave do Windows:" VerticalAlignment="Center" Foreground="#A6ADC8"/>
-                                    <TextBox Name="txtWinKey" Grid.Column="1" Margin="0,0,8,0" Text=""/>
-                                    <Button Name="btnApplyWinKey" Grid.Column="2" Content="Instalar e Ativar Chave" Width="170" Height="32"/>
-                                </Grid>
-                            </StackPanel>
-                        </GroupBox>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="232"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-                        <GroupBox Header="Licença do Microsoft Office">
-                            <StackPanel>
-                                <WrapPanel Margin="0,0,0,6">
-                                    <Button Name="btnCheckOfficeLicense" Content="Verificar Status do Office" Width="210" Height="34"/>
-                                </WrapPanel>
-                                <Grid Margin="0,2">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="130"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="Chave do Office:" VerticalAlignment="Center" Foreground="#A6ADC8"/>
-                                    <TextBox Name="txtOfficeKey" Grid.Column="1" Margin="0,0,8,0" Text=""/>
-                                    <Button Name="btnApplyOfficeKey" Grid.Column="2" Content="Instalar e Ativar Chave" Width="170" Height="32"/>
-                                </Grid>
-                            </StackPanel>
-                        </GroupBox>
-
-                        <GroupBox Header="Servidor KMS Institucional">
-                            <Grid Margin="0,2">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="130"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Host KMS Oficial:" VerticalAlignment="Center" Foreground="#A6ADC8"/>
-                                <TextBox Name="txtKmsHost" Grid.Column="1" Margin="0,0,8,0" Text="kms.dominio.local"/>
-                                <Button Name="btnSetKms" Grid.Column="2" Content="Configurar Servidor KMS" Width="170" Height="32"/>
-                            </Grid>
-                        </GroupBox>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-        </TabControl>
-
-        <!-- Painel Inferior de Logs -->
-        <Border Grid.Row="2" Background="#11111B" CornerRadius="8" Margin="0,8,0,0" BorderBrush="#313244" BorderThickness="1">
-            <Grid Margin="6">
+        <!-- ================================================================ -->
+        <!-- SIDEBAR FIXA                                                     -->
+        <!-- ================================================================ -->
+        <Border Grid.Column="0" Background="{DynamicResource BrushBgSidebar}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="0,0,1,0">
+            <Grid Margin="10,14">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <Grid Grid.Row="0" Margin="0,0,0,2">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="📜 Console de Execução &amp; Logs em Tempo Real" FontSize="11" FontWeight="SemiBold" Foreground="#89B4FA" VerticalAlignment="Center"/>
-                    <Button Name="btnClearLogs" Grid.Column="1" Content="Limpar Log" Padding="6,3" FontSize="11" Margin="0"/>
-                </Grid>
+                <!-- Logo & Badges -->
+                <StackPanel Grid.Row="0" Margin="6,2,6,16">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="&#x26A1; WinRepair Pro" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}"/>
+                        <Border Background="{DynamicResource BrushBgCardAlt}" CornerRadius="5" Padding="6,2" Margin="8,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="v3.0" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrushSuccess}"/>
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Text="Suíte Completa de Sistema" FontSize="11" Foreground="{DynamicResource BrushTextMuted}" Margin="0,3,0,8"/>
+                    <Border Background="#1B2E25" BorderBrush="{DynamicResource BrushSuccess}" BorderThickness="1" CornerRadius="5" Padding="7,3" HorizontalAlignment="Left">
+                        <TextBlock Text="&#x1F6E1; Modo Administrador" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource BrushSuccess}"/>
+                    </Border>
+                </StackPanel>
 
-                <TextBox Name="txtLog" Grid.Row="1"
-                         Background="#11111B"
-                         Foreground="#A6E3A1"
-                         FontFamily="Consolas"
-                         FontSize="12"
-                         IsReadOnly="True"
-                         VerticalScrollBarVisibility="Auto"
-                         HorizontalScrollBarVisibility="Auto"
-                         TextWrapping="Wrap"
-                         BorderThickness="0"/>
+                <!-- Menu de Navegação -->
+                <StackPanel Grid.Row="1">
+                    <TextBlock Text="FERRAMENTAS" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrushTextMuted}" Margin="12,0,0,6"/>
+                    <RadioButton x:Name="navInstall" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x1F4E6;  Softwares (239)"/>
+                    <RadioButton x:Name="navTweaks" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x26A1;  Tweaks &amp; Perfis" IsChecked="True"/>
+                    <RadioButton x:Name="navAppx" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x1F9F9;  AppX &amp; Bloatware"/>
+                    <RadioButton x:Name="navNetwork" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x1F310;  Rede &amp; Diagnóstico"/>
+                    <RadioButton x:Name="navConfig" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x2699;  Recursos &amp; Reparos"/>
+                    <RadioButton x:Name="navUpdates" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x1F504;  Windows Update"/>
+                    <RadioButton x:Name="navIso" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}" Content="&#x1F4BF;  Criador de ISO &amp; USB"/>
+                </StackPanel>
+
+                <!-- Rodapé da Sidebar -->
+                <StackPanel Grid.Row="2" Margin="2,8,2,0">
+                    <Border Background="{DynamicResource BrushBgCard}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="8">
+                        <StackPanel>
+                            <TextBlock Text="CONFIGURAÇÕES &amp; VISUAL" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BrushTextMuted}" Margin="2,0,0,6"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Button x:Name="btnImportConfig" Grid.Column="0" Content="&#x1F4E5; Importar" FontSize="11" Padding="6,5" ToolTip="Importa seleção (.json) sem executar"/>
+                                <Button x:Name="btnExportConfig" Grid.Column="1" Content="&#x1F4E4; Exportar" FontSize="11" Padding="6,5" ToolTip="Exporta seleções atuais para .json"/>
+                            </Grid>
+                            <Button x:Name="btnEnvReport" Content="&#x1F4CB; Relatório do Ambiente" FontSize="11" Padding="6,5"/>
+                            <Grid Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Button x:Name="btnToggleTheme" Grid.Column="0" Content="&#x1F317; Tema Claro/Escuro" FontSize="11" Padding="6,5"/>
+                                <Button x:Name="btnFontDown" Grid.Column="1" Content="A-" FontSize="11" Padding="8,5" ToolTip="Diminuir Fonte"/>
+                                <Button x:Name="btnFontUp" Grid.Column="2" Content="A+" FontSize="11" Padding="8,5" ToolTip="Aumentar Fonte"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
             </Grid>
         </Border>
+
+        <!-- ================================================================ -->
+        <!-- ÁREA PRINCIPAL (HEADER + CONTEÚDO + SPLITTER + CONSOLE)          -->
+        <!-- ================================================================ -->
+        <Grid Grid.Column="1" Background="{DynamicResource BrushBgApp}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="64"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="5"/>
+                <RowDefinition x:Name="rowConsole" Height="175" MinHeight="38"/>
+            </Grid.RowDefinitions>
+
+            <!-- HEADER TOPBAR -->
+            <Border Grid.Row="0" Background="{DynamicResource BrushBgSurface}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="0,0,0,1" Padding="18,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="260"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <TextBlock x:Name="txtSectionTitle" Text="Tweaks &amp; Perfis Recomendados" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource BrushTextPrimary}"/>
+                        <TextBlock x:Name="txtSectionSubtitle" Text="Selecione um perfil para marcar as opções ou ajuste manualmente antes de aplicar" FontSize="11.5" Foreground="{DynamicResource BrushTextMuted}"/>
+                    </StackPanel>
+
+                    <!-- Busca Contextual -->
+                    <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1" CornerRadius="6" Margin="10,4" Padding="8,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="&#x1F50D;" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="12"/>
+                            <TextBox x:Name="txtGlobalSearch" Grid.Column="1" BorderThickness="0" Background="Transparent" Padding="0,6" VerticalAlignment="Center" ToolTip="Filtrar itens da aba atual..."/>
+                            <Button x:Name="btnClearSearch" Grid.Column="2" Content="&#x2715;" Padding="4,1" Margin="0" FontSize="10" Background="Transparent" BorderThickness="0"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Info Hardware -->
+                    <Border Grid.Column="2" Background="{DynamicResource BrushBgCard}" CornerRadius="6" Padding="10,5" Margin="6,4" VerticalAlignment="Center" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1">
+                        <TextBlock x:Name="txtSystemInfo" Text="Carregando hardware..." FontSize="11" Foreground="{DynamicResource BrushTextMuted}"/>
+                    </Border>
+
+                    <!-- Pílula de Status -->
+                    <Border x:Name="borderStatusPill" Grid.Column="3" Background="{DynamicResource BrushBgCard}" CornerRadius="6" Padding="10,5" Margin="4,4,0,4" VerticalAlignment="Center" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1">
+                        <TextBlock x:Name="txtTaskStatus" Text="&#x25CF; Pronto" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource BrushSuccess}"/>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- CONTAINER DE PÁGINAS -->
+            <Grid Grid.Row="1" Margin="16,12,16,6">
+
+                <!-- ==================================================== -->
+                <!-- VIEW 1: SOFTWARES (WINGET / CHOCO - 239 APPS)         -->
+                <!-- ==================================================== -->
+                <Grid x:Name="viewInstall" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Barra de Ações -->
+                    <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}" Padding="10,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                                <TextBlock Text="Gerenciador:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,8,0" Foreground="{DynamicResource BrushTextMuted}"/>
+                                <RadioButton x:Name="rbManagerWinget" GroupName="PkgMgr" Content="WinGet" IsChecked="True" VerticalAlignment="Center" Foreground="{DynamicResource BrushTextPrimary}" Margin="0,0,10,0"/>
+                                <RadioButton x:Name="rbManagerChoco" GroupName="PkgMgr" Content="Chocolatey" VerticalAlignment="Center" Foreground="{DynamicResource BrushTextPrimary}"/>
+                            </StackPanel>
+
+                            <WrapPanel Grid.Column="1" VerticalAlignment="Center">
+                                <Button x:Name="btnInstallApps" Style="{StaticResource PrimaryButtonStyle}" Content="&#x2B07; Instalar / Atualizar Selecionados"/>
+                                <Button x:Name="btnUninstallApps" Style="{StaticResource DangerButtonStyle}" Content="&#x1F5D1; Desinstalar Selecionados"/>
+                                <Button x:Name="btnUpgradeAllApps" Style="{StaticResource SuccessButtonStyle}" Content="&#x1F504; Atualizar Todos"/>
+                                <Button x:Name="btnDetectInstalledApps" Content="&#x1F50D; Mostrar Instalados"/>
+                                <Button x:Name="btnClearApps" Content="&#x2715; Limpar Seleção"/>
+                                <Button x:Name="btnExpandAllApps" Content="Expandir Tudo"/>
+                                <Button x:Name="btnCollapseAllApps" Content="Recolher Tudo"/>
+                            </WrapPanel>
+
+                            <Border Grid.Column="2" Background="{DynamicResource BrushBgInput}" CornerRadius="6" Padding="10,5" VerticalAlignment="Center">
+                                <TextBlock x:Name="txtAppsSelectedCount" Text="Selecionados: 0" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" FontSize="12"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <!-- Filter Chips -->
+                    <WrapPanel x:Name="panelAppCategoryChips" Grid.Row="1" Margin="0,0,0,8"/>
+
+                    <!-- Grade de Apps -->
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel x:Name="panelAppsCol0" Grid.Column="0"/>
+                            <StackPanel x:Name="panelAppsCol1" Grid.Column="2"/>
+                            <StackPanel x:Name="panelAppsCol2" Grid.Column="4"/>
+                        </Grid>
+                    </ScrollViewer>
+                </Grid>
+
+                <!-- ==================================================== -->
+                <!-- VIEW 2: TWEAKS & PERFIS (SOMENTE SELEÇÃO + RESUMO)    -->
+                <!-- ==================================================== -->
+                <Grid x:Name="viewTweaks" Visibility="Visible">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Barra de Perfis (Apenas Desktop, Notebook, All) -->
+                    <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}" Padding="12,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Perfis Recomendados (Pré-Seleção)" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}"/>
+                                <TextBlock Text="Clique para marcar as opções recomendadas e revisar antes de aplicar" FontSize="11" Foreground="{DynamicResource BrushTextMuted}"/>
+                            </StackPanel>
+                            <WrapPanel Grid.Column="1" VerticalAlignment="Center">
+                                <Button x:Name="btnPresetDesktop" Content="&#x1F5A5;  Desktop" Padding="16,8" Foreground="{DynamicResource BrushSuccess}"/>
+                                <Button x:Name="btnPresetNotebook" Content="&#x1F4BB;  Notebook" Padding="16,8" Foreground="{DynamicResource BrushAccent}"/>
+                                <Button x:Name="btnPresetAll" Content="&#x1F31F;  All (Marcar Todos)" Padding="16,8" Foreground="{DynamicResource BrushWarning}"/>
+                            </WrapPanel>
+                            <Button x:Name="btnCreateRestorePoint" Grid.Column="2" Content="&#x1F6E1; Criar Ponto de Restauração"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Card de Resumo em Tempo Real das Opções Selecionadas -->
+                    <Border x:Name="borderSelectionPreview" Grid.Row="1" Style="{StaticResource CardBorderStyle}" Background="{DynamicResource BrushBgSurface}" Padding="12,10">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Border Background="{DynamicResource BrushBgCardAlt}" CornerRadius="5" Padding="8,3" Margin="0,0,10,0">
+                                        <TextBlock x:Name="txtActivePresetBadge" Text="Perfil: Nenhum" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}"/>
+                                    </Border>
+                                    <TextBlock x:Name="txtTweaksSelectedCount" Text="0 opções selecionadas" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource BrushTextPrimary}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <WrapPanel Grid.Column="2" VerticalAlignment="Center">
+                                    <Button x:Name="btnApplyTweaks" Style="{StaticResource PrimaryButtonStyle}" Content="&#x1F680; Aplicar Tweaks Selecionados" Padding="14,7"/>
+                                    <Button x:Name="btnUndoTweaks" Content="&#x21A9; Desfazer Selecionados" Padding="12,7"/>
+                                    <Button x:Name="btnClearTweaks" Content="&#x2715; Limpar Seleção" Padding="10,7"/>
+                                </WrapPanel>
+                            </Grid>
+                            <ScrollViewer Grid.Row="1" MaxHeight="76" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+                                <WrapPanel x:Name="panelSelectedTweaksChips"/>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+
+                    <!-- Grade de 3 Colunas: Essenciais | Avançados | Preferências Instantâneas -->
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Coluna 1: Essenciais -->
+                            <Border Grid.Column="0" Style="{StaticResource CardBorderStyle}">
+                                <StackPanel>
+                                    <TextBlock Text="Tweaks Essenciais" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                    <StackPanel x:Name="panelTweaksEssential"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Coluna 2: Avançados + Energia + O&O -->
+                            <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+                                <StackPanel>
+                                    <TextBlock Text="Tweaks Avançados (Cuidado)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushWarning}" Margin="0,0,0,8"/>
+                                    <StackPanel x:Name="panelTweaksAdvanced"/>
+                                    <Border Background="{DynamicResource BrushBgSurface}" CornerRadius="8" Padding="10" Margin="0,10,0,0" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1">
+                                        <StackPanel>
+                                            <TextBlock Text="Energia &amp; Privacidade Extra" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,6"/>
+                                            <Button x:Name="btnEnableUltPerf" Content="&#x26A1; Ativar Plano Desempenho Máximo"/>
+                                            <Button x:Name="btnDisableUltPerf" Content="&#x21A9; Restaurar Planos de Energia Padrão"/>
+                                            <Button x:Name="btnRunOOSU" Content="&#x1F6E1; Executar O&amp;O ShutUp10++"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Coluna 3: Preferências Instantâneas -->
+                            <Border Grid.Column="4" Style="{StaticResource CardBorderStyle}">
+                                <StackPanel>
+                                    <TextBlock Text="Preferências (Aplicação Instantânea)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushSuccess}" Margin="0,0,0,8"/>
+                                    <StackPanel x:Name="panelTweaksPrefs"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </ScrollViewer>
+                </Grid>
+
+                <!-- ==================================================== -->
+                <!-- VIEW 3: APPX & BLOATWARE (34 PACOTES)                 -->
+                <!-- ==================================================== -->
+                <Grid x:Name="viewAppx" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}" Padding="10,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <WrapPanel Grid.Column="0" VerticalAlignment="Center">
+                                <Button x:Name="btnAppxDefault" Content="&#x2B50; Marcar Bloatwares Padrão (18)"/>
+                                <Button x:Name="btnAppxSelectAll" Content="&#x2611; Marcar Todos"/>
+                                <Button x:Name="btnAppxClear" Content="&#x2715; Limpar"/>
+                                <Button x:Name="btnAppxDetectInstalled" Content="&#x1F50D; Destacar Instalados"/>
+                                <Button x:Name="btnAppxRemove" Style="{StaticResource DangerButtonStyle}" Content="&#x1F5D1; Remover Selecionados"/>
+                                <Button x:Name="btnAppxInstall" Style="{StaticResource SuccessButtonStyle}" Content="&#x1F4E5; Reinstalar Selecionados (Store)"/>
+                            </WrapPanel>
+                            <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" CornerRadius="6" Padding="10,5" VerticalAlignment="Center">
+                                <TextBlock x:Name="txtAppxSelectedCount" Text="Selecionados: 0" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" FontSize="12"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel x:Name="panelAppxCol0" Grid.Column="0"/>
+                            <StackPanel x:Name="panelAppxCol1" Grid.Column="2"/>
+                            <StackPanel x:Name="panelAppxCol2" Grid.Column="4"/>
+                        </Grid>
+                    </ScrollViewer>
+                </Grid>
+
+                <!-- ==================================================== -->
+                <!-- VIEW 4: REDE, 14 FERRAMENTAS .BAT, DNS BENCHMARK      -->
+                <!-- ==================================================== -->
+                <ScrollViewer x:Name="viewNetwork" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <Border Style="{StaticResource CardBorderStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="105"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="85"/>
+                                    <ColumnDefinition Width="95"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Host / IP Alvo:" VerticalAlignment="Center" Foreground="{DynamicResource BrushTextMuted}" FontWeight="SemiBold"/>
+                                <TextBox x:Name="txtNetTarget" Grid.Column="1" Margin="0,0,12,0" Text="8.8.8.8"/>
+                                <TextBlock Grid.Column="2" Text="Porta TCP:" VerticalAlignment="Center" Foreground="{DynamicResource BrushTextMuted}" HorizontalAlignment="Right" Margin="0,0,8,0" FontWeight="SemiBold"/>
+                                <TextBox x:Name="txtNetPort" Grid.Column="3" Text="443"/>
+                            </Grid>
+                        </Border>
+
+                        <Border Style="{StaticResource CardBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="Diagnóstico &amp; Testes de Conectividade (Opções 1 a 8)" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <WrapPanel>
+                                    <Button x:Name="btnNetQuickDiag" Style="{StaticResource PrimaryButtonStyle}" Content="[1] Diagnóstico Rápido Integrado" Width="230"/>
+                                    <Button x:Name="btnNetDetailed" Content="[2] Teste Detalhado (Ping + HTTPS + DNS)" Width="260"/>
+                                    <Button x:Name="btnNetSpeedtest" Content="[3] Teste Velocidade Download (Mbps)" Width="245"/>
+                                    <Button x:Name="btnNetWifi" Content="[4] Diagnóstico Wi-Fi (Sinal/Redes)" Width="225"/>
+                                    <Button x:Name="btnNetWifiReport" Content="[4b] Gerar Relatório Wi-Fi (HTML)" Width="225"/>
+                                    <Button x:Name="btnNetTestPort" Content="[5] Testar Porta TCP Alvo" Width="185"/>
+                                    <Button x:Name="btnNetPathping" Content="[6] Perda de Pacotes (Pathping)" Width="215"/>
+                                    <Button x:Name="btnNetTracert" Content="[7] Rastrear Rota (Tracert)" Width="195"/>
+                                    <Button x:Name="btnNetPingCont" Content="[8] Ping Contínuo (-t)" Width="175"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource CardBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="Monitoramento, Varredura &amp; Dispositivos Locais (Opções 9 a 11)" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <WrapPanel>
+                                    <Button x:Name="btnNetstatEst" Content="[9a] Netstat: Conexões Ativas" Width="210"/>
+                                    <Button x:Name="btnNetstatList" Content="[9b] Netstat: Portas Escutando" Width="210"/>
+                                    <Button x:Name="btnNetstatAll" Content="[9c] Netstat: Tudo Detalhado" Width="200"/>
+                                    <Button x:Name="btnNetSubnetScan" Style="{StaticResource SuccessButtonStyle}" Content="[10] Varredura Rede Local (IPs Livres/Ocupados)" Width="310"/>
+                                    <Button x:Name="btnNetIpConfig" Content="[11] Exibir ipconfig /all" Width="170"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource CardBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="Reparo, Reset de Pilha, TCP Gaming &amp; Relatório Forense (Opções 12 a 14)" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <WrapPanel>
+                                    <Button x:Name="btnNetSimpleRepair" Content="[12] Reparar Conexão (DNS/DHCP/NetBIOS)" Width="270"/>
+                                    <Button x:Name="btnNetResetDeep" Style="{StaticResource DangerButtonStyle}" Content="[13] Reset Completo Pilha (Winsock/TCP/FW)" Width="280"/>
+                                    <Button x:Name="btnNetForensicReport" Style="{StaticResource PrimaryButtonStyle}" Content="[14] Gerar Relatório Forense Completo (.TXT)" Width="295"/>
+                                    <Button x:Name="btnRestartAdapters" Content="Reiniciar Placas de Rede" Width="185"/>
+                                    <Button x:Name="btnOptimizeTcpTab" Style="{StaticResource SuccessButtonStyle}" Content="&#x1F680; Otimizar TCP Baixa Latência" Width="220"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource CardBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="Servidores DNS (IPv4 + IPv6 + DoH) &amp; Benchmark de Latência" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="280"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Provedor DNS:" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource BrushTextMuted}"/>
+                                    <ComboBox x:Name="cmbDnsProvider" Grid.Column="1" Margin="0,0,10,0"/>
+                                    <Button x:Name="btnApplyDns" Grid.Column="2" Style="{StaticResource PrimaryButtonStyle}" Content="Aplicar DNS Selecionado"/>
+                                    <Button x:Name="btnDnsBenchmark" Grid.Column="3" Style="{StaticResource SuccessButtonStyle}" Content="&#x26A1; Benchmark DNS (Latência)"/>
+                                </Grid>
+                                <WrapPanel>
+                                    <Button x:Name="btnDnsCloudflare" Content="Cloudflare (1.1.1.1)"/>
+                                    <Button x:Name="btnDnsGoogle" Content="Google (8.8.8.8)"/>
+                                    <Button x:Name="btnDnsQuad9" Content="Quad9 (9.9.9.9)"/>
+                                    <Button x:Name="btnDnsAdGuard" Content="AdGuard (Anti-Anúncios)"/>
+                                    <Button x:Name="btnDnsDhcp" Content="Restaurar Automático (DHCP)"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ==================================================== -->
+                <!-- VIEW 5: RECURSOS, FIXES, PAINÉIS & REPARO DO SO       -->
+                <!-- ==================================================== -->
+                <ScrollViewer x:Name="viewConfig" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Recursos Opcionais -->
+                        <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource CardBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="Recursos Opcionais do Windows" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <StackPanel x:Name="panelFeaturesContainer"/>
+                                <Button x:Name="btnInstallFeatures" Style="{StaticResource PrimaryButtonStyle}" Content="&#x2699; Instalar / Aplicar Recursos Selecionados" Margin="0,10,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Correções & Reparos -->
+                        <Border Grid.Row="0" Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="Correções &amp; Reparos do Sistema" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <WrapPanel>
+                                    <Button x:Name="btnFixFullCorruption" Style="{StaticResource PrimaryButtonStyle}" Content="&#x1F6E0; Verificação Completa (DISM + SFC)" Width="265"/>
+                                    <Button x:Name="btnSfcScan" Content="SFC /scannow" Width="125"/>
+                                    <Button x:Name="btnDismRepair" Content="DISM /RestoreHealth" Width="155"/>
+                                    <Button x:Name="btnDismCleanup" Content="Limpar WinSxS" Width="130"/>
+                                    <Button x:Name="btnFixWuReset" Content="Resetar Windows Update" Width="185"/>
+                                    <Button x:Name="btnFixWuResetAggressive" Style="{StaticResource DangerButtonStyle}" Content="Resetar WU (Agressivo)" Width="180"/>
+                                    <Button x:Name="btnFixNetwork" Content="Resetar Rede Completa" Width="170"/>
+                                    <Button x:Name="btnFixWinget" Content="Reinstalar / Reparar WinGet" Width="205"/>
+                                    <Button x:Name="btnFixNtpPool" Content="Sincronizar NTP (pool.ntp.org)" Width="210"/>
+                                    <Button x:Name="btnFixAutologon" Content="Executar Autologon (Sysinternals)" Width="225"/>
+                                    <Button x:Name="btnRestartSpooler" Content="Destravar Spooler Impressão" Width="200"/>
+                                    <Button x:Name="btnScheduleChkdsk" Content="Agendar CHKDSK (Disco C:)" Width="195"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Painéis Clássicos do Windows -->
+                        <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource CardBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="Painéis Clássicos do Windows (14)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <WrapPanel x:Name="panelLegacyPanelsContainer"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Acesso Remoto & Terminal -->
+                        <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="Acesso Remoto &amp; Perfil PowerShell 7+" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <TextBlock Text="Habilite o servidor SSH nativo no Windows (porta 22) ou instale o perfil aprimorado para PowerShell 7 com histórico preditivo." TextWrapping="Wrap" FontSize="11.5" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,10"/>
+                                <WrapPanel>
+                                    <Button x:Name="btnEnableSshServer" Style="{StaticResource SuccessButtonStyle}" Content="&#x1F510; Habilitar Servidor OpenSSH"/>
+                                    <Button x:Name="btnInstallPsProfile" Content="&#x1F4BB; Instalar Perfil PowerShell 7"/>
+                                    <Button x:Name="btnUninstallPsProfile" Content="&#x1F5D1; Remover Perfil PowerShell 7"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </ScrollViewer>
+
+                <!-- ==================================================== -->
+                <!-- VIEW 6: WINDOWS UPDATE (4 POLÍTICAS)                  -->
+                <!-- ==================================================== -->
+                <ScrollViewer x:Name="viewUpdates" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource CardBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="&#x1F504; Padrão Original (Microsoft)" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,6"/>
+                                <TextBlock Text="Remove todas as políticas personalizadas, libera ACLs bloqueadas e restaura as configurações originais de fábrica do Windows Update." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
+                                <Button x:Name="btnWuDefault" Content="Restaurar Configurações Padrão"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Row="0" Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="&#x1F6E1; Modo Recomendado (Segurança Estável)" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BrushSuccess}" Margin="0,0,0,6"/>
+                                <TextBlock Text="Desativa atualização automática de drivers via Update, adia atualizações de recursos por 365 dias e qualidade por 4 dias para máxima estabilidade." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
+                                <Button x:Name="btnWuRecommended" Style="{StaticResource SuccessButtonStyle}" Content="Aplicar Modo Recomendado"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource CardBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="&#x23F8; Pausar Atualizações (Até 2042)" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BrushWarning}" Margin="0,0,0,6"/>
+                                <TextBlock Text="Estende a pausa oficial da interface do Windows Update até 2042 sem desativar serviços críticos do sistema ou da Microsoft Store." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
+                                <Button x:Name="btnWuPause" Content="Pausar Atualizações até 2042"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="&#x26A0; Desativar Todas as Atualizações (Avançado)" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BrushDanger}" Margin="0,0,0,6"/>
+                                <TextBlock Text="Para e desabilita BITS, wuauserv, UsoSvc e tarefas agendadas do Windows Update. Recomendado apenas para máquinas dedicadas/isoladas." TextWrapping="Wrap" Foreground="{DynamicResource BrushTextMuted}" Margin="0,0,0,12"/>
+                                <Button x:Name="btnWuDisable" Style="{StaticResource DangerButtonStyle}" Content="Desativar Windows Update"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </ScrollViewer>
+
+                <!-- ==================================================== -->
+                <!-- VIEW 7: CRIADOR DE ISO & PENDRIVE USB BOOTÁVEL        -->
+                <!-- ==================================================== -->
+                <ScrollViewer x:Name="viewIso" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <Border Style="{StaticResource CardBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="1. Imagem ISO Oficial &amp; Seleção de Edição" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="135"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Arquivo ISO Origem:" VerticalAlignment="Center" Foreground="{DynamicResource BrushTextMuted}"/>
+                                    <TextBox x:Name="txtIsoPath" Grid.Column="1" Margin="0,0,8,0"/>
+                                    <Button x:Name="btnBrowseIso" Grid.Column="2" Content="Procurar ISO..."/>
+                                    <Button x:Name="btnInspectIso" Grid.Column="3" Style="{StaticResource PrimaryButtonStyle}" Content="Analisar Edições"/>
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="135"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Edição Selecionada:" VerticalAlignment="Center" Foreground="{DynamicResource BrushTextMuted}"/>
+                                    <ComboBox x:Name="cmbIsoEdition" Grid.Column="1"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource CardBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="2. Destino, Drivers &amp; Customizações" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" Margin="0,0,0,8"/>
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="135"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Pasta de Destino:" VerticalAlignment="Center" Foreground="{DynamicResource BrushTextMuted}"/>
+                                    <TextBox x:Name="txtOutputIsoDir" Grid.Row="0" Grid.Column="1" Margin="0,0,8,6" Text="C:\ISO_Work"/>
+                                    <Button x:Name="btnBrowseOutputDir" Grid.Row="0" Grid.Column="2" Content="Selecionar Pasta..." Margin="3,0,3,6"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Nome do Arquivo:" VerticalAlignment="Center" Foreground="{DynamicResource BrushTextMuted}"/>
+                                    <TextBox x:Name="txtOutputIsoName" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="Windows_Custom_Pro.iso"/>
+                                </Grid>
+
+                                <CheckBox x:Name="chkIsoBypassHw" Content="Bypass Requisitos Windows 11 (TPM 2.0, Secure Boot, RAM e CPU)" IsChecked="True"/>
+                                <CheckBox x:Name="chkIsoBypassAcc" Content="Bypass Conta Microsoft Obrigatória (Conta Local Offline - BypassNRO)" IsChecked="True"/>
+                                <CheckBox x:Name="chkIsoDisableBitLocker" Content="Desativar Criptografia Automática BitLocker no Primeiro Boot" IsChecked="True"/>
+                                <CheckBox x:Name="chkIsoDebloat" Content="Remover Bloatwares AppX Provisionados na Raiz da Imagem" IsChecked="True"/>
+                                <CheckBox x:Name="chkIsoUnattend" Content="Injetar autounattend.xml Completo (Privacidade + Pós-Instalação Automática)" IsChecked="True"/>
+                                <CheckBox x:Name="chkIsoInjectDrivers" Content="Exportar e Injetar Drivers deste Computador na ISO (install.wim + boot.wim)" IsChecked="False"/>
+
+                                <Button x:Name="btnBuildCustomIso" Style="{StaticResource PrimaryButtonStyle}" Content="&#x1F680; Preparar e Gerar ISO Otimizada" Height="40" FontSize="14" Margin="0,10,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource CardBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="3. Gravar Mídia Preparada Diretamente em Pendrive USB (Bootável FAT32 UEFI)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushWarning}" Margin="0,0,0,8"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="135"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Unidade USB Alvo:" VerticalAlignment="Center" Foreground="{DynamicResource BrushTextMuted}"/>
+                                    <ComboBox x:Name="cmbUsbDrive" Grid.Column="1" Margin="0,0,8,0"/>
+                                    <Button x:Name="btnRefreshUsb" Grid.Column="2" Content="&#x1F504; Atualizar USBs"/>
+                                    <Button x:Name="btnWriteUsb" Grid.Column="3" Style="{StaticResource DangerButtonStyle}" Content="&#x1F4BE; Formatar e Gravar Pendrive"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- SPLITTER REDIMENSIONÁVEL DO CONSOLE -->
+            <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" Background="{DynamicResource BrushBorder}" Cursor="SizeNS"/>
+
+            <!-- CONSOLE DRAWER INFERIOR -->
+            <Border Grid.Row="3" Background="{DynamicResource BrushConsoleBg}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="0,1,0,0" Padding="14,6">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0" Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="220"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="&#x1F4DC; Console de Execução &amp; Logs" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource BrushAccent}" VerticalAlignment="Center" Margin="0,0,14,0"/>
+                        <ProgressBar x:Name="pbTaskProgress" Grid.Column="1" Height="6" IsIndeterminate="True" Visibility="Collapsed" VerticalAlignment="Center" Foreground="{DynamicResource BrushAccent}" Background="{DynamicResource BrushBgCard}"/>
+                        <StackPanel Grid.Column="3" Orientation="Horizontal">
+                            <Button x:Name="btnToggleConsole" Content="&#x25BC; Minimizar" Padding="8,3" FontSize="11"/>
+                            <Button x:Name="btnCopyLogs" Content="&#x1F4CB; Copiar" Padding="8,3" FontSize="11"/>
+                            <Button x:Name="btnSaveLogs" Content="&#x1F4BE; Salvar" Padding="8,3" FontSize="11"/>
+                            <Button x:Name="btnClearLogs" Content="&#x1F9F9; Limpar" Padding="8,3" FontSize="11"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBox x:Name="txtLog" Grid.Row="1"
+                             Background="{DynamicResource BrushConsoleBg}"
+                             Foreground="{DynamicResource BrushConsoleFg}"
+                             FontFamily="Consolas"
+                             FontSize="12"
+                             IsReadOnly="True"
+                             VerticalScrollBarVisibility="Auto"
+                             HorizontalScrollBarVisibility="Auto"
+                             TextWrapping="Wrap"
+                             BorderThickness="0"
+                             Padding="4"/>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </Window>

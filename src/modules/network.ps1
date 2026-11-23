@@ -562,11 +562,164 @@ function Invoke-RenewDhcp {
     }
 }
 
+function Invoke-DnsLatencyBenchmark {
+    param(
+        $DnsConfigs,
+        [int]$TimeoutMs = 1500
+    )
+
+    if (-not $DnsConfigs) {
+        $sync = if ($WinRepairSync) { $WinRepairSync } else { $global:WinRepairSync }
+        if ($sync -and $sync.Configs) { $DnsConfigs = $sync.Configs.Dns }
+    }
+
+    if (-not $DnsConfigs) {
+        Write-ToolLog "Tabela de servidores DNS não carregada." "ERROR"
+        return @()
+    }
+
+    Write-ToolLog "=== BENCHMARK DE LATÊNCIA DNS (TCP PORTA 53) ===" "INFO"
+    $results = New-Object System.Collections.Generic.List[object]
+
+    foreach ($prop in $DnsConfigs.PSObject.Properties) {
+        $name = $prop.Name
+        $ip = $prop.Value.Primary
+        if (-not $ip) { continue }
+
+        $ms = 9999
+        $client = $null
+        try {
+            $client = New-Object System.Net.Sockets.TcpClient
+            $sw = [System.Diagnostics.Stopwatch]::StartNew()
+            $ar = $client.BeginConnect($ip, 53, $null, $null)
+            $ok = $ar.AsyncWaitHandle.WaitOne($TimeoutMs, $false)
+            $sw.Stop()
+            if ($ok) {
+                $client.EndConnect($ar)
+                $ms = [int]$sw.ElapsedMilliseconds
+            }
+        } catch {
+            $ms = 9999
+        } finally {
+            if ($client) { $client.Dispose() }
+        }
+
+        $eligible = ($prop.Value.BenchmarkEligible -eq $true)
+        $results.Add([pscustomobject]@{
+            Provider = $name
+            Primary  = $ip
+            LatencyMs = $ms
+            Eligible = $eligible
+        })
+    }
+
+    $sorted = $results | Sort-Object LatencyMs
+    foreach ($r in $sorted) {
+        $tag = if ($r.LatencyMs -ge 9999) { "Timeout" } else { "$($r.LatencyMs) ms" }
+        Write-ToolLog ("  {0,-34} ({1,-15}) -> {2}" -f $r.Provider, $r.Primary, $tag) "INFO"
+    }
+
+    $best = $sorted | Where-Object { $_.LatencyMs -lt 9999 } | Select-Object -First 1
+    if ($best) {
+        Write-ToolLog "Mais rápido detectado: $($best.Provider) ($($best.Primary)) com $($best.LatencyMs) ms." "SUCCESS"
+    }
+    return $sorted
+}
+
+function Set-DnsFromConfig {
+    param(
+        [Parameter(Mandatory=$true)][string]$ProviderKey,
+        $DnsConfigs
+    )
+
+    if (-not $DnsConfigs) {
+        $sync = if ($WinRepairSync) { $WinRepairSync } else { $global:WinRepairSync }
+        if ($sync -and $sync.Configs) { $DnsConfigs = $sync.Configs.Dns }
+    }
+
+    if ($ProviderKey -eq "Fastest") {
+        $bench = Invoke-DnsLatencyBenchmark -DnsConfigs $DnsConfigs
+        $eligibleBest = $bench | Where-Object { $_.Eligible -and $_.LatencyMs -lt 9999 } | Select-Object -First 1
+        if (-not $eligibleBest) {
+            $eligibleBest = $bench | Where-Object { $_.LatencyMs -lt 9999 } | Select-Object -First 1
+        }
+        if (-not $eligibleBest) {
+            Write-ToolLog "Nenhum servidor DNS respondeu ao benchmark." "ERROR"
+            return
+        }
+        $ProviderKey = $eligibleBest.Provider
+        Write-ToolLog "Aplicando servidor DNS mais rápido: $ProviderKey ($($eligibleBest.LatencyMs) ms)..." "INFO"
+    }
+
+    $adapters = Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and $_.Virtual -eq $false }
+    if (-not $adapters) {
+        $adapters = Get-NetAdapter | Where-Object { $_.Status -eq 'Up' }
+    }
+    if (-not $adapters) {
+        Write-ToolLog "Nenhum adaptador de rede ativo encontrado." "WARN"
+        return
+    }
+
+    if ($ProviderKey -eq "DHCP") {
+        foreach ($adapter in $adapters) {
+            try {
+                Set-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -ResetServerAddresses -ErrorAction Stop
+                Write-ToolLog "[$($adapter.Name)] DNS restaurado para automático (DHCP)." "SUCCESS"
+            } catch {
+                Write-ToolLog "Falha ao restaurar DHCP em $($adapter.Name): $_" "ERROR"
+            }
+        }
+        Clear-DnsClientCache -ErrorAction SilentlyContinue
+        return
+    }
+
+    $cfg = $null
+    if ($DnsConfigs) {
+        $cfg = $DnsConfigs.$ProviderKey
+    }
+    if (-not $cfg) {
+        Write-ToolLog "Provedor DNS '$ProviderKey' não encontrado." "ERROR"
+        return
+    }
+
+    $v4 = @($cfg.Primary, $cfg.Secondary | Where-Object { $_ })
+    $v6 = @($cfg.Primary6, $cfg.Secondary6 | Where-Object { $_ })
+    $dohCmd = Get-Command "Add-DnsClientDohServerAddress" -ErrorAction SilentlyContinue
+
+    foreach ($adapter in $adapters) {
+        try {
+            if ($v4.Count -gt 0) {
+                Set-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -ServerAddresses $v4 -ErrorAction Stop
+            }
+            if ($v6.Count -gt 0) {
+                try { Set-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -ServerAddresses $v6 -ErrorAction SilentlyContinue } catch {}
+            }
+            if ($dohCmd -and $cfg.DohTemplate) {
+                foreach ($srv in $v4) {
+                    try {
+                        Add-DnsClientDohServerAddress -ServerAddress $srv -DohTemplate $cfg.DohTemplate -AllowFallbackToUdp $true -AutoUpgrade $true -ErrorAction SilentlyContinue | Out-Null
+                    } catch {}
+                }
+            }
+            Write-ToolLog "[$($adapter.Name)] DNS $ProviderKey aplicado (IPv4: $($v4 -join ', '))." "SUCCESS"
+        } catch {
+            Write-ToolLog "Falha ao definir DNS em $($adapter.Name): $_" "ERROR"
+        }
+    }
+    Clear-DnsClientCache -ErrorAction SilentlyContinue
+}
+
 function Set-QuickDnsProvider {
     param(
-        [ValidateSet("Cloudflare", "Google", "Quad9", "AdGuard", "DHCP")]
         [string]$Provider = "Cloudflare"
     )
+
+    $mapped = if ($Provider -eq "AdGuard") { "AdGuard_Ads_Trackers" } else { $Provider }
+    $sync = if ($WinRepairSync) { $WinRepairSync } else { $global:WinRepairSync }
+    if ($sync -and $sync.Configs -and $sync.Configs.Dns -and ($mapped -eq "DHCP" -or $mapped -eq "Fastest" -or $sync.Configs.Dns.$mapped)) {
+        Set-DnsFromConfig -ProviderKey $mapped -DnsConfigs $sync.Configs.Dns
+        return
+    }
 
     $dnsServers = switch ($Provider) {
         "Cloudflare" { @("1.1.1.1", "1.0.0.1") }

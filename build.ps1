@@ -1,12 +1,12 @@
 ﻿# ==============================================================================
-# Script de Build: Empacotador para Execução Única via irm | iex
+# Script de Build: Empacotador Standalone para Execução Única via irm | iex
 # ==============================================================================
 param(
     [string]$OutputDir = "$PSScriptRoot\dist",
     [string]$OutputFile = "winrepair.ps1"
 )
 
-Write-Host "[*] Iniciando compilação do WinRepair Pro..." -ForegroundColor Cyan
+Write-Host "[*] Iniciando compilação do WinRepair & Tweaks Pro v3.0..." -ForegroundColor Cyan
 
 if (-not (Test-Path $OutputDir)) {
     New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
@@ -14,10 +14,35 @@ if (-not (Test-Path $OutputDir)) {
 
 $destination = Join-Path $OutputDir $OutputFile
 
+function ConvertTo-AsciiXml([string]$rawText) {
+    $xsb = New-Object System.Text.StringBuilder
+    for ($i = 0; $i -lt $rawText.Length; $i++) {
+        $ch = $rawText[$i]
+        if ([int]$ch -le 127) {
+            [void]$xsb.Append($ch)
+        } elseif ([char]::IsHighSurrogate($ch) -and ($i + 1) -lt $rawText.Length -and [char]::IsLowSurrogate($rawText[$i + 1])) {
+            $cp = [char]::ConvertToUtf32($ch, $rawText[$i + 1])
+            [void]$xsb.Append(("&#x{0:X};" -f $cp))
+            $i++
+        } else {
+            [void]$xsb.Append(("&#x{0:X};" -f [int]$ch))
+        }
+    }
+    return $xsb.ToString()
+}
+
+function ConvertTo-AsciiJson([string]$rawJson) {
+    $compressed = ($rawJson | ConvertFrom-Json) | ConvertTo-Json -Depth 12 -Compress
+    return [regex]::Replace($compressed, '[^\x00-\x7F]', {
+        param($m)
+        '\u{0:x4}' -f [int][char]$m.Value[0]
+    })
+}
+
 $banner = @"
 # ==============================================================================
-# WinRepair & Tweaks Pro (Standalone All-in-One)
-# Utilitário Completo de Otimização, Diagnóstico de Rede, ISO e Reparos
+# WinRepair & Tweaks Pro v3.0 (Standalone All-in-One)
+# Utilitário Completo: Tweaks, Softwares, AppX, Rede (14 Ferramentas), ISO & USB
 # Execução direta via: irm <URL> | iex
 # ==============================================================================
 
@@ -28,13 +53,11 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 
 "@
 
-$coreFiles = @(
+$filesToBundle = @(
     "$PSScriptRoot\src\core\elevation.ps1",
-    "$PSScriptRoot\src\core\logger.ps1"
-)
-
-$moduleFiles = @(
+    "$PSScriptRoot\src\core\logger.ps1",
     "$PSScriptRoot\src\modules\network.ps1",
+    "$PSScriptRoot\src\modules\tweak_engine.ps1",
     "$PSScriptRoot\src\modules\optimizer.ps1",
     "$PSScriptRoot\src\modules\tweaks_system.ps1",
     "$PSScriptRoot\src\modules\windows_features.ps1",
@@ -42,49 +65,37 @@ $moduleFiles = @(
     "$PSScriptRoot\src\modules\system_repair.ps1",
     "$PSScriptRoot\src\modules\iso_builder.ps1",
     "$PSScriptRoot\src\modules\software_installer.ps1",
-    "$PSScriptRoot\src\modules\licensing.ps1"
+    "$PSScriptRoot\src\modules\appx_manager.ps1",
+    "$PSScriptRoot\src\ui\controller.ps1"
 )
 
 $sb = New-Object System.Text.StringBuilder
 [void]$sb.AppendLine($banner)
 
-# Adicionar arquivos do core lendo como UTF-8
-foreach ($f in $coreFiles) {
-    if (Test-Path $f) {
-        Write-Host " -> Agregando $(Split-Path $f -Leaf)..." -ForegroundColor Gray
-        $content = [System.IO.File]::ReadAllText($f, [System.Text.Encoding]::UTF8)
-        [void]$sb.AppendLine($content)
-        [void]$sb.AppendLine()
+foreach ($f in $filesToBundle) {
+    if (-not (Test-Path $f)) {
+        throw "Arquivo obrigatório ausente: $f"
     }
+    Write-Host " -> Agregando $(Split-Path $f -Leaf)..." -ForegroundColor Gray
+    $content = [System.IO.File]::ReadAllText($f, [System.Text.Encoding]::UTF8)
+    [void]$sb.AppendLine($content)
+    [void]$sb.AppendLine()
 }
 
-# Adicionar módulos lendo como UTF-8
-foreach ($f in $moduleFiles) {
-    if (Test-Path $f) {
-        Write-Host " -> Agregando $(Split-Path $f -Leaf)..." -ForegroundColor Gray
-        $content = [System.IO.File]::ReadAllText($f, [System.Text.Encoding]::UTF8)
-        [void]$sb.AppendLine($content)
-        [void]$sb.AppendLine()
-    }
-}
+# Converter e embutir configs JSON em formato ASCII-safe
+Write-Host " -> Embutindo configurações JSON (ASCII-safe)..." -ForegroundColor Gray
+$cfgDir = "$PSScriptRoot\src\config"
+$appsJson     = ConvertTo-AsciiJson ([System.IO.File]::ReadAllText((Join-Path $cfgDir "applications.json"), [System.Text.Encoding]::UTF8))
+$appxJson     = ConvertTo-AsciiJson ([System.IO.File]::ReadAllText((Join-Path $cfgDir "appx.json"), [System.Text.Encoding]::UTF8))
+$dnsJson      = ConvertTo-AsciiJson ([System.IO.File]::ReadAllText((Join-Path $cfgDir "dns.json"), [System.Text.Encoding]::UTF8))
+$featuresJson = ConvertTo-AsciiJson ([System.IO.File]::ReadAllText((Join-Path $cfgDir "features.json"), [System.Text.Encoding]::UTF8))
+$presetsJson  = ConvertTo-AsciiJson ([System.IO.File]::ReadAllText((Join-Path $cfgDir "presets.json"), [System.Text.Encoding]::UTF8))
+$tweaksJson   = ConvertTo-AsciiJson ([System.IO.File]::ReadAllText((Join-Path $cfgDir "tweaks.json"), [System.Text.Encoding]::UTF8))
 
-# Adicionar interface XAML lida como UTF-8 e convertida em entidades XML puras (ASCII-safe)
-$xamlPath = "$PSScriptRoot\src\ui\app.xaml"
-$rawXaml = [System.IO.File]::ReadAllText($xamlPath, [System.Text.Encoding]::UTF8)
-$xamlSb = New-Object System.Text.StringBuilder
-for ($i = 0; $i -lt $rawXaml.Length; $i++) {
-    $ch = $rawXaml[$i]
-    if ([int]$ch -le 127) {
-        [void]$xamlSb.Append($ch)
-    } elseif ([char]::IsHighSurrogate($ch) -and ($i + 1) -lt $rawXaml.Length -and [char]::IsLowSurrogate($rawXaml[$i + 1])) {
-        $cp = [char]::ConvertToUtf32($ch, $rawXaml[$i + 1])
-        [void]$xamlSb.Append(("&#x{0:X};" -f $cp))
-        $i++
-    } else {
-        [void]$xamlSb.Append(("&#x{0:X};" -f [int]$ch))
-    }
-}
-$xamlContent = $xamlSb.ToString()
+# Converter XAML e autounattend.xml em entidades XML puras (ASCII-safe)
+Write-Host " -> Embutindo XAML e autounattend.xml..." -ForegroundColor Gray
+$xamlContent     = ConvertTo-AsciiXml ([System.IO.File]::ReadAllText("$PSScriptRoot\src\ui\app.xaml", [System.Text.Encoding]::UTF8))
+$unattendContent = ConvertTo-AsciiXml ([System.IO.File]::ReadAllText((Join-Path $cfgDir "autounattend.xml"), [System.Text.Encoding]::UTF8))
 
 $runtimeScript = @"
 # 1. Garantir privilégios de Administrador
@@ -93,371 +104,43 @@ if (-not (Test-IsAdmin)) {
     return
 }
 
-# 2. Carregar assemblies do WPF e Forms
-Add-Type -AssemblyName PresentationFramework
-Add-Type -AssemblyName PresentationCore
-Add-Type -AssemblyName WindowsBase
-Add-Type -AssemblyName System.Windows.Forms
+# 2. Carregar configurações e templates embutidos
+`$embeddedConfigs = @{
+    Applications = @'
+$appsJson
+'@ | ConvertFrom-Json
+    Appx         = @'
+$appxJson
+'@ | ConvertFrom-Json
+    Dns          = @'
+$dnsJson
+'@ | ConvertFrom-Json
+    Features     = @'
+$featuresJson
+'@ | ConvertFrom-Json
+    Presets      = @'
+$presetsJson
+'@ | ConvertFrom-Json
+    Tweaks       = @'
+$tweaksJson
+'@ | ConvertFrom-Json
+}
 
-# 3. Carregar interface gráfica embutida
-[xml]`$xaml = @'
+`$embeddedUnattendXml = @'
+$unattendContent
+'@
+
+`$embeddedXaml = @'
 $xamlContent
 '@
 
-`$reader = New-Object System.Xml.XmlNodeReader `$xaml
-`$window = [Windows.Markup.XamlReader]::Load(`$reader)
-
-`$global:txtLogControl = `$window.FindName("txtLog")
-`$global:WinRepairSync = [hashtable]::Synchronized(@{
-    LogQueue   = [System.Collections.Concurrent.ConcurrentQueue[string]]::new()
-    ActiveJobs = [System.Collections.ArrayList]::Synchronized([System.Collections.ArrayList]::new())
-})
-
-# Preparar InitialSessionState para tarefas assíncronas em Runspaces
-`$global:BaseInitialSessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
-`$global:BaseInitialSessionState.Variables.Add((New-Object System.Management.Automation.Runspaces.SessionStateVariableEntry("WinRepairSync", `$global:WinRepairSync, `$null)))
-foreach (`$fn in (Get-ChildItem Function:\ | Where-Object { -not `$_.ModuleName -and `$_.Name.Length -gt 2 -and `$_.Name -notmatch ':' })) {
-    try {
-        `$global:BaseInitialSessionState.Commands.Add((New-Object System.Management.Automation.Runspaces.SessionStateFunctionEntry(`$fn.Name, `$fn.Definition)))
-    } catch {}
-}
-
-# Timer da UI para drenar logs e limpar Runspaces finalizados
-`$uiTimer = New-Object System.Windows.Threading.DispatcherTimer
-`$uiTimer.Interval = [TimeSpan]::FromMilliseconds(150)
-`$uiTimer.Add_Tick({
-    `$line = `$null
-    `$updated = `$false
-    while (`$global:WinRepairSync.LogQueue.TryDequeue([ref]`$line)) {
-        `$global:txtLogControl.AppendText("`$line``r``n")
-        `$updated = `$true
-    }
-    if (`$updated) {
-        `$global:txtLogControl.ScrollToEnd()
-    }
-
-    for (`$i = `$global:WinRepairSync.ActiveJobs.Count - 1; `$i -ge 0; `$i--) {
-        `$job = `$global:WinRepairSync.ActiveJobs[`$i]
-        if (`$job.Handle.IsCompleted) {
-            try { `$job.PowerShell.EndInvoke(`$job.Handle) | Out-Null } catch {}
-            `$job.PowerShell.Dispose()
-            `$job.Runspace.Close()
-            `$job.Runspace.Dispose()
-            `$global:WinRepairSync.ActiveJobs.RemoveAt(`$i)
-        }
-    }
-})
-`$uiTimer.Start()
-
-# Informações do Sistema
-try {
-    `$os = Get-CimInstance Win32_OperatingSystem
-    `$cs = Get-CimInstance Win32_ComputerSystem
-    `$ramGb = [math]::Round(`$cs.TotalPhysicalMemory / 1GB, 1)
-    `$window.FindName("txtSystemInfo").Text = "`$(`$os.Caption) (`$(`$os.OSArchitecture)) | `$ramGb GB RAM | Host: `$(`$env:COMPUTERNAME)"
-} catch {
-    `$window.FindName("txtSystemInfo").Text = "Windows `$(`$env:OS) | Host: `$(`$env:COMPUTERNAME)"
-}
-
-function Start-AsyncAction {
-    param(
-        [Parameter(Mandatory=`$true)][scriptblock]`$Action,
-        [hashtable]`$Vars = @{}
-    )
-    `$rs = [System.Management.Automation.Runspaces.RunspaceFactory]::CreateRunspace(`$global:BaseInitialSessionState)
-    `$rs.Open()
-    foreach (`$k in `$Vars.Keys) {
-        `$rs.SessionStateProxy.SetVariable(`$k, `$Vars[`$k])
-    }
-    `$ps = [PowerShell]::Create()
-    `$ps.Runspace = `$rs
-    `$wrappedCode = "try {``n`$(`$Action.ToString())``n} catch { Write-ToolLog ```"Erro na execução da tarefa: ```$_```" 'ERROR' }"
-    [void]`$ps.AddScript(`$wrappedCode)
-    `$handle = `$ps.BeginInvoke()
-    [void]`$global:WinRepairSync.ActiveJobs.Add([pscustomobject]@{
-        PowerShell = `$ps
-        Runspace   = `$rs
-        Handle     = `$handle
-    })
-}
-
-# --- PERFIS PRONTOS (1 CLIQUE) ---
-`$window.FindName("btnProfileDesktop").Add_Click({ Start-AsyncAction { Apply-DesktopRecommendedProfile } })
-`$window.FindName("btnProfileLaptop").Add_Click({ Start-AsyncAction { Apply-LaptopRecommendedProfile } })
-`$window.FindName("btnProfileGamer").Add_Click({ Start-AsyncAction { Apply-GamerUltimateProfile } })
-`$window.FindName("btnCreateRestorePoint").Add_Click({ Start-AsyncAction { Set-RestorePoint } })
-
-# --- APLICAR TWEAKS SELECIONADOS ---
-`$window.FindName("btnApplySelectedTweaks").Add_Click({
-    `$tweaks = @{
-        CleanTemp           = [bool]`$window.FindName("chkCleanTemp").IsChecked
-        DisableTelemetry    = [bool]`$window.FindName("chkDisableTelemetry").IsChecked
-        DisableBingSearch   = [bool]`$window.FindName("chkDisableBingSearch").IsChecked
-        DisableGameDvr      = [bool]`$window.FindName("chkDisableGameDvr").IsChecked
-        OptimizeServices    = [bool]`$window.FindName("chkOptimizeServices").IsChecked
-        UltimatePower       = [bool]`$window.FindName("chkUltimatePower").IsChecked
-        DisableHibernation  = [bool]`$window.FindName("chkDisableHibernation").IsChecked
-        FastVisuals         = [bool]`$window.FindName("chkFastVisuals").IsChecked
-        SsdTrim             = [bool]`$window.FindName("chkSsdTrim").IsChecked
-
-        ShowFileExt         = [bool]`$window.FindName("chkShowFileExt").IsChecked
-        ShowHiddenFiles     = [bool]`$window.FindName("chkShowHiddenFiles").IsChecked
-        ExplorerThisPc      = [bool]`$window.FindName("chkExplorerThisPc").IsChecked
-        DarkMode            = [bool]`$window.FindName("chkDarkMode").IsChecked
-        DisableMouseAccel   = [bool]`$window.FindName("chkDisableMouseAccel").IsChecked
-        CleanWin11Taskbar   = [bool]`$window.FindName("chkCleanWin11Taskbar").IsChecked
-        TakeOwnership       = [bool]`$window.FindName("chkTakeOwnership").IsChecked
-        UninstallOneDrive   = [bool]`$window.FindName("chkUninstallOneDrive").IsChecked
-
-        OptimizeTcp         = [bool]`$window.FindName("chkOptimizeTcp").IsChecked
-        FlushDns            = [bool]`$window.FindName("chkFlushDns").IsChecked
-        RenewDhcp           = [bool]`$window.FindName("chkRenewDhcp").IsChecked
-        ResetNetwork        = [bool]`$window.FindName("chkResetNetwork").IsChecked
-    }
-
-    Start-AsyncAction -Vars @{ tweaks = `$tweaks } -Action {
-        Write-ToolLog "=== INICIANDO APLICAÇÃO DOS TWEAKS SELECIONADOS ===" "INFO"
-
-        if (`$tweaks.CleanTemp) { Clear-TempFiles }
-        if (`$tweaks.DisableTelemetry) { Optimize-WindowsTelemetryAndPrivacy }
-        if (`$tweaks.DisableBingSearch) { Disable-StartMenuAdsAndBingSearch }
-        if (`$tweaks.DisableGameDvr) { Disable-GameDvrAndBackgroundRecording }
-        if (`$tweaks.OptimizeServices) { Optimize-WindowsServicesManual }
-        if (`$tweaks.UltimatePower) { Enable-UltimatePerformancePowerPlan }
-        if (`$tweaks.DisableHibernation) { Set-HibernationState -Enable `$false }
-        if (`$tweaks.FastVisuals) { Optimize-SystemResponsivenessAndVisuals }
-        if (`$tweaks.SsdTrim) { Optimize-SsdTrim }
-
-        if (`$tweaks.ShowFileExt) { Set-ShowFileExtensions -Enable `$true }
-        if (`$tweaks.ShowHiddenFiles) { Set-ShowHiddenFiles -Enable `$true }
-        if (`$tweaks.ExplorerThisPc) { Set-ExplorerOpenToThisPC }
-        if (`$tweaks.DarkMode) { Set-SystemDarkMode -Enable `$true }
-        if (`$tweaks.DisableMouseAccel) { Disable-MouseAcceleration }
-        if (`$tweaks.CleanWin11Taskbar) { Disable-Win11TaskbarJunk }
-        if (`$tweaks.TakeOwnership) { Add-TakeOwnershipContextMenu }
-        if (`$tweaks.UninstallOneDrive) { Uninstall-OneDrivePurge }
-
-        if (`$tweaks.OptimizeTcp) { Optimize-TcpLatencyAndThroughput }
-        if (`$tweaks.FlushDns) { Invoke-FlushDns }
-        if (`$tweaks.RenewDhcp) { Invoke-RenewDhcp }
-        if (`$tweaks.ResetNetwork) { Invoke-ResetNetworkStack }
-
-        Write-ToolLog "=== TODOS OS TWEAKS SELECIONADOS FORAM APLICADOS COM SUCESSO! ===" "SUCCESS"
-    }
-})
-
-# --- ABA 2: REDE & DIAGNOSTICO COMPLETO ---
-`$window.FindName("btnNetQuickDiag").Add_Click({ Start-AsyncAction { Invoke-QuickIntegratedNetworkDiag } })
-`$window.FindName("btnNetDetailed").Add_Click({ Start-AsyncAction { Invoke-DetailedInternetTest } })
-`$window.FindName("btnNetSpeedtest").Add_Click({ Start-AsyncAction { Invoke-DownloadSpeedTest } })
-`$window.FindName("btnNetWifi").Add_Click({ Start-AsyncAction { Invoke-WifiDiagnostics -GenerateHtmlReport `$false } })
-`$window.FindName("btnNetWifiReport").Add_Click({ Start-AsyncAction { Invoke-WifiDiagnostics -GenerateHtmlReport `$true } })
-
-`$window.FindName("btnNetTestPort").Add_Click({
-    `$target = `$window.FindName("txtNetTarget").Text
-    `$portVal = 443
-    if (-not [int]::TryParse(`$window.FindName("txtNetPort").Text, [ref]`$portVal)) {
-        Write-ToolLog "Informe um número de porta TCP válido (ex: 80, 443, 3389)." "WARN"
-        return
-    }
-    if (-not `$target) { `$target = "google.com" }
-    Start-AsyncAction -Vars @{ target = `$target; portVal = `$portVal } -Action {
-        Test-SpecificTcpPort -TargetHost `$target -Port `$portVal
-    }
-})
-
-`$window.FindName("btnNetPathping").Add_Click({
-    `$target = `$window.FindName("txtNetTarget").Text
-    Start-AsyncAction -Vars @{ target = `$target } -Action { Invoke-PathpingAnalysis -TargetHost `$target }
-})
-
-`$window.FindName("btnNetTracert").Add_Click({
-    `$target = `$window.FindName("txtNetTarget").Text
-    Start-AsyncAction -Vars @{ target = `$target } -Action { Invoke-TracertAnalysis -TargetHost `$target }
-})
-
-`$window.FindName("btnNetPingCont").Add_Click({
-    `$target = `$window.FindName("txtNetTarget").Text
-    Start-ContinuousPingWindow -TargetHost `$target
-})
-
-`$window.FindName("btnNetstatEst").Add_Click({ Start-AsyncAction { Get-ActiveConnectionsNetstat -Mode "Established" } })
-`$window.FindName("btnNetstatList").Add_Click({ Start-AsyncAction { Get-ActiveConnectionsNetstat -Mode "Listening" } })
-`$window.FindName("btnNetstatAll").Add_Click({ Start-AsyncAction { Get-ActiveConnectionsNetstat -Mode "All" } })
-`$window.FindName("btnNetSubnetScan").Add_Click({ Start-AsyncAction { Invoke-LocalSubnetScan -SaveAndOpenReport `$true } })
-`$window.FindName("btnNetIpConfig").Add_Click({ Start-AsyncAction { Get-IpConfigAllDetails } })
-
-`$window.FindName("btnNetSimpleRepair").Add_Click({ Start-AsyncAction { Invoke-SimpleNetworkRepair } })
-`$window.FindName("btnNetResetDeep").Add_Click({ Start-AsyncAction { Invoke-ResetNetworkStack } })
-`$window.FindName("btnNetForensicReport").Add_Click({ Start-AsyncAction { Export-ForensicNetworkReport } })
-`$window.FindName("btnRestartAdapters").Add_Click({ Start-AsyncAction { Restart-NetworkAdapters } })
-`$window.FindName("btnOptimizeTcpTab").Add_Click({ Start-AsyncAction { Optimize-TcpLatencyAndThroughput } })
-
-`$window.FindName("btnDnsCloudflare").Add_Click({ Start-AsyncAction { Set-QuickDnsProvider -Provider "Cloudflare" } })
-`$window.FindName("btnDnsGoogle").Add_Click({ Start-AsyncAction { Set-QuickDnsProvider -Provider "Google" } })
-`$window.FindName("btnDnsQuad9").Add_Click({ Start-AsyncAction { Set-QuickDnsProvider -Provider "Quad9" } })
-`$window.FindName("btnDnsAdGuard").Add_Click({ Start-AsyncAction { Set-QuickDnsProvider -Provider "AdGuard" } })
-`$window.FindName("btnDnsDhcp").Add_Click({ Start-AsyncAction { Set-QuickDnsProvider -Provider "DHCP" } })
-
-# --- ABA 3: RECURSOS & UPDATES ---
-`$window.FindName("btnWuRecommended").Add_Click({ Start-AsyncAction { Set-WindowsUpdateRecommended } })
-`$window.FindName("btnWuDefault").Add_Click({ Start-AsyncAction { Reset-WindowsUpdateDefault } })
-`$window.FindName("btnWuPause").Add_Click({ Start-AsyncAction { Pause-WindowsUpdateExtended } })
-
-`$window.FindName("btnEnableWsl").Add_Click({ Start-AsyncAction { Enable-WslFeature } })
-`$window.FindName("btnEnableSandbox").Add_Click({ Start-AsyncAction { Enable-WindowsSandbox } })
-`$window.FindName("btnEnableHyperV").Add_Click({ Start-AsyncAction { Enable-HyperVFeature } })
-`$window.FindName("btnEnableNet35").Add_Click({ Start-AsyncAction { Enable-NetFramework35 } })
-
-# --- ABA 4: MICROWIN / CRIADOR DE ISO ---
-`$window.FindName("btnBrowseIso").Add_Click({
-    `$selected = Select-IsoFileDialog
-    if (`$selected) {
-        `$window.FindName("txtIsoPath").Text = `$selected
-        Write-ToolLog "ISO selecionada: `$selected" "INFO"
-    }
-})
-
-`$window.FindName("btnBrowseOutputDir").Add_Click({
-    `$selected = Select-OutputFolderDialog
-    if (`$selected) {
-        `$window.FindName("txtOutputIsoDir").Text = `$selected
-        Write-ToolLog "Pasta de saída selecionada: `$selected" "INFO"
-    }
-})
-
-`$window.FindName("btnInspectIso").Add_Click({
-    `$isoPath = `$window.FindName("txtIsoPath").Text
-    if (-not `$isoPath) {
-        Write-ToolLog "Por favor, selecione primeiro um arquivo ISO." "WARN"
-        return
-    }
-    Start-AsyncAction -Vars @{ isoPath = `$isoPath } -Action { Inspect-IsoEditions -IsoPath `$isoPath }
-})
-
-`$window.FindName("btnBuildCustomIso").Add_Click({
-    `$isoPath = `$window.FindName("txtIsoPath").Text
-    `$outputDir = `$window.FindName("txtOutputIsoDir").Text
-    `$outputName = `$window.FindName("txtOutputIsoName").Text
-    `$idx = [int]`$window.FindName("txtEditionIndex").Text
-
-    `$bpHw = [bool]`$window.FindName("chkIsoBypassHw").IsChecked
-    `$bpAcc = [bool]`$window.FindName("chkIsoBypassAcc").IsChecked
-    `$disBit = [bool]`$window.FindName("chkIsoDisableBitLocker").IsChecked
-    `$debloat = [bool]`$window.FindName("chkIsoDebloat").IsChecked
-    `$unattend = [bool]`$window.FindName("chkIsoUnattend").IsChecked
-
-    if (-not `$isoPath -or -not (Test-Path `$isoPath)) {
-        Write-ToolLog "Arquivo ISO de origem inválido ou não informado!" "ERROR"
-        return
-    }
-
-    Start-AsyncAction -Vars @{
-        isoPath    = `$isoPath
-        outputDir  = `$outputDir
-        outputName = `$outputName
-        idx        = `$idx
-        bpHw       = `$bpHw
-        bpAcc      = `$bpAcc
-        disBit     = `$disBit
-        debloat    = `$debloat
-        unattend   = `$unattend
-    } -Action {
-        Build-CustomOptimizedIsoPipeline ``
-            -SourceIsoPath `$isoPath ``
-            -OutputIsoDir `$outputDir ``
-            -OutputIsoName `$outputName ``
-            -EditionIndex `$idx ``
-            -BypassHardwareChecks `$bpHw ``
-            -BypassMicrosoftAccount `$bpAcc ``
-            -DisableBitLocker `$disBit ``
-            -RemoveBloatware `$debloat ``
-            -InjectUnattendXml `$unattend
-    }
-})
-
-# --- ABA 5: SOFTWARES (WINGET) ---
-`$window.FindName("btnInstallSelectedSoftware").Add_Click({
-    `$softBoxes = @(
-        `$window.FindName("chkSoftwareChrome"),
-        `$window.FindName("chkSoftwareFirefox"),
-        `$window.FindName("chkSoftwareBrave"),
-        `$window.FindName("chkSoftware7zip"),
-        `$window.FindName("chkSoftwareNotepad"),
-        `$window.FindName("chkSoftwareAnyDesk"),
-        `$window.FindName("chkSoftwarePowerToys"),
-        `$window.FindName("chkSoftwareVlc"),
-        `$window.FindName("chkSoftwareVsCode"),
-        `$window.FindName("chkSoftwareSteam"),
-        `$window.FindName("chkSoftwareDiscord")
-    )
-
-    `$toInstall = @()
-    foreach (`$box in `$softBoxes) {
-        if (`$box -and `$box.IsChecked) {
-            `$toInstall += `$box.Tag
-        }
-    }
-
-    if (`$toInstall.Count -eq 0) {
-        Write-ToolLog "Nenhum aplicativo foi selecionado para instalação." "WARN"
-        return
-    }
-
-    Start-AsyncAction -Vars @{ toInstall = `$toInstall } -Action {
-        Install-SelectedSoftwareList -PackageIds `$toInstall
-    }
-})
-
-`$window.FindName("btnUpgradeAllSoftware").Add_Click({
-    Start-AsyncAction {
-        Write-ToolLog "Iniciando atualização de todos os programas instalados via Winget..." "INFO"
-        Start-Process winget.exe -ArgumentList "upgrade --all --silent --accept-source-agreements --accept-package-agreements" -NoNewWindow -Wait
-        Write-ToolLog "Atualização geral de programas concluída." "SUCCESS"
-    }
-})
-
-# --- ABA 6: REPAROS DO SO ---
-`$window.FindName("btnSfcScan").Add_Click({ Start-AsyncAction { Invoke-SfcScan } })
-`$window.FindName("btnDismRepair").Add_Click({ Start-AsyncAction { Invoke-DismRepair } })
-`$window.FindName("btnDismCleanup").Add_Click({ Start-AsyncAction { Invoke-DismCleanup } })
-`$window.FindName("btnRestartSpooler").Add_Click({ Start-AsyncAction { Restart-PrintSpooler } })
-`$window.FindName("btnScheduleChkdsk").Add_Click({ Start-AsyncAction { Schedule-ChkdskOnReboot } })
-
-# --- ABA 7: LICENCIAMENTO ---
-`$window.FindName("btnCheckWinLicense").Add_Click({ Start-AsyncAction { Get-WindowsActivationStatus } })
-`$window.FindName("btnApplyWinKey").Add_Click({
-    `$key = `$window.FindName("txtWinKey").Text
-    if (-not `$key) { Write-ToolLog "Informe a chave do Windows." "WARN"; return }
-    Start-AsyncAction -Vars @{ key = `$key } -Action { Install-WindowsProductKey -ProductKey `$key }
-})
-
-`$window.FindName("btnCheckOfficeLicense").Add_Click({ Start-AsyncAction { Get-OfficeActivationStatus } })
-`$window.FindName("btnApplyOfficeKey").Add_Click({
-    `$key = `$window.FindName("txtOfficeKey").Text
-    if (-not `$key) { Write-ToolLog "Informe a chave do Office." "WARN"; return }
-    Start-AsyncAction -Vars @{ key = `$key } -Action { Install-OfficeProductKey -ProductKey `$key }
-})
-
-`$window.FindName("btnSetKms").Add_Click({
-    `$kmsHost = `$window.FindName("txtKmsHost").Text
-    if (-not `$kmsHost) { Write-ToolLog "Informe o host KMS." "WARN"; return }
-    Start-AsyncAction -Vars @{ kmsHost = `$kmsHost } -Action { Set-EnterpriseKmsServer -KmsHost `$kmsHost }
-})
-
-# --- LOGS ---
-`$window.FindName("btnClearLogs").Add_Click({ `$global:txtLogControl.Text = "" })
-
-Write-ToolLog "WinRepair & Tweaks Pro carregado com sucesso!" "SUCCESS"
-Write-ToolLog "Escolha um Perfil de Otimização ou selecione as ferramentas nas abas acima." "INFO"
-
-`$window.Add_Closed({ `$uiTimer.Stop() })
-`$window.ShowDialog() | Out-Null
+# 3. Iniciar Interface Gráfica (HUD v3.0)
+Start-WinRepairUI -XamlText `$embeddedXaml -Configs `$embeddedConfigs -AutoUnattendXml `$embeddedUnattendXml
 "@
 
 [void]$sb.AppendLine($runtimeScript)
 
-# Salvar em UTF-8 SEM BOM para que 'irm <url> | iex' nao interprete o caractere BOM na linha 1 como comando!
+# Salvar em UTF-8 SEM BOM para compatibilidade total com irm | iex e ParseFile
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($destination, $sb.ToString(), $utf8NoBom)
 

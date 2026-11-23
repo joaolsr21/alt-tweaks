@@ -1,5 +1,5 @@
 ﻿# ==============================================================================
-# Módulo: Sistema de Logging (Thread-Safe entre Runspaces e UI WPF)
+# Módulo: Sistema de Logging e Status Assíncrono (Thread-Safe entre Runspaces e UI)
 # ==============================================================================
 
 function Write-ToolLog {
@@ -10,6 +10,8 @@ function Write-ToolLog {
         [ValidateSet("INFO", "SUCCESS", "WARN", "ERROR")]
         [string]$Level = "INFO"
     )
+
+    if ([string]::IsNullOrWhiteSpace($Message)) { return }
 
     $timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
     $logLine = "[$timestamp] [$Level] $Message"
@@ -26,5 +28,18 @@ function Write-ToolLog {
     $sync = if ($WinRepairSync) { $WinRepairSync } else { $global:WinRepairSync }
     if ($sync -and $sync.LogQueue) {
         $sync.LogQueue.Enqueue($logLine)
+    }
+}
+
+function Set-TaskStatus {
+    param (
+        [string]$Text = "Pronto",
+        [bool]$IsRunning = $false
+    )
+
+    $sync = if ($WinRepairSync) { $WinRepairSync } else { $global:WinRepairSync }
+    if ($sync) {
+        $sync.TaskStatus = $Text
+        $sync.IsRunning = $IsRunning
     }
 }
