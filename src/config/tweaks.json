@@ -753,7 +753,7 @@
                                                    }
                                                ],
                                   "InvokeScript":  [
-                                                       "\n      if (-not (Get-ComputerRestorePoint)) {\n          Enable-ComputerRestore -Drive $Env:SystemDrive\n      }\n\n      Checkpoint-Computer -Description \"System Restore Point created by WinRepair Pro\" -RestorePointType MODIFY_SETTINGS\n      Write-Host \"System Restore Point Created Successfully\" -ForegroundColor Green\n      "
+                                                       "\n      if (-not (Get-ComputerRestorePoint)) {\n          Enable-ComputerRestore -Drive $Env:SystemDrive\n      }\n\n      Checkpoint-Computer -Description \"System Restore Point created by Alt's\" -RestorePointType MODIFY_SETTINGS\n      Write-Host \"System Restore Point Created Successfully\" -ForegroundColor Green\n      "
                                                    ]
                               },
     "WPFTweaksEndTaskOnTaskbar":  {
@@ -1612,7 +1612,7 @@
                            },
     "WPFOOSUbutton":  {
                           "Content":  "O\u0026O ShutUp10++ - Run",
-                          "Description":  "Baixa O\u0026O ShutUp10++ (~82 MB) em %LocalAppData%\\WinRepairPro e executa diretamente.",
+                          "Description":  "Baixa O\u0026O ShutUp10++ (~82 MB) em %LocalAppData%\\Alts e executa diretamente.",
                           "category":  "Avancados",
                           "panel":  "1",
                           "Type":  "Button"

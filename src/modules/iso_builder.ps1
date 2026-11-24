@@ -107,7 +107,7 @@ function Add-IsoSetupCustomizations {
 
     $postInstallScript = @"
 `$ErrorActionPreference = 'Continue'
-Start-Transcript -Path 'C:\Windows\Setup\Scripts\WinRepair-PostInstall.log' -Append -ErrorAction SilentlyContinue
+Start-Transcript -Path 'C:\Windows\Setup\Scripts\Alts-PostInstall.log' -Append -ErrorAction SilentlyContinue
 try {
     `$packages = @(
 $appxBlock
@@ -174,10 +174,10 @@ $appxBlock
 
     if ($extensions -and $firstLogon) {
         $postFile = $xmlDoc.CreateElement('File', $extensions.NamespaceURI)
-        $postFile.SetAttribute('path', 'C:\Windows\Setup\Scripts\WinRepair-PostInstall.ps1')
+        $postFile.SetAttribute('path', 'C:\Windows\Setup\Scripts\Alts-PostInstall.ps1')
         $postFile.InnerText = $postInstallScript
         [void]$extensions.AppendChild($postFile)
-        $firstLogon.InnerText = "& 'C:\Windows\Setup\Scripts\WinRepair-PostInstall.ps1';`r`n`r`n$($firstLogon.InnerText.Trim())"
+        $firstLogon.InnerText = "& 'C:\Windows\Setup\Scripts\Alts-PostInstall.ps1';`r`n`r`n$($firstLogon.InnerText.Trim())"
     }
 
     return $xmlDoc.OuterXml
@@ -274,7 +274,7 @@ function Build-CustomOptimizedIsoPipeline {
     )
 
     Write-ToolLog "=== INICIANDO CRIAÇÃO DE ISO CUSTOMIZADA ===" "INFO"
-    $workDir = Join-Path $OutputIsoDir "_WinRepair_ISO_Work"
+    $workDir = Join-Path $OutputIsoDir "_Alts_ISO_Work"
     $extractedDir = Join-Path $workDir "extracted"
     $mountDir = Join-Path $workDir "mount"
     $drvDir = Join-Path $workDir "drivers"
@@ -496,7 +496,7 @@ function Write-PreparedIsoToUsb {
         Clear-Disk -Number $DiskNumber -RemoveData -RemoveOEM -Confirm:$false -ErrorAction Stop
         Initialize-Disk -Number $DiskNumber -PartitionStyle MBR -ErrorAction Stop | Out-Null
         $part = New-Partition -DiskNumber $DiskNumber -UseMaximumSize -IsActive -DriveLetter $freeLetter -ErrorAction Stop
-        Format-Volume -Partition $part -FileSystem FAT32 -NewFileSystemLabel "WINREPAIR" -Confirm:$false -ErrorAction Stop | Out-Null
+        Format-Volume -Partition $part -FileSystem FAT32 -NewFileSystemLabel "ALTS" -Confirm:$false -ErrorAction Stop | Out-Null
 
         $destRoot = "${freeLetter}:\"
         Write-ToolLog "Copiando arquivos para $destRoot via robocopy..." "INFO"

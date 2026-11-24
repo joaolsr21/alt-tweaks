@@ -3,10 +3,10 @@
 # ==============================================================================
 param(
     [string]$OutputDir = "$PSScriptRoot\dist",
-    [string]$OutputFile = "winrepair.ps1"
+    [string]$OutputFile = "alts.ps1"
 )
 
-Write-Host "[*] Iniciando compilação do WinRepair & Tweaks Pro v3.0..." -ForegroundColor Cyan
+Write-Host "[*] Iniciando compilação do Alt's v3.1..." -ForegroundColor Cyan
 
 if (-not (Test-Path $OutputDir)) {
     New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
@@ -41,7 +41,7 @@ function ConvertTo-AsciiJson([string]$rawJson) {
 
 $banner = @"
 # ==============================================================================
-# WinRepair & Tweaks Pro v3.0 (Standalone All-in-One)
+# Alt's v3.1 (Standalone All-in-One)
 # Utilitário Completo: Tweaks, Softwares, AppX, Rede (14 Ferramentas), ISO & USB
 # Execução direta via: irm <URL> | iex
 # ==============================================================================

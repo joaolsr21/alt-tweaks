@@ -132,7 +132,7 @@ function Invoke-DetailedInternetTest {
 function Invoke-DownloadSpeedTest {
     Write-ToolLog "=== [3] TESTE DE VELOCIDADE DE DOWNLOAD (CLOUDFLARE CDN) ===" "INFO"
     Write-ToolLog "Baixando bloco de medição de 5 MB direto do Cloudflare... Aguarde..." "INFO"
-    $tempFile = Join-Path $env:TEMP "winrepair_speedtest.bin"
+    $tempFile = Join-Path $env:TEMP "alts_speedtest.bin"
     try {
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls13
         $wc = New-Object System.Net.WebClient

@@ -151,7 +151,7 @@ function Install-EnhancedPowerShellProfile {
         }
 
         $profileContent = @'
-# Perfil Aprimorado WinRepair Pro - PowerShell 7+
+# Perfil Aprimorado Alt's - PowerShell 7+
 if (Get-Module -ListAvailable -Name PSReadLine) {
     Import-Module PSReadLine
     Set-PSReadLineOption -PredictionSource History
@@ -199,7 +199,7 @@ function Uninstall-EnhancedPowerShellProfile {
 
 function Invoke-SysinternalsAutologon {
     Write-ToolLog "Baixando Sysinternals Autologon oficial..." "INFO"
-    $dir = Join-Path $env:LOCALAPPDATA "WinRepairPro"
+    $dir = Join-Path $env:LOCALAPPDATA "Alts"
     if (-not (Test-Path $dir)) { New-Item -Path $dir -ItemType Directory -Force | Out-Null }
     $exe = Join-Path $dir "Autologon.exe"
 

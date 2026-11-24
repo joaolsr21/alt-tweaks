@@ -847,7 +847,7 @@ function Start-WinRepairUI {
     $window.FindName("btnExportConfig").Add_Click({
         $dlg = New-Object System.Windows.Forms.SaveFileDialog
         $dlg.Filter = "Configuração JSON (*.json)|*.json"
-        $dlg.FileName = "winrepair_config.json"
+        $dlg.FileName = "alts_config.json"
         if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
             $keys = New-Object System.Collections.Generic.List[string]
             foreach ($map in @($global:WinRepairUi.TweakCheckBoxes, $global:WinRepairUi.AppCheckBoxes, $global:WinRepairUi.AppxCheckBoxes, $global:WinRepairUi.FeatureCheckBoxes)) {
@@ -925,7 +925,7 @@ function Start-WinRepairUI {
     $window.FindName("btnSaveLogs").Add_Click({
         $dlg = New-Object System.Windows.Forms.SaveFileDialog
         $dlg.Filter = "Arquivo de Texto (*.txt)|*.txt|Log (*.log)|*.log"
-        $dlg.FileName = "winrepair_logs_$((Get-Date).ToString('yyyyMMdd_HHmmss')).txt"
+        $dlg.FileName = "alts_logs_$((Get-Date).ToString('yyyyMMdd_HHmmss')).txt"
         if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
             [System.IO.File]::WriteAllText($dlg.FileName, $global:txtLogControl.Text, (New-Object System.Text.UTF8Encoding($false)))
             Write-ToolLog "Logs salvos em: $($dlg.FileName)" "SUCCESS"
@@ -1414,7 +1414,7 @@ function Start-WinRepairUI {
 
     $global:WinRepairUi.Initializing = $false
 
-    Write-ToolLog "WinRepair & Tweaks Pro v3.1 carregado com sucesso!" "SUCCESS"
+    Write-ToolLog "Alt's v3.1 carregado com sucesso!" "SUCCESS"
     Write-ToolLog "Passe o mouse em qualquer opção para ler o resumo instantâneo antes de executar." "INFO"
 
     $window.Add_Closed({ $uiTimer.Stop() })

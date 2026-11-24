@@ -324,7 +324,7 @@
                             "Description":  "Abre o assistente rstrui.exe para restaurar o Windows a um ponto anterior."
                         },
     "WPFInstallPSProfile":  {
-                                "Content":  "WinRepair PowerShell Profile - Install",
+                                "Content":  "Alt's PowerShell Profile - Install",
                                 "category":  "Powershell Profile Powershell 7+ Only",
                                 "panel":  "2",
                                 "Type":  "Button",
@@ -332,7 +332,7 @@
                                 "function":  "Install-EnhancedPowerShellProfile"
                             },
     "WPFUninstallPSProfile":  {
-                                  "Content":  "WinRepair PowerShell Profile - Remove",
+                                  "Content":  "Alt's PowerShell Profile - Remove",
                                   "category":  "Powershell Profile Powershell 7+ Only",
                                   "panel":  "2",
                                   "Type":  "Button",

@@ -340,7 +340,7 @@ function Set-UltimatePowerPlan {
 
 function Invoke-OOSU10 {
     Write-ToolLog "Preparando O&O ShutUp10++..." "INFO"
-    $dir = Join-Path $env:LOCALAPPDATA "WinRepairPro"
+    $dir = Join-Path $env:LOCALAPPDATA "Alts"
     if (-not (Test-Path $dir)) { New-Item -Path $dir -ItemType Directory -Force | Out-Null }
     $exePath = Join-Path $dir "OOSU10.exe"
 
@@ -366,7 +366,7 @@ function Export-EnvironmentReport {
     try {
         $sb = New-Object System.Text.StringBuilder
         [void]$sb.AppendLine("======================================================================")
-        [void]$sb.AppendLine("  RELAT$([char]0xD3)RIO DO AMBIENTE - WINREPAIR & TWEAKS PRO")
+        [void]$sb.AppendLine("  RELAT$([char]0xD3)RIO DO AMBIENTE - ALT'S")
         [void]$sb.AppendLine("  Data: $((Get-Date).ToString('dd/MM/yyyy HH:mm:ss')) | Host: $($env:COMPUTERNAME)")
         [void]$sb.AppendLine("======================================================================")
         [void]$sb.AppendLine("")

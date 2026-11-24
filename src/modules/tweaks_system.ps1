@@ -3,7 +3,7 @@
 # ==============================================================================
 
 function Set-RestorePoint {
-    param([string]$Description = "WinRepair_RestorePoint")
+    param([string]$Description = "Alts_RestorePoint")
     Write-ToolLog "Criando Ponto de Restauração do Sistema ($Description)..." "INFO"
     try {
         Enable-ComputerRestore -Drive "C:\" -ErrorAction SilentlyContinue | Out-Null

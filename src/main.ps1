@@ -1,5 +1,5 @@
 ﻿# ==============================================================================
-# Script Principal: WinRepair & Tweaks Pro
+# Script Principal: Alt's
 # ==============================================================================
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8

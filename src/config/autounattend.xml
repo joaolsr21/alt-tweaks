@@ -328,10 +328,10 @@ $scripts = @(
             $classicMenuPath = 'HKCU:\Software\Classes\CLSID\{51668040-5e31-4023-bbe3-149163bd80f1}';
             if (-not (Test-Path -LiteralPath $classicMenuPath -ErrorAction Stop)) {
                 $createdClassicMenuKey = New-Item -Path $classicMenuPath -ErrorAction Stop;
-                New-ItemProperty -LiteralPath $classicMenuPath -Name 'WinRepairClassicContextMenu' -Value 1 -PropertyType DWord -ErrorAction Stop | Out-Null;
+                New-ItemProperty -LiteralPath $classicMenuPath -Name 'AltsClassicContextMenu' -Value 1 -PropertyType DWord -ErrorAction Stop | Out-Null;
             };
             $classicMenuKey = Get-Item -LiteralPath $classicMenuPath -ErrorAction Stop;
-            $classicMenuMarker = $classicMenuKey.GetValue('WinRepairClassicContextMenu');
+            $classicMenuMarker = $classicMenuKey.GetValue('AltsClassicContextMenu');
             if ($classicMenuMarker -is [int] -and $classicMenuMarker -eq 1) {
                 $classicMenuServer = "$classicMenuPath\InprocServer32";
                 if (-not (Test-Path -LiteralPath $classicMenuServer -ErrorAction Stop)) {
@@ -407,7 +407,7 @@ $scripts = @(
 } *&gt;&amp;1 | Out-String -Width 1KB -Stream &gt;&gt; "$env:TEMP\UserOnce.log";
 
 # RunOnce and FirstLogonCommands can overlap. Publish completion after the log is flushed.
-$completionDir = Join-Path $env:LOCALAPPDATA 'WinRepair Pro';
+$completionDir = Join-Path $env:LOCALAPPDATA 'Alt's';
 [System.IO.Directory]::CreateDirectory($completionDir) | Out-Null;
 [System.IO.File]::WriteAllText((Join-Path $completionDir 'UserOnce.complete'), '');
         </File>
@@ -552,19 +552,19 @@ $scripts = @(
 } *&gt;&amp;1 | Out-String -Width 1KB -Stream &gt;&gt; "C:\Windows\Setup\Scripts\FirstLogon.log";
 
 # UserOnce may finish first, so keep any completion flag it has already written.
-$completionPath = Join-Path $env:LOCALAPPDATA 'WinRepair Pro\UserOnce.complete';
+$completionPath = Join-Path $env:LOCALAPPDATA 'Alt's\UserOnce.complete';
 $deadline = (Get-Date).AddMinutes(5);
-'WinRepair Pro: Waiting for user configuration to finish before restarting (up to 5 minutes).' | Out-File -LiteralPath 'C:\Windows\Setup\Scripts\FirstLogon.log' -Append -ErrorAction Stop;
+'Alt's: Waiting for user configuration to finish before restarting (up to 5 minutes).' | Out-File -LiteralPath 'C:\Windows\Setup\Scripts\FirstLogon.log' -Append -ErrorAction Stop;
 while( -not (Test-Path -LiteralPath $completionPath -PathType Leaf) ) {
     if( (Get-Date) -ge $deadline ) {
-        $message = 'WinRepair Pro: Timed out waiting for user configuration. Automatic restart skipped. Check %TEMP%\UserOnce.log.';
+        $message = 'Alt's: Timed out waiting for user configuration. Automatic restart skipped. Check %TEMP%\UserOnce.log.';
         $message | Out-File -LiteralPath 'C:\Windows\Setup\Scripts\FirstLogon.log' -Append -ErrorAction Stop;
         return;
     }
     Start-Sleep -Seconds 1;
 }
 
-$message = 'WinRepair Pro: First-logon customization complete. Restarting the computer.';
+$message = 'Alt's: First-logon customization complete. Restarting the computer.';
 $message | Out-File -LiteralPath 'C:\Windows\Setup\Scripts\FirstLogon.log' -Append -ErrorAction Stop;
 Restart-Computer -Force;
         </File>
