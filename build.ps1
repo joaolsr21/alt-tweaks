@@ -69,6 +69,7 @@ $filesToBundle = @(
     "$PSScriptRoot\src\core\logger.ps1",
     "$PSScriptRoot\src\modules\network.ps1",
     "$PSScriptRoot\src\modules\tweak_engine.ps1",
+    "$PSScriptRoot\src\modules\hardware_optimizer.ps1",
     "$PSScriptRoot\src\modules\optimizer.ps1",
     "$PSScriptRoot\src\modules\tweaks_system.ps1",
     "$PSScriptRoot\src\modules\windows_features.ps1",

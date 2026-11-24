@@ -6,6 +6,7 @@
 
     . (Join-Path $script:SrcDir "core\logger.ps1")
     . (Join-Path $script:SrcDir "modules\tweak_engine.ps1")
+    . (Join-Path $script:SrcDir "modules\hardware_optimizer.ps1")
     . (Join-Path $script:SrcDir "modules\tweaks_system.ps1")
     . (Join-Path $script:SrcDir "modules\appx_manager.ps1")
 }
@@ -142,5 +143,29 @@ Describe "Modo Dry-Run e Pré-visualização" {
 
         { Remove-SelectedAppxPackages -Entries $entries -DryRun } | Should -Not -Throw
         { Install-SelectedAppxPackages -Entries $entries -DryRun } | Should -Not -Throw
+    }
+
+    It "Hardware Optimizer detecta perfil, lista 16 ajustes, gera preview e simula Dry-Run sem falhas" {
+        $profile = Get-HardwareOptimizationProfile
+        $profile.CpuVendor | Should -Not -BeNullOrEmpty
+        $profile.PrimaryGpuName | Should -Not -BeNullOrEmpty
+
+        $catalog = Get-HardwareOptimizationCatalog
+        $catalog.Count | Should -Be 16
+        $allKeys = @($catalog | Select-Object -ExpandProperty Key)
+        ($allKeys | Select-Object -Unique).Count | Should -Be 16
+
+        $prev = Get-HardwareChangesPreview -Keys $allKeys
+        $prev.Count | Should -Be 16
+        $txt = Format-HardwareChangesPreviewText -Keys $allKeys
+        $txt | Should -Match "PRÉ-VISUALIZAÇÃO DE HARDWARE"
+
+        foreach ($k in $allKeys) {
+            { Invoke-HardwareOptimization -Key $k -DryRun } | Should -Not -Throw
+            { Invoke-HardwareOptimization -Key $k -Undo -DryRun } | Should -Not -Throw
+        }
+
+        { Invoke-HardwareExternalTool -ToolKey "NVCleanstall" -DryRun } | Should -Not -Throw
+        { Invoke-HardwareExternalTool -ToolKey "NvidiaDrivers" -DryRun } | Should -Not -Throw
     }
 }

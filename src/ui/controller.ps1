@@ -286,6 +286,13 @@ function Update-AppxSelectionCounter {
     $ui.Window.FindName("txtAppxSelectedCount").Text = "Selecionados: $count"
 }
 
+function Update-HardwareSelectionCounter {
+    $ui = $global:WinRepairUi
+    if (-not $ui) { return }
+    $count = @($ui.HwCheckBoxes.Values | Where-Object { $_.IsChecked }).Count
+    $ui.Window.FindName("txtHwSelectedCount").Text = "Selecionados: $count"
+}
+
 function Apply-GlobalSearchFilter {
     $ui = $global:WinRepairUi
     if (-not $ui) { return }
@@ -314,7 +321,7 @@ function Apply-GlobalSearchFilter {
         $catInfo.Expander.Visibility = if ($catMatchesFilter -and $anyVisible) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
     }
 
-    foreach ($map in @($ui.TweakCheckBoxes, $ui.ToggleBoxes, $ui.AppxCheckBoxes, $ui.FeatureCheckBoxes)) {
+    foreach ($map in @($ui.TweakCheckBoxes, $ui.ToggleBoxes, $ui.AppxCheckBoxes, $ui.FeatureCheckBoxes, $ui.HwCheckBoxes)) {
         foreach ($cb in $map.Values) {
             $descTxt = if ($cb.Resources["HoverHelpInfo"]) { $cb.Resources["HoverHelpInfo"].Description } else { "" }
             $match = ([string]::IsNullOrEmpty($q)) -or (([string]$cb.Content).ToLowerInvariant().Contains($q)) -or ($descTxt.ToLowerInvariant().Contains($q))
@@ -330,9 +337,10 @@ function Set-ActiveHudView {
     if (-not $ui) { return }
 
     $meta = @{
-        Install = @{ Title = "Catálogo de Softwares"; Sub = "Passe o mouse em qualquer software para ver descrição e instale via WinGet ou Chocolatey" }
-        Tweaks  = @{ Title = "Tweaks & Perfis Recomendados"; Sub = "Escolha Desktop, Notebook ou All para pré-selecionar e revisar antes de aplicar" }
-        Appx    = @{ Title = "Gerenciador de AppX & Bloatware"; Sub = "Remova aplicativos pré-instalados do Windows ou reinstale via Microsoft Store" }
+        Install  = @{ Title = "Catálogo de Softwares"; Sub = "Passe o mouse em qualquer software para ver descrição e instale via WinGet ou Chocolatey" }
+        Tweaks   = @{ Title = "Tweaks & Perfis Recomendados"; Sub = "Escolha Desktop, Notebook ou All para pré-selecionar e revisar antes de aplicar" }
+        Hardware = @{ Title = "Hardware (GPU NVIDIA/AMD & CPU AMD/Intel)"; Sub = "Detecção automática de GPU/CPU com otimizações reversíveis de latência, estabilidade e energia" }
+        Appx     = @{ Title = "Gerenciador de AppX & Bloatware"; Sub = "Remova aplicativos pré-instalados do Windows ou reinstale via Microsoft Store" }
         Network = @{ Title = "Rede, Diagnóstico & DNS"; Sub = "14 ferramentas integradas de diagnóstico, varredura de rede local, TCP e Benchmark DNS" }
         Config  = @{ Title = "Recursos, Correções & Painéis do Sistema"; Sub = "Recursos opcionais, reparo DISM/SFC/Update, 14 painéis clássicos e OpenSSH" }
         Updates = @{ Title = "Políticas do Windows Update"; Sub = "Controle completo sobre atualizações automáticas, drivers e adiamento" }
@@ -356,6 +364,7 @@ function Initialize-StaticHoverHelp {
 
     $entries = @(
         @("navTweaks", "Tweaks & Perfis", "Abre os perfis recomendados (Desktop, Notebook, All), otimizações do sistema e preferências instantâneas.", "Navegação"),
+        @("navHardware", "Hardware (GPU & CPU)", "Otimizações específicas e reversíveis para GPUs NVIDIA/AMD e CPUs AMD/Intel com detecção automática.", "Navegação"),
         @("navInstall", "Catálogo de Softwares", "Instale, desinstale ou atualize 239 programas populares silenciosamente via WinGet ou Chocolatey.", "Navegação"),
         @("navAppx", "AppX & Bloatware", "Remova ou reinstale aplicativos universais pré-instalados da Microsoft Store.", "Navegação"),
         @("navNetwork", "Rede & Diagnóstico", "Diagnóstico de rede em 14 ferramentas, varredura de IPs locais, otimização TCP e Benchmark DNS.", "Navegação"),
@@ -383,6 +392,23 @@ function Initialize-StaticHoverHelp {
         @("btnEnableUltPerf", "Plano Desempenho Máximo", "Desbloqueia e ativa o esquema oculto Ultimate Performance (maior resposta de CPU).", "Energia"),
         @("btnDisableUltPerf", "Restaurar Planos de Energia", "Restaura os esquemas de energia padrão de fábrica do Windows.", "Energia"),
         @("btnRunOOSU", "Executar O&O ShutUp10++", "Baixa e abre a ferramenta portátil oficial O&O ShutUp10++ para ajustes extras de privacidade.", "Privacidade"),
+
+        @("btnHwAutoSelect", "Auto-Selecionar Recomendados", "Marca automaticamente apenas as otimizações seguras compatíveis com a GPU e CPU detectadas neste computador.", "Hardware"),
+        @("btnHwApply", "Aplicar Selecionados (Hardware)", "Executa as otimizações de GPU/CPU marcadas abaixo (com Ponto de Restauração automático ou Dry-Run se habilitado).", "Execução"),
+        @("btnHwUndo", "Desfazer Selecionados (Hardware)", "Reverte as otimizações de GPU/CPU marcadas para os padrões do sistema/driver.", "Reverter"),
+        @("btnHwClear", "Limpar Seleção (Hardware)", "Desmarca todas as opções de otimização de GPU e CPU.", "Seleção"),
+        @("btnHwPreview", "Pré-visualizar Alterações (Hardware)", "Mostra as chaves de registro, serviços e comandos powercfg que serão aplicados ou revertidos.", "Simulação"),
+        @("chkHwAutoRestorePoint", "Ponto de Restauração Automático (Hardware)", "Cria automaticamente um Ponto de Restauração antes de aplicar ou desfazer otimizações de hardware.", "Segurança"),
+        @("chkHwDryRun", "Modo Simulação (Dry-Run - Hardware)", "Simula as otimizações de GPU/CPU e ferramentas no console sem alterar nada no sistema.", "Simulação"),
+        @("btnHwToolNvCleanstall", "NVCleanstall", "Instala via WinGet (ou abre o site oficial) o NVCleanstall para instalar drivers NVIDIA sem telemetria/bloat.", "NVIDIA"),
+        @("btnHwToolDdu", "Display Driver Uninstaller (DDU)", "Instala via WinGet (ou abre o site oficial) o DDU para remoção limpa de drivers de vídeo em Modo de Segurança.", "Ferramenta"),
+        @("btnHwToolAfterburner", "MSI Afterburner", "Instala via WinGet (ou abre o site oficial) para controle de curva de fan, monitoramento OSD e ajuste de GPU.", "Ferramenta"),
+        @("btnHwToolGpuZ", "TechPowerUp GPU-Z", "Instala via WinGet (ou abre o site oficial) para inspeção detalhada de GPU, clocks, VRAM e barramento PCIe.", "Diagnóstico"),
+        @("btnHwToolCpuZ", "CPUID CPU-Z", "Instala via WinGet (ou abre o site oficial) para inspeção de CPU, cache, placa-mãe e memória RAM.", "Diagnóstico"),
+        @("btnHwToolHwInfo", "HWiNFO", "Instala via WinGet (ou abre o site oficial) para monitoramento completo de temperaturas, tensões e clocks.", "Diagnóstico"),
+        @("btnHwUrlNvidia", "Drivers Oficiais NVIDIA", "Abre a página oficial de download de drivers NVIDIA GeForce/RTX.", "Driver"),
+        @("btnHwUrlAmd", "Drivers Oficiais AMD", "Abre a página oficial de suporte e drivers AMD Radeon e Chipset Ryzen.", "Driver"),
+        @("btnHwUrlIntel", "Drivers Oficiais Intel", "Abre a página oficial de drivers e Assistente Intel (Arc / UHD / Chipset).", "Driver"),
 
         @("btnInstallApps", "Instalar / Atualizar Selecionados", "Instala ou atualiza todos os programas marcados usando WinGet ou Chocolatey.", "Softwares"),
         @("btnUninstallApps", "Desinstalar Selecionados", "Remove silenciosamente do sistema todos os programas marcados no catálogo.", "Softwares"),
@@ -600,18 +626,21 @@ function Start-WinRepairUI {
     $global:WinRepairUi = @{
         Window               = $window
         Views                = @{
-            Install = $window.FindName("viewInstall")
-            Tweaks  = $window.FindName("viewTweaks")
-            Appx    = $window.FindName("viewAppx")
-            Network = $window.FindName("viewNetwork")
-            Config  = $window.FindName("viewConfig")
-            Updates = $window.FindName("viewUpdates")
-            Iso     = $window.FindName("viewIso")
+            Install  = $window.FindName("viewInstall")
+            Tweaks   = $window.FindName("viewTweaks")
+            Hardware = $window.FindName("viewHardware")
+            Appx     = $window.FindName("viewAppx")
+            Network  = $window.FindName("viewNetwork")
+            Config   = $window.FindName("viewConfig")
+            Updates  = $window.FindName("viewUpdates")
+            Iso      = $window.FindName("viewIso")
         }
         AppCheckBoxes        = [ordered]@{}
         AppCategoryExpanders = New-Object System.Collections.Generic.List[object]
         SelectedAppCategory  = "Todas"
         TweakCheckBoxes      = [ordered]@{}
+        HwCheckBoxes         = [ordered]@{}
+        HwProfile            = $null
         ToggleBoxes          = [ordered]@{}
         ComboControls        = [ordered]@{}
         AppxCheckBoxes       = [ordered]@{}
@@ -924,6 +953,60 @@ function Start-WinRepairUI {
         }
     }
 
+    # 6. HARDWARE (GPU NVIDIA/AMD & CPU AMD/INTEL)
+    $hwProfile = Get-HardwareOptimizationProfile
+    $global:WinRepairUi.HwProfile = $hwProfile
+    $window.FindName("txtHwDetectedGpu").Text = "GPU: $($hwProfile.PrimaryGpuName)"
+    $window.FindName("txtHwDetectedCpu").Text = "CPU: $($hwProfile.CpuName) ($($hwProfile.CpuCores)C/$($hwProfile.CpuThreads)T)"
+    $window.FindName("txtHwDetectedTips").Text = $hwProfile.SummaryTips
+
+    $badgeConfig = @(
+        @{ Badge = "txtHwNvidiaBadge";   Border = "borderHwNvidia";   Detected = $hwProfile.HasNvidia },
+        @{ Badge = "txtHwAmdGpuBadge";   Border = "borderHwAmdGpu";   Detected = $hwProfile.HasAmdGpu },
+        @{ Badge = "txtHwAmdCpuBadge";   Border = "borderHwAmdCpu";   Detected = ($hwProfile.CpuVendor -eq "AMD") },
+        @{ Badge = "txtHwIntelCpuBadge"; Border = "borderHwIntelCpu"; Detected = ($hwProfile.CpuVendor -eq "Intel") }
+    )
+    foreach ($bc in $badgeConfig) {
+        $bTxt = $window.FindName($bc.Badge)
+        $bBrd = $window.FindName($bc.Border)
+        if ($bc.Detected) {
+            if ($bTxt) {
+                $bTxt.Text = "Detectado"
+                $bTxt.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, "BrushSuccess")
+            }
+            if ($bBrd) {
+                $bBrd.SetResourceReference([System.Windows.Controls.Border]::BorderBrushProperty, "BrushBorderStrong")
+            }
+        } else {
+            if ($bTxt) {
+                $bTxt.Text = "Não detectado"
+                $bTxt.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, "BrushTextMuted")
+            }
+        }
+    }
+
+    $hwGroupPanels = @{
+        GpuGeneral = $window.FindName("panelHwGpuGeneral")
+        GpuNvidia  = $window.FindName("panelHwGpuNvidia")
+        GpuAmd     = $window.FindName("panelHwGpuAmd")
+        CpuGeneral = $window.FindName("panelHwCpuGeneral")
+        CpuAmd     = $window.FindName("panelHwCpuAmd")
+        CpuIntel   = $window.FindName("panelHwCpuIntel")
+    }
+    foreach ($hwItem in (Get-HardwareOptimizationCatalog)) {
+        $targetPanel = $hwGroupPanels[$hwItem.Group]
+        if (-not $targetPanel) { continue }
+        $cb = New-Object System.Windows.Controls.CheckBox
+        $cb.Content = $hwItem.Content
+        $cb.Tag = $hwItem.Key
+        Register-HoverHelp -Control $cb -Title $hwItem.Content -Description $hwItem.Description -Badge $hwItem.Risk
+        $cb.Add_Checked({ Update-HardwareSelectionCounter })
+        $cb.Add_Unchecked({ Update-HardwareSelectionCounter })
+        [void]$targetPanel.Children.Add($cb)
+        $global:WinRepairUi.HwCheckBoxes[$hwItem.Key] = $cb
+    }
+    Update-HardwareSelectionCounter
+
     # Hover help em todos os botões e elementos estáticos
     Initialize-StaticHoverHelp
 
@@ -933,6 +1016,7 @@ function Start-WinRepairUI {
 
     $window.FindName("navInstall").Add_Checked({ Set-ActiveHudView "Install" })
     $window.FindName("navTweaks").Add_Checked({ Set-ActiveHudView "Tweaks" })
+    $window.FindName("navHardware").Add_Checked({ Set-ActiveHudView "Hardware" })
     $window.FindName("navAppx").Add_Checked({ Set-ActiveHudView "Appx" })
     $window.FindName("navNetwork").Add_Checked({ Set-ActiveHudView "Network" })
     $window.FindName("navConfig").Add_Checked({ Set-ActiveHudView "Config" })
@@ -963,7 +1047,7 @@ function Start-WinRepairUI {
         $dlg.FileName = "alts_config.json"
         if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
             $keys = New-Object System.Collections.Generic.List[string]
-            foreach ($map in @($global:WinRepairUi.TweakCheckBoxes, $global:WinRepairUi.AppCheckBoxes, $global:WinRepairUi.AppxCheckBoxes, $global:WinRepairUi.FeatureCheckBoxes)) {
+            foreach ($map in @($global:WinRepairUi.TweakCheckBoxes, $global:WinRepairUi.HwCheckBoxes, $global:WinRepairUi.AppCheckBoxes, $global:WinRepairUi.AppxCheckBoxes, $global:WinRepairUi.FeatureCheckBoxes)) {
                 foreach ($k in $map.Keys) {
                     if ($map[$k].IsChecked) { [void]$keys.Add($k) }
                 }
@@ -991,7 +1075,7 @@ function Start-WinRepairUI {
 
                 $global:WinRepairUi.SuppressPresetReset = $true
                 try {
-                    foreach ($map in @($global:WinRepairUi.TweakCheckBoxes, $global:WinRepairUi.AppCheckBoxes, $global:WinRepairUi.AppxCheckBoxes, $global:WinRepairUi.FeatureCheckBoxes)) {
+                    foreach ($map in @($global:WinRepairUi.TweakCheckBoxes, $global:WinRepairUi.HwCheckBoxes, $global:WinRepairUi.AppCheckBoxes, $global:WinRepairUi.AppxCheckBoxes, $global:WinRepairUi.FeatureCheckBoxes)) {
                         foreach ($k in $map.Keys) { $map[$k].IsChecked = $flat.Contains($k) }
                     }
                 } finally {
@@ -1000,6 +1084,7 @@ function Start-WinRepairUI {
 
                 $global:WinRepairUi.ActivePreset = "Importado"
                 Update-TweaksSelectionPreview
+                Update-HardwareSelectionCounter
                 Update-AppsSelectionCounter
                 Update-AppxSelectionCounter
                 Write-ToolLog "Configuração importada ($($flat.Count) chaves). Revise as seleções antes de aplicar." "SUCCESS"
@@ -1220,6 +1305,118 @@ function Start-WinRepairUI {
     $window.FindName("btnEnableUltPerf").Add_Click({ Start-AsyncAction -Label "Ativando Plano Desempenho Máximo..." -Action { Set-UltimatePowerPlan -Enable } })
     $window.FindName("btnDisableUltPerf").Add_Click({ Start-AsyncAction -Label "Restaurando planos de energia..." -Action { Set-UltimatePowerPlan } })
     $window.FindName("btnRunOOSU").Add_Click({ Start-AsyncAction -Label "Baixando e iniciando O&O ShutUp10++..." -Action { Invoke-OOSU10 } })
+
+    # --- VIEW 8: HARDWARE (GPU & CPU) ---
+    $window.FindName("btnHwAutoSelect").Add_Click({
+        $ui = $global:WinRepairUi
+        $hw = $ui.HwProfile
+        $selectedCount = 0
+        foreach ($item in (Get-HardwareOptimizationCatalog)) {
+            $cb = $ui.HwCheckBoxes[$item.Key]
+            if (-not $cb) { continue }
+            $matchVendor = switch ($item.Vendor) {
+                "All"       { $true }
+                "NVIDIA"    { [bool]$hw.HasNvidia }
+                "AMD_GPU"   { [bool]$hw.HasAmdGpu }
+                "AMD_CPU"   { $hw.CpuVendor -eq "AMD" }
+                "Intel_CPU" { $hw.CpuVendor -eq "Intel" }
+                default     { $false }
+            }
+            $isMatch = ($item.Recommended -eq $true) -and $matchVendor
+            $cb.IsChecked = $isMatch
+            if ($isMatch) { $selectedCount++ }
+        }
+        Update-HardwareSelectionCounter
+        Write-ToolLog "Auto-seleção de Hardware: $selectedCount otimização(ões) recomendadas marcadas para $($hw.PrimaryGpuName) / $($hw.CpuName)." "INFO"
+    })
+
+    $window.FindName("btnHwClear").Add_Click({
+        foreach ($cb in $global:WinRepairUi.HwCheckBoxes.Values) { $cb.IsChecked = $false }
+        Update-HardwareSelectionCounter
+    })
+
+    $window.FindName("btnHwPreview").Add_Click({
+        $ui = $global:WinRepairUi
+        $keys = @(foreach ($k in $ui.HwCheckBoxes.Keys) { if ($ui.HwCheckBoxes[$k].IsChecked) { $k } })
+        if ($keys.Count -eq 0) { Write-ToolLog "Nenhuma otimização de hardware selecionada para pré-visualizar." "WARN"; return }
+        $previewText = Format-HardwareChangesPreviewText -Keys $keys
+        Write-ToolLog "Pré-visualização de hardware gerada para $($keys.Count) item(ns)." "INFO"
+        Show-PreviewDialog -Title "Pré-visualização de Hardware ($($keys.Count))" -Subtitle "Revise os ajustes de GPU e CPU antes de aplicar." -BodyText $previewText
+    })
+
+    $window.FindName("btnHwApply").Add_Click({
+        $ui = $global:WinRepairUi
+        $keys = @(foreach ($k in $ui.HwCheckBoxes.Keys) { if ($ui.HwCheckBoxes[$k].IsChecked) { $k } })
+        if ($keys.Count -eq 0) { Write-ToolLog "Nenhuma otimização de hardware selecionada para aplicar." "WARN"; return }
+
+        $dryRun = [bool]$ui.Window.FindName("chkHwDryRun").IsChecked
+        $autoRestore = [bool]$ui.Window.FindName("chkHwAutoRestorePoint").IsChecked
+        $modeTag = if ($dryRun) { "[DRY-RUN] " } else { "" }
+
+        Start-AsyncAction -Label "${modeTag}Aplicando $($keys.Count) otimização(ões) de hardware..." -Vars @{ keys = $keys; dryRun = $dryRun; autoRestore = $autoRestore } -Action {
+            $prefix = if ($dryRun) { "[DRY-RUN] " } else { "" }
+            Write-ToolLog "=== ${prefix}INICIANDO OTIMIZAÇÕES DE HARDWARE ($($keys.Count)) ===" "INFO"
+            if ($autoRestore) {
+                $null = Set-RestorePoint -Description "Alts_PreHardware" -DryRun:$dryRun
+            }
+            foreach ($k in $keys) {
+                Invoke-HardwareOptimization -Key $k -Undo:$false -DryRun:$dryRun
+            }
+            if ($dryRun) {
+                Write-ToolLog "=== [DRY-RUN] SIMULAÇÃO DE HARDWARE CONCLUÍDA! ===" "SUCCESS"
+            } else {
+                Write-ToolLog "=== OTIMIZAÇÕES DE HARDWARE APLICADAS! Alguns ajustes exigem reinício. ===" "SUCCESS"
+            }
+        }
+    })
+
+    $window.FindName("btnHwUndo").Add_Click({
+        $ui = $global:WinRepairUi
+        $keys = @(foreach ($k in $ui.HwCheckBoxes.Keys) { if ($ui.HwCheckBoxes[$k].IsChecked) { $k } })
+        if ($keys.Count -eq 0) { Write-ToolLog "Nenhuma otimização de hardware selecionada para desfazer." "WARN"; return }
+
+        $dryRun = [bool]$ui.Window.FindName("chkHwDryRun").IsChecked
+        $autoRestore = [bool]$ui.Window.FindName("chkHwAutoRestorePoint").IsChecked
+        $modeTag = if ($dryRun) { "[DRY-RUN] " } else { "" }
+
+        Start-AsyncAction -Label "${modeTag}Desfazendo $($keys.Count) otimização(ões) de hardware..." -Vars @{ keys = $keys; dryRun = $dryRun; autoRestore = $autoRestore } -Action {
+            $prefix = if ($dryRun) { "[DRY-RUN] " } else { "" }
+            Write-ToolLog "=== ${prefix}REVERTENDO OTIMIZAÇÕES DE HARDWARE ($($keys.Count)) ===" "INFO"
+            if ($autoRestore) {
+                $null = Set-RestorePoint -Description "Alts_PreUndoHardware" -DryRun:$dryRun
+            }
+            foreach ($k in $keys) {
+                Invoke-HardwareOptimization -Key $k -Undo:$true -DryRun:$dryRun
+            }
+            Write-ToolLog "=== ${prefix}REVERSÃO DE HARDWARE CONCLUÍDA! ===" "SUCCESS"
+        }
+    })
+
+    $hwToolButtons = @{
+        btnHwToolNvCleanstall = "NVCleanstall"
+        btnHwToolDdu          = "DDU"
+        btnHwToolAfterburner  = "MSIAfterburner"
+        btnHwToolGpuZ         = "GPUZ"
+        btnHwToolCpuZ         = "CPUZ"
+        btnHwToolHwInfo       = "HWiNFO"
+        btnHwUrlNvidia        = "NvidiaDrivers"
+        btnHwUrlAmd           = "AmdDrivers"
+        btnHwUrlIntel         = "IntelDrivers"
+    }
+    foreach ($btnName in $hwToolButtons.Keys) {
+        $btn = $window.FindName($btnName)
+        if ($btn) {
+            $btn.Tag = $hwToolButtons[$btnName]
+            $btn.Add_Click({
+                param($sender, $e)
+                $tKey = [string]$sender.Tag
+                $dryRun = [bool]$global:WinRepairUi.Window.FindName("chkHwDryRun").IsChecked
+                Start-AsyncAction -Label "Ferramenta Hardware: $tKey..." -Vars @{ tKey = $tKey; dryRun = $dryRun } -Action {
+                    Invoke-HardwareExternalTool -ToolKey $tKey -DryRun:$dryRun
+                }
+            })
+        }
+    }
 
     # --- VIEW 3: APPX & BLOATWARE ---
     $window.FindName("btnAppxDefault").Add_Click({

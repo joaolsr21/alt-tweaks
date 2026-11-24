@@ -13,6 +13,7 @@ irm https://raw.githubusercontent.com/joaolsr21/alts/main/dist/alts.ps1 | iex
 ## Funcionalidades
 
 - **Tweaks & Perfis Recomendados**: perfis pré-configurados (`Desktop`, `Notebook` e `All`), ajustes de privacidade/desempenho, preferências instantâneas, plano de energia *Desempenho Máximo* e integração com O&O ShutUp10++.
+- **Hardware (GPU & CPU)**: detecção automática de GPU (NVIDIA/AMD) e CPU (AMD Ryzen/X3D e Intel Core/Híbrida) com otimizações reversíveis (HAGS, MMCSS, PCIe ASPM, MSI Mode, ULPS, Telemetria, Core Parking, Power Throttling, Agendamento P-Cores, limpeza de Shader Cache) e atalhos para NVCleanstall, DDU, MSI Afterburner, GPU-Z, CPU-Z, HWiNFO e portais oficiais de drivers.
 - **Catálogo de Softwares**: instalação, desinstalação, detecção e atualização em lote via **WinGet** ou **Chocolatey**.
 - **Gerenciador de AppX & Bloatware**: listagem, remoção (usuário atual e pacotes provisionados) e reinstalação pela Microsoft Store.
 - **Rede, Diagnóstico & DNS**: diagnóstico rápido/detalhado, teste de velocidade, Wi-Fi, `pathping`, `tracert`, `netstat`, varredura de sub-rede local, reset de pilha TCP/IP, otimização TCP e benchmark/aplicação de DNS (IPv4, IPv6 e DoH).

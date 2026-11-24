@@ -26,6 +26,7 @@ if (Test-Path $srcCore) {
     . (Join-Path $srcCore "logger.ps1")
     . (Join-Path $srcModules "network.ps1")
     . (Join-Path $srcModules "tweak_engine.ps1")
+    . (Join-Path $srcModules "hardware_optimizer.ps1")
     . (Join-Path $srcModules "optimizer.ps1")
     . (Join-Path $srcModules "tweaks_system.ps1")
     . (Join-Path $srcModules "windows_features.ps1")

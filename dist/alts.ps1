@@ -1457,6 +1457,610 @@ function Export-EnvironmentReport {
 
 
 # ==============================================================================
+# Módulo: Otimização de Hardware (GPU NVIDIA/AMD & CPU AMD/Intel)
+# ==============================================================================
+
+function Get-HardwareOptimizationProfile {
+    $cpuName = "CPU Desconhecida"
+    $cpuVendor = "Other"
+    $cpuCores = 0
+    $cpuThreads = 0
+
+    try {
+        $cpu = Get-CimInstance -ClassName Win32_Processor -ErrorAction Stop | Select-Object -First 1
+        if ($cpu) {
+            if ($cpu.Name) { $cpuName = ([string]$cpu.Name).Trim() }
+            $mfr = [string]$cpu.Manufacturer
+            if ($cpuName -match 'AMD|Ryzen|EPYC|Athlon' -or $mfr -match 'AMD') {
+                $cpuVendor = "AMD"
+            } elseif ($cpuName -match 'Intel|Core|Xeon|Pentium|Celeron' -or $mfr -match 'Intel') {
+                $cpuVendor = "Intel"
+            }
+            if ($cpu.NumberOfCores) { $cpuCores = [int]$cpu.NumberOfCores }
+            if ($cpu.NumberOfLogicalProcessors) { $cpuThreads = [int]$cpu.NumberOfLogicalProcessors }
+        }
+    } catch {}
+
+    $isRyzenX3D = ($cpuVendor -eq "AMD") -and ($cpuName -match 'X3D')
+    $isIntelHybrid = ($cpuVendor -eq "Intel") -and ($cpuName -match '1[2-5]\d{2}|Ultra|Core\(TM\) [3579] 1\d{2}')
+
+    $gpuList = New-Object System.Collections.Generic.List[string]
+    try {
+        $gpus = @(Get-CimInstance -ClassName Win32_VideoController -ErrorAction Stop)
+        foreach ($g in $gpus) {
+            $gName = ([string]$g.Name).Trim()
+            if ($gName -and ($gName -notmatch 'Microsoft Basic|Remote|Parsec|Virtual|Meta')) {
+                [void]$gpuList.Add($gName)
+            }
+        }
+        if ($gpuList.Count -eq 0) {
+            foreach ($g in $gpus) {
+                $gName = ([string]$g.Name).Trim()
+                if ($gName) { [void]$gpuList.Add($gName) }
+            }
+        }
+    } catch {}
+
+    $gpuArray = $gpuList.ToArray()
+    $joinedGpu = $gpuArray -join " | "
+    $hasNvidia = ($joinedGpu -match 'NVIDIA|GeForce|Quadro|RTX|GTX')
+    $hasAmdGpu = ($joinedGpu -match 'AMD|Radeon')
+    $hasIntelGpu = ($joinedGpu -match 'Intel')
+
+    $primaryGpu = "GPU não detectada"
+    $discrete = $gpuArray | Where-Object { $_ -match 'NVIDIA|GeForce|Quadro|RTX|GTX|Radeon RX|Radeon Pro|Arc' } | Select-Object -First 1
+    if ($discrete) {
+        $primaryGpu = $discrete
+    } elseif ($gpuArray.Count -gt 0) {
+        $primaryGpu = $gpuArray[0]
+    }
+
+    $tips = New-Object System.Collections.Generic.List[string]
+    if ($hasNvidia) { [void]$tips.Add("NVIDIA detectada (MSI Mode e Telemetria disponíveis)") }
+    if ($hasAmdGpu) { [void]$tips.Add("AMD Radeon detectada (Desativar ULPS e MSI Mode disponíveis)") }
+    if ($cpuVendor -eq "AMD") {
+        if ($isRyzenX3D) {
+            [void]$tips.Add("Ryzen X3D detectado (mantenha o Modo de Jogo ativado para agendamento 3D V-Cache)")
+        } else {
+            [void]$tips.Add("CPU AMD Ryzen detectada (Core Parking e Boost AC recomendados)")
+        }
+    } elseif ($cpuVendor -eq "Intel") {
+        if ($isIntelHybrid) {
+            [void]$tips.Add("CPU Intel Híbrida detectada (agendamento prioritário de P-Cores recomendado)")
+        } else {
+            [void]$tips.Add("CPU Intel detectada (Core Parking e Speed Shift EPP disponíveis)")
+        }
+    }
+    if ($tips.Count -eq 0) {
+        [void]$tips.Add("Use os ajustes gerais de GPU e CPU ou clique em Auto-Selecionar Recomendados.")
+    }
+
+    return [pscustomobject]@{
+        CpuName       = $cpuName
+        CpuVendor     = $cpuVendor
+        CpuCores      = $cpuCores
+        CpuThreads    = $cpuThreads
+        IsRyzenX3D    = $isRyzenX3D
+        IsIntelHybrid = $isIntelHybrid
+        GpuNames      = $gpuArray
+        PrimaryGpuName = $primaryGpu
+        HasNvidia     = $hasNvidia
+        HasAmdGpu     = $hasAmdGpu
+        HasIntelGpu   = $hasIntelGpu
+        SummaryTips   = ($tips.ToArray() -join " | ")
+    }
+}
+
+function Get-HardwareOptimizationCatalog {
+    $items = New-Object System.Collections.Generic.List[object]
+
+    $defs = @(
+        @{
+            Key = "HwGpuHags"; Group = "GpuGeneral"; Vendor = "All"; Recommended = $true; Risk = "Seguro"
+            Content = "Agendamento de GPU por Hardware (HAGS)"
+            Description = "Ativa Hardware-Accelerated GPU Scheduling (HwSchMode=2) para reduzir latência de renderização e overhead de CPU em jogos compatíveis."
+            ApplySummary = "HKLM:\...\GraphicsDrivers\HwSchMode = 2 (Requer reinício)"
+            UndoSummary  = "HKLM:\...\GraphicsDrivers\HwSchMode = 1 (Padrão)"
+        },
+        @{
+            Key = "HwGpuMmcss"; Group = "GpuGeneral"; Vendor = "All"; Recommended = $true; Risk = "Seguro"
+            Content = "Prioridade MMCSS para Jogos (CPU/GPU/SFIO)"
+            Description = "Ajusta Multimedia Class Scheduler (SystemResponsiveness=10, GPU Priority=8, Priority=6, Scheduling Category=High) para menor stuttering."
+            ApplySummary = "HKLM:\...\Multimedia\SystemProfile + Tasks\Games -> Prioridade Alta"
+            UndoSummary  = "HKLM:\...\Multimedia\SystemProfile + Tasks\Games -> Padrão Windows"
+        },
+        @{
+            Key = "HwGpuPcieLspm"; Group = "GpuGeneral"; Vendor = "All"; Recommended = $true; Risk = "Seguro"
+            Content = "Desativar Economia PCIe (ASPM / Link State)"
+            Description = "Define Link State Power Management (SUB_PCIEXPRESS ASPM) para Desligado na tomada (AC), evitando quedas de largura de banda na GPU."
+            ApplySummary = "powercfg /setacvalueindex SCHEME_CURRENT SUB_PCIEXPRESS ASPM 0"
+            UndoSummary  = "powercfg /setacvalueindex SCHEME_CURRENT SUB_PCIEXPRESS ASPM 2"
+        },
+        @{
+            Key = "HwGpuShaderCache"; Group = "GpuGeneral"; Vendor = "All"; Recommended = $false; Risk = "Seguro"
+            Content = "Limpar Cache de Shaders (DirectX / NVIDIA / AMD)"
+            Description = "Remove caches antigos de shaders (D3DSCache, DXCache, GLCache, VkCache) que podem causar travamentos após troca de driver ou updates."
+            ApplySummary = "Limpar pastas de Shader Cache em LocalAppData / LocalLow"
+            UndoSummary  = "Limpeza de cache é pontual (os shaders são recriados automaticamente)"
+        },
+        @{
+            Key = "HwNvidiaMsiMode"; Group = "GpuNvidia"; Vendor = "NVIDIA"; Recommended = $true; Risk = "Seguro"
+            Content = "Ativar MSI Mode na GPU NVIDIA (VEN_10DE)"
+            Description = "Habilita Message Signaled Interrupts (MSISupported=1) no dispositivo PCI de vídeo NVIDIA para reduzir latência de interrupções DPC."
+            ApplySummary = "HKLM:\...\PCI\VEN_10DE*\...\Interrupt Management\MSISupported = 1"
+            UndoSummary  = "HKLM:\...\PCI\VEN_10DE*\...\Interrupt Management\MSISupported = 0"
+        },
+        @{
+            Key = "HwNvidiaTelemetry"; Group = "GpuNvidia"; Vendor = "NVIDIA"; Recommended = $true; Risk = "Seguro"
+            Content = "Desativar Telemetria NVIDIA (NvTelemetryContainer)"
+            Description = "Desativa o serviço NvTelemetryContainer e tarefas agendadas NvTmRep/NvTmMon que coletam métricas em segundo plano."
+            ApplySummary = "Serviço NvTelemetryContainer -> Disabled + tarefas NvTm* desativadas"
+            UndoSummary  = "Serviço NvTelemetryContainer -> Automatic + tarefas NvTm* reativadas"
+        },
+        @{
+            Key = "HwNvidiaPowerMizer"; Group = "GpuNvidia"; Vendor = "NVIDIA"; Recommended = $false; Risk = "Avançado"
+            Content = "Desativar PowerMizer Dinâmico (Clock Fixo Desktop)"
+            Description = "Força PerfLevelSrc/PowerMizerLevel=1 na chave de vídeo NVIDIA para impedir redução agressiva de clock. Aumenta consumo em idle."
+            ApplySummary = "Chave Class\{4d36e968...} NVIDIA: PowerMizerLevelAC=1, PerfLevelSrc=8738"
+            UndoSummary  = "Remover entradas PowerMizer customizadas (retorna ao driver padrão)"
+        },
+        @{
+            Key = "HwAmdUlps"; Group = "GpuAmd"; Vendor = "AMD_GPU"; Recommended = $true; Risk = "Seguro"
+            Content = "Desativar ULPS (Ultra Low Power State - AMD)"
+            Description = "Define EnableUlps=0 no driver AMD Radeon para evitar quedas bruscas de clock, tela preta ao acordar e microstuttering."
+            ApplySummary = "Chave Class\{4d36e968...} AMD: EnableUlps = 0"
+            UndoSummary  = "Chave Class\{4d36e968...} AMD: EnableUlps = 1"
+        },
+        @{
+            Key = "HwAmdMsiMode"; Group = "GpuAmd"; Vendor = "AMD_GPU"; Recommended = $true; Risk = "Seguro"
+            Content = "Ativar MSI Mode na GPU AMD (VEN_1002)"
+            Description = "Habilita Message Signaled Interrupts (MSISupported=1) na GPU PCI AMD Radeon para menor latência de interrupções."
+            ApplySummary = "HKLM:\...\PCI\VEN_1002*\...\Interrupt Management\MSISupported = 1"
+            UndoSummary  = "HKLM:\...\PCI\VEN_1002*\...\Interrupt Management\MSISupported = 0"
+        },
+        @{
+            Key = "HwAmdCrashDefender"; Group = "GpuAmd"; Vendor = "AMD_GPU"; Recommended = $true; Risk = "Seguro"
+            Content = "Desativar Telemetria / Crash Defender AMD"
+            Description = "Desativa os serviços AMD Crash Defender Service e AUEPLauncher, preservando AMD External Events Utility (FreeSync)."
+            ApplySummary = "Serviços AMD Crash Defender / AUEPLauncher -> Disabled"
+            UndoSummary  = "Serviços AMD Crash Defender / AUEPLauncher -> Manual"
+        },
+        @{
+            Key = "HwCpuCoreParking"; Group = "CpuGeneral"; Vendor = "All"; Recommended = $true; Risk = "Seguro"
+            Content = "Desativar Core Parking na Tomada (CPMINCORES=100%)"
+            Description = "Mantém 100% dos núcleos ativos no plano de energia atual na tomada (AC), reduzindo latência ao alternar cargas em jogos."
+            ApplySummary = "powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR CPMINCORES 100"
+            UndoSummary  = "powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR CPMINCORES 10"
+        },
+        @{
+            Key = "HwCpuPowerThrottling"; Group = "CpuGeneral"; Vendor = "All"; Recommended = $true; Risk = "Seguro"
+            Content = "Desativar Power Throttling do Windows"
+            Description = "Define PowerThrottlingOff=1 no registro para evitar que o Windows limite clocks de processos e jogos em segundo plano."
+            ApplySummary = "HKLM:\...\Control\Power\PowerThrottling\PowerThrottlingOff = 1"
+            UndoSummary  = "Remover PowerThrottlingOff (comportamento padrão)"
+        },
+        @{
+            Key = "HwCpuAmdRyzenBoost"; Group = "CpuAmd"; Vendor = "AMD_CPU"; Recommended = $true; Risk = "Seguro"
+            Content = "Otimizar Boost & EPP para AMD Ryzen (AC)"
+            Description = "Define PERFBOOSTMODE=2 (Aggressive) e PERFEPP=0 na tomada para resposta rápida de Precision Boost em CPUs Ryzen."
+            ApplySummary = "powercfg AC: PERFBOOSTMODE=2, PERFEPP=0"
+            UndoSummary  = "powercfg AC: PERFEPP=50"
+        },
+        @{
+            Key = "HwCpuAmdX3DGameMode"; Group = "CpuAmd"; Vendor = "AMD_CPU"; Recommended = $true; Risk = "Seguro"
+            Content = "Otimizar Agendamento Ryzen X3D (Modo de Jogo Ativo)"
+            Description = "Garante AllowAutoGameMode=1 e AutoGameModeEnabled=1 para que o driver AMD 3D V-Cache direcione jogos ao CCD com V-Cache."
+            ApplySummary = "HKCU:\Software\Microsoft\GameBar -> AutoGameModeEnabled = 1"
+            UndoSummary  = "HKCU:\Software\Microsoft\GameBar -> AutoGameModeEnabled = 0"
+        },
+        @{
+            Key = "HwCpuIntelHybridPolicy"; Group = "CpuIntel"; Vendor = "Intel_CPU"; Recommended = $true; Risk = "Seguro"
+            Content = "Priorizar P-Cores em CPUs Intel Híbridas"
+            Description = "Ajusta SCHEDPOLICY=2 e SHORTSCHEDPOLICY=2 (Performant processors) para priorizar núcleos de performance (P-Cores) em jogos."
+            ApplySummary = "powercfg AC: SCHEDPOLICY=2, SHORTSCHEDPOLICY=2"
+            UndoSummary  = "powercfg AC: SCHEDPOLICY=5, SHORTSCHEDPOLICY=5"
+        },
+        @{
+            Key = "HwCpuIntelEpp"; Group = "CpuIntel"; Vendor = "Intel_CPU"; Recommended = $true; Risk = "Seguro"
+            Content = "Intel Speed Shift / EPP Desempenho Máximo (AC)"
+            Description = "Define Energy Performance Preference (PERFEPP=0) na tomada para atingir clocks turbo mais rápido sem atraso de rampa."
+            ApplySummary = "powercfg AC: PERFEPP=0"
+            UndoSummary  = "powercfg AC: PERFEPP=50"
+        }
+    )
+
+    foreach ($d in $defs) {
+        [void]$items.Add([pscustomobject]$d)
+    }
+    return ,$items.ToArray()
+}
+
+function Get-DisplayPciDeviceRegPaths {
+    param([Parameter(Mandatory=$true)][string]$VendorId)
+
+    $results = New-Object System.Collections.Generic.List[string]
+    $pciRoot = "HKLM:\SYSTEM\CurrentControlSet\Enum\PCI"
+    if (-not (Test-Path $pciRoot)) { return ,$results.ToArray() }
+
+    try {
+        $venDirs = Get-ChildItem -Path $pciRoot -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -like "${VendorId}*" }
+        foreach ($vd in $venDirs) {
+            $instDirs = Get-ChildItem -Path $vd.PSPath -ErrorAction SilentlyContinue
+            foreach ($inst in $instDirs) {
+                $props = Get-ItemProperty -Path $inst.PSPath -ErrorAction SilentlyContinue
+                if ($props -and ($props.ClassGUID -eq "{4d36e968-e325-11ce-bfc1-08002be10318}")) {
+                    $msiPath = Join-Path $inst.PSPath "Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
+                    $msiPath = $msiPath -replace '^Microsoft\.PowerShell\.Core\\Registry::HKEY_LOCAL_MACHINE\\', 'HKLM:\'
+                    [void]$results.Add($msiPath)
+                }
+            }
+        }
+    } catch {}
+    return ,$results.ToArray()
+}
+
+function Get-DisplayClassRegPaths {
+    param([Parameter(Mandatory=$true)][string]$ProviderPattern)
+
+    $results = New-Object System.Collections.Generic.List[string]
+    $classRoot = "HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}"
+    if (-not (Test-Path $classRoot)) { return ,$results.ToArray() }
+
+    try {
+        $subKeys = Get-ChildItem -Path $classRoot -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' }
+        foreach ($sk in $subKeys) {
+            $props = Get-ItemProperty -Path $sk.PSPath -ErrorAction SilentlyContinue
+            if ($props -and ($props.ProviderName -match $ProviderPattern -or $props.DriverDesc -match $ProviderPattern)) {
+                $cleanPath = $sk.PSPath -replace '^Microsoft\.PowerShell\.Core\\Registry::HKEY_LOCAL_MACHINE\\', 'HKLM:\'
+                [void]$results.Add($cleanPath)
+            }
+        }
+    } catch {}
+    return ,$results.ToArray()
+}
+
+function Invoke-PowerCfgSetting {
+    param(
+        [Parameter(Mandatory=$true)][string]$Subgroup,
+        [Parameter(Mandatory=$true)][string]$Setting,
+        [Parameter(Mandatory=$true)][int]$Value,
+        [switch]$DryRun
+    )
+
+    if ($DryRun) {
+        Write-ToolLog "[DRY-RUN] powercfg /setacvalueindex SCHEME_CURRENT $Subgroup $Setting $Value" "INFO"
+        return
+    }
+
+    try {
+        $p = Start-Process -FilePath "powercfg.exe" -ArgumentList "/setacvalueindex SCHEME_CURRENT $Subgroup $Setting $Value" -NoNewWindow -Wait -PassThru
+        if ($p.ExitCode -eq 0) {
+            $null = Start-Process -FilePath "powercfg.exe" -ArgumentList "/setactive SCHEME_CURRENT" -NoNewWindow -Wait -PassThru
+            Write-ToolLog "Energia (powercfg): $Subgroup/$Setting = $Value aplicado." "INFO"
+        } else {
+            Write-ToolLog "powercfg retornou código $($p.ExitCode) para $Subgroup/$Setting (pode não ser suportado nesta CPU/plano)." "WARN"
+        }
+    } catch {
+        Write-ToolLog "Aviso ao executar powercfg ($Subgroup/$Setting): $($_.Exception.Message)" "WARN"
+    }
+}
+
+function Clear-GpuShaderCaches {
+    param([switch]$DryRun)
+
+    $cacheDirs = @(
+        (Join-Path $env:LOCALAPPDATA "D3DSCache"),
+        (Join-Path $env:LOCALAPPDATA "NVIDIA\DXCache"),
+        (Join-Path $env:LOCALAPPDATA "NVIDIA\GLCache"),
+        (Join-Path $env:LOCALAPPDATA "AMD\DxCache"),
+        (Join-Path $env:LOCALAPPDATA "AMD\GLCache"),
+        (Join-Path $env:LOCALAPPDATA "AMD\VkCache"),
+        (Join-Path (Split-Path $env:LOCALAPPDATA) "LocalLow\NVIDIA\PerDriverVersion\DXCache")
+    )
+
+    $totalRemoved = 0
+    foreach ($dir in $cacheDirs) {
+        if (-not (Test-Path $dir)) { continue }
+        $files = @(Get-ChildItem -Path $dir -Recurse -File -Force -ErrorAction SilentlyContinue)
+        if ($DryRun) {
+            Write-ToolLog "[DRY-RUN] Limparia $($files.Count) arquivo(s) em $dir" "INFO"
+            continue
+        }
+        foreach ($f in $files) {
+            try {
+                Remove-Item -Path $f.FullName -Force -ErrorAction Stop
+                $totalRemoved++
+            } catch {}
+        }
+    }
+
+    if ($DryRun) {
+        Write-ToolLog "[DRY-RUN] Limpeza de Shader Cache simulada." "SUCCESS"
+    } else {
+        Write-ToolLog "Limpeza de Shader Cache concluída ($totalRemoved arquivo(s) removidos; arquivos em uso foram preservados)." "SUCCESS"
+    }
+}
+
+function Set-ScheduledTasksByPrefix {
+    param(
+        [Parameter(Mandatory=$true)][string]$Pattern,
+        [bool]$Enable = $false,
+        [switch]$DryRun
+    )
+
+    $actionLabel = if ($Enable) { "Habilitar" } else { "Desabilitar" }
+    try {
+        $tasks = @(Get-ScheduledTask -ErrorAction SilentlyContinue | Where-Object { $_.TaskName -like $Pattern })
+        if ($tasks.Count -eq 0) {
+            $prefix = if ($DryRun) { "[DRY-RUN] " } else { "" }
+            Write-ToolLog "${prefix}Nenhuma tarefa agendada encontrada para [$Pattern]." "INFO"
+            return
+        }
+        foreach ($t in $tasks) {
+            if ($DryRun) {
+                Write-ToolLog "[DRY-RUN] $actionLabel tarefa agendada: $($t.TaskPath)$($t.TaskName)" "INFO"
+            } else {
+                if ($Enable) {
+                    Enable-ScheduledTask -TaskPath $t.TaskPath -TaskName $t.TaskName -ErrorAction SilentlyContinue | Out-Null
+                } else {
+                    Disable-ScheduledTask -TaskPath $t.TaskPath -TaskName $t.TaskName -ErrorAction SilentlyContinue | Out-Null
+                }
+                Write-ToolLog "Tarefa [$($t.TaskName)] -> $actionLabel." "INFO"
+            }
+        }
+    } catch {}
+}
+
+function Invoke-HardwareOptimization {
+    param(
+        [Parameter(Mandatory=$true)][string]$Key,
+        [switch]$Undo,
+        [switch]$DryRun
+    )
+
+    $catalog = Get-HardwareOptimizationCatalog
+    $item = $catalog | Where-Object { $_.Key -eq $Key } | Select-Object -First 1
+    $label = if ($item) { $item.Content } else { $Key }
+    $prefix = if ($DryRun) { "[DRY-RUN] " } else { "" }
+    $verb = if ($Undo) { "Desfazendo" } else { "Aplicando" }
+
+    Write-ToolLog "${prefix}$verb [$label]..." "INFO"
+
+    switch ($Key) {
+        "HwGpuHags" {
+            $val = if ($Undo) { 1 } else { 2 }
+            Set-RegistryEntry -Path "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" -Name "HwSchMode" -Type "DWord" -Value $val -DryRun:$DryRun
+        }
+        "HwGpuMmcss" {
+            $sysResp = if ($Undo) { 20 } else { 10 }
+            $gpuPrio = if ($Undo) { 2 } else { 8 }
+            $prio    = if ($Undo) { 2 } else { 6 }
+            $sched   = if ($Undo) { "Medium" } else { "High" }
+            $sfio    = if ($Undo) { "Normal" } else { "High" }
+
+            $mmRoot = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"
+            $games  = "$mmRoot\Tasks\Games"
+            Set-RegistryEntry -Path $mmRoot -Name "SystemResponsiveness" -Type "DWord" -Value $sysResp -DryRun:$DryRun
+            Set-RegistryEntry -Path $games -Name "GPU Priority" -Type "DWord" -Value $gpuPrio -DryRun:$DryRun
+            Set-RegistryEntry -Path $games -Name "Priority" -Type "DWord" -Value $prio -DryRun:$DryRun
+            Set-RegistryEntry -Path $games -Name "Scheduling Category" -Type "String" -Value $sched -DryRun:$DryRun
+            Set-RegistryEntry -Path $games -Name "SFIO Priority" -Type "String" -Value $sfio -DryRun:$DryRun
+        }
+        "HwGpuPcieLspm" {
+            $val = if ($Undo) { 2 } else { 0 }
+            Invoke-PowerCfgSetting -Subgroup "SUB_PCIEXPRESS" -Setting "ASPM" -Value $val -DryRun:$DryRun
+        }
+        "HwGpuShaderCache" {
+            if ($Undo) {
+                Write-ToolLog "${prefix}Limpeza de Shader Cache não requer reversão (caches são recriados pelos jogos)." "INFO"
+            } else {
+                Clear-GpuShaderCaches -DryRun:$DryRun
+            }
+        }
+        "HwNvidiaMsiMode" {
+            $paths = Get-DisplayPciDeviceRegPaths -VendorId "VEN_10DE"
+            if ($paths.Count -eq 0) {
+                Write-ToolLog "${prefix}Nenhuma GPU PCI NVIDIA (VEN_10DE) encontrada neste sistema." "INFO"
+            } else {
+                $val = if ($Undo) { 0 } else { 1 }
+                foreach ($p in $paths) {
+                    Set-RegistryEntry -Path $p -Name "MSISupported" -Type "DWord" -Value $val -DryRun:$DryRun
+                }
+            }
+        }
+        "HwNvidiaTelemetry" {
+            $svcMode = if ($Undo) { "Automatic" } else { "Disabled" }
+            Set-ServiceStartupSafe -Name "NvTelemetryContainer" -StartupType $svcMode -DryRun:$DryRun
+            Set-ScheduledTasksByPrefix -Pattern "NvTmRep*" -Enable:$Undo -DryRun:$DryRun
+            Set-ScheduledTasksByPrefix -Pattern "NvTmMon*" -Enable:$Undo -DryRun:$DryRun
+        }
+        "HwNvidiaPowerMizer" {
+            $paths = Get-DisplayClassRegPaths -ProviderPattern "NVIDIA"
+            if ($paths.Count -eq 0) {
+                Write-ToolLog "${prefix}Nenhuma chave de classe de vídeo NVIDIA encontrada." "INFO"
+            } else {
+                foreach ($p in $paths) {
+                    if ($Undo) {
+                        foreach ($n in @("PerfLevelSrc", "PowerMizerEnable", "PowerMizerLevel", "PowerMizerLevelAC")) {
+                            Set-RegistryEntry -Path $p -Name $n -Type "DWord" -Value "<RemoveEntry>" -DryRun:$DryRun
+                        }
+                    } else {
+                        Set-RegistryEntry -Path $p -Name "PerfLevelSrc" -Type "DWord" -Value 8738 -DryRun:$DryRun
+                        Set-RegistryEntry -Path $p -Name "PowerMizerEnable" -Type "DWord" -Value 1 -DryRun:$DryRun
+                        Set-RegistryEntry -Path $p -Name "PowerMizerLevel" -Type "DWord" -Value 1 -DryRun:$DryRun
+                        Set-RegistryEntry -Path $p -Name "PowerMizerLevelAC" -Type "DWord" -Value 1 -DryRun:$DryRun
+                    }
+                }
+            }
+        }
+        "HwAmdUlps" {
+            $paths = Get-DisplayClassRegPaths -ProviderPattern "AMD|ATI|Radeon"
+            if ($paths.Count -eq 0) {
+                Write-ToolLog "${prefix}Nenhuma chave de classe de vídeo AMD encontrada." "INFO"
+            } else {
+                $val = if ($Undo) { 1 } else { 0 }
+                foreach ($p in $paths) {
+                    Set-RegistryEntry -Path $p -Name "EnableUlps" -Type "DWord" -Value $val -DryRun:$DryRun
+                }
+            }
+        }
+        "HwAmdMsiMode" {
+            $paths = Get-DisplayPciDeviceRegPaths -VendorId "VEN_1002"
+            if ($paths.Count -eq 0) {
+                Write-ToolLog "${prefix}Nenhuma GPU PCI AMD (VEN_1002) encontrada neste sistema." "INFO"
+            } else {
+                $val = if ($Undo) { 0 } else { 1 }
+                foreach ($p in $paths) {
+                    Set-RegistryEntry -Path $p -Name "MSISupported" -Type "DWord" -Value $val -DryRun:$DryRun
+                }
+            }
+        }
+        "HwAmdCrashDefender" {
+            $svcMode = if ($Undo) { "Manual" } else { "Disabled" }
+            Set-ServiceStartupSafe -Name "AMD Crash Defender Service" -StartupType $svcMode -DryRun:$DryRun
+            Set-ServiceStartupSafe -Name "AUEPLauncher" -StartupType $svcMode -DryRun:$DryRun
+        }
+        "HwCpuCoreParking" {
+            $val = if ($Undo) { 10 } else { 100 }
+            Invoke-PowerCfgSetting -Subgroup "SUB_PROCESSOR" -Setting "CPMINCORES" -Value $val -DryRun:$DryRun
+        }
+        "HwCpuPowerThrottling" {
+            $ptPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling"
+            $val = if ($Undo) { "<RemoveEntry>" } else { 1 }
+            Set-RegistryEntry -Path $ptPath -Name "PowerThrottlingOff" -Type "DWord" -Value $val -DryRun:$DryRun
+        }
+        "HwCpuAmdRyzenBoost" {
+            if ($Undo) {
+                Invoke-PowerCfgSetting -Subgroup "SUB_PROCESSOR" -Setting "PERFEPP" -Value 50 -DryRun:$DryRun
+            } else {
+                Invoke-PowerCfgSetting -Subgroup "SUB_PROCESSOR" -Setting "PERFBOOSTMODE" -Value 2 -DryRun:$DryRun
+                Invoke-PowerCfgSetting -Subgroup "SUB_PROCESSOR" -Setting "PERFEPP" -Value 0 -DryRun:$DryRun
+            }
+        }
+        "HwCpuAmdX3DGameMode" {
+            $gbPath = "HKCU:\Software\Microsoft\GameBar"
+            $val = if ($Undo) { 0 } else { 1 }
+            Set-RegistryEntry -Path $gbPath -Name "AllowAutoGameMode" -Type "DWord" -Value $val -DryRun:$DryRun
+            Set-RegistryEntry -Path $gbPath -Name "AutoGameModeEnabled" -Type "DWord" -Value $val -DryRun:$DryRun
+        }
+        "HwCpuIntelHybridPolicy" {
+            $val = if ($Undo) { 5 } else { 2 }
+            Invoke-PowerCfgSetting -Subgroup "SUB_PROCESSOR" -Setting "SCHEDPOLICY" -Value $val -DryRun:$DryRun
+            Invoke-PowerCfgSetting -Subgroup "SUB_PROCESSOR" -Setting "SHORTSCHEDPOLICY" -Value $val -DryRun:$DryRun
+        }
+        "HwCpuIntelEpp" {
+            $val = if ($Undo) { 50 } else { 0 }
+            Invoke-PowerCfgSetting -Subgroup "SUB_PROCESSOR" -Setting "PERFEPP" -Value $val -DryRun:$DryRun
+        }
+        default {
+            Write-ToolLog "Otimização de hardware desconhecida: $Key" "WARN"
+            return
+        }
+    }
+
+    Write-ToolLog "${prefix}Concluído: $label" "SUCCESS"
+}
+
+function Get-HardwareChangesPreview {
+    param(
+        [Parameter(Mandatory=$true)][string[]]$Keys,
+        [switch]$Undo
+    )
+
+    $catalog = Get-HardwareOptimizationCatalog
+    $byKey = @{}
+    foreach ($c in $catalog) { $byKey[$c.Key] = $c }
+
+    $items = New-Object System.Collections.Generic.List[object]
+    foreach ($k in $Keys) {
+        if (-not $byKey.ContainsKey($k)) { continue }
+        $c = $byKey[$k]
+        $detail = if ($Undo) { $c.UndoSummary } else { $c.ApplySummary }
+        [void]$items.Add([pscustomobject]@{
+            Key     = $c.Key
+            Content = $c.Content
+            Group   = $c.Group
+            Vendor  = $c.Vendor
+            Risk    = $c.Risk
+            Action  = if ($Undo) { "Desfazer" } else { "Aplicar" }
+            Detail  = $detail
+        })
+    }
+    return ,$items.ToArray()
+}
+
+function Format-HardwareChangesPreviewText {
+    param(
+        [Parameter(Mandatory=$true)][string[]]$Keys,
+        [switch]$Undo
+    )
+
+    $preview = Get-HardwareChangesPreview -Keys $Keys -Undo:$Undo
+    $modeLabel = if ($Undo) { "REVERSÃO (DESFAZER)" } else { "APLICAÇÃO" }
+
+    $sb = New-Object System.Text.StringBuilder
+    [void]$sb.AppendLine("======================================================================")
+    [void]$sb.AppendLine("  PRÉ-VISUALIZAÇÃO DE HARDWARE (GPU & CPU) - $modeLabel")
+    [void]$sb.AppendLine("  Ajustes selecionados: $($preview.Count)")
+    [void]$sb.AppendLine("======================================================================")
+    [void]$sb.AppendLine("")
+
+    foreach ($p in $preview) {
+        [void]$sb.AppendLine("* $($p.Content) [$($p.Key)] ($($p.Risk))")
+        [void]$sb.AppendLine("    Alvo/Ação: $($p.Detail)")
+        [void]$sb.AppendLine("")
+    }
+
+    return $sb.ToString().TrimEnd()
+}
+
+function Invoke-HardwareExternalTool {
+    param(
+        [Parameter(Mandatory=$true)][string]$ToolKey,
+        [switch]$DryRun
+    )
+
+    $tools = @{
+        NVCleanstall   = @{ Name = "NVCleanstall";            Winget = "TechPowerUp.NVCleanstall";                 Url = "https://www.techpowerup.com/nvcleanstall/" }
+        DDU            = @{ Name = "Display Driver Uninstaller (DDU)"; Winget = "Wagnardsoft.DisplayDriverUninstaller"; Url = "https://www.wagnardsoft.com/display-driver-uninstaller-ddu-" }
+        MSIAfterburner = @{ Name = "MSI Afterburner";         Winget = "Guru3D.Afterburner";                       Url = "https://www.msi.com/Landing/afterburner/graphics-cards" }
+        GPUZ           = @{ Name = "TechPowerUp GPU-Z";       Winget = "TechPowerUp.GPU-Z";                        Url = "https://www.techpowerup.com/gpuz/" }
+        CPUZ           = @{ Name = "CPUID CPU-Z";             Winget = "CPUID.CPU-Z";                              Url = "https://www.cpuid.com/softwares/cpu-z.html" }
+        HWiNFO         = @{ Name = "HWiNFO";                  Winget = "REALiX.HWiNFO";                            Url = "https://www.hwinfo.com/download/" }
+        NvidiaDrivers  = @{ Name = "Drivers Oficiais NVIDIA"; Winget = "";                                         Url = "https://www.nvidia.com/Download/index.aspx" }
+        AmdDrivers     = @{ Name = "Drivers Oficiais AMD";    Winget = "";                                         Url = "https://www.amd.com/en/support" }
+        IntelDrivers   = @{ Name = "Drivers Oficiais Intel";  Winget = "";                                         Url = "https://www.intel.com/content/www/us/en/support/detect.html" }
+    }
+
+    if (-not $tools.ContainsKey($ToolKey)) {
+        Write-ToolLog "Ferramenta externa desconhecida: $ToolKey" "WARN"
+        return
+    }
+
+    $t = $tools[$ToolKey]
+    if ($DryRun) {
+        if ($t.Winget) {
+            Write-ToolLog "[DRY-RUN] Instalaria $($t.Name) via WinGet ($($t.Winget)) ou abriria $($t.Url)." "INFO"
+        } else {
+            Write-ToolLog "[DRY-RUN] Abriria página oficial $($t.Name): $($t.Url)" "INFO"
+        }
+        return
+    }
+
+    if ($t.Winget -and (Get-Command "winget.exe" -ErrorAction SilentlyContinue) -and (Get-Command "Install-PackagesBatch" -ErrorAction SilentlyContinue)) {
+        Install-PackagesBatch -Apps @([pscustomobject]@{ Content = $t.Name; Winget = $t.Winget; Choco = "na" }) -Manager "WinGet"
+    } else {
+        Write-ToolLog "Abrindo página oficial de $($t.Name): $($t.Url)" "INFO"
+        try {
+            Start-Process $t.Url
+        } catch {
+            Write-ToolLog "Erro ao abrir URL $($t.Url): $($_.Exception.Message)" "ERROR"
+        }
+    }
+}
+
+
+# ==============================================================================
 # Módulo Avançado: Otimizações de Desempenho, Debloat, Serviços e Perfis Prontos
 # ==============================================================================
 
@@ -3651,6 +4255,13 @@ function Update-AppxSelectionCounter {
     $ui.Window.FindName("txtAppxSelectedCount").Text = "Selecionados: $count"
 }
 
+function Update-HardwareSelectionCounter {
+    $ui = $global:WinRepairUi
+    if (-not $ui) { return }
+    $count = @($ui.HwCheckBoxes.Values | Where-Object { $_.IsChecked }).Count
+    $ui.Window.FindName("txtHwSelectedCount").Text = "Selecionados: $count"
+}
+
 function Apply-GlobalSearchFilter {
     $ui = $global:WinRepairUi
     if (-not $ui) { return }
@@ -3679,7 +4290,7 @@ function Apply-GlobalSearchFilter {
         $catInfo.Expander.Visibility = if ($catMatchesFilter -and $anyVisible) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
     }
 
-    foreach ($map in @($ui.TweakCheckBoxes, $ui.ToggleBoxes, $ui.AppxCheckBoxes, $ui.FeatureCheckBoxes)) {
+    foreach ($map in @($ui.TweakCheckBoxes, $ui.ToggleBoxes, $ui.AppxCheckBoxes, $ui.FeatureCheckBoxes, $ui.HwCheckBoxes)) {
         foreach ($cb in $map.Values) {
             $descTxt = if ($cb.Resources["HoverHelpInfo"]) { $cb.Resources["HoverHelpInfo"].Description } else { "" }
             $match = ([string]::IsNullOrEmpty($q)) -or (([string]$cb.Content).ToLowerInvariant().Contains($q)) -or ($descTxt.ToLowerInvariant().Contains($q))
@@ -3695,9 +4306,10 @@ function Set-ActiveHudView {
     if (-not $ui) { return }
 
     $meta = @{
-        Install = @{ Title = "Catálogo de Softwares"; Sub = "Passe o mouse em qualquer software para ver descrição e instale via WinGet ou Chocolatey" }
-        Tweaks  = @{ Title = "Tweaks & Perfis Recomendados"; Sub = "Escolha Desktop, Notebook ou All para pré-selecionar e revisar antes de aplicar" }
-        Appx    = @{ Title = "Gerenciador de AppX & Bloatware"; Sub = "Remova aplicativos pré-instalados do Windows ou reinstale via Microsoft Store" }
+        Install  = @{ Title = "Catálogo de Softwares"; Sub = "Passe o mouse em qualquer software para ver descrição e instale via WinGet ou Chocolatey" }
+        Tweaks   = @{ Title = "Tweaks & Perfis Recomendados"; Sub = "Escolha Desktop, Notebook ou All para pré-selecionar e revisar antes de aplicar" }
+        Hardware = @{ Title = "Hardware (GPU NVIDIA/AMD & CPU AMD/Intel)"; Sub = "Detecção automática de GPU/CPU com otimizações reversíveis de latência, estabilidade e energia" }
+        Appx     = @{ Title = "Gerenciador de AppX & Bloatware"; Sub = "Remova aplicativos pré-instalados do Windows ou reinstale via Microsoft Store" }
         Network = @{ Title = "Rede, Diagnóstico & DNS"; Sub = "14 ferramentas integradas de diagnóstico, varredura de rede local, TCP e Benchmark DNS" }
         Config  = @{ Title = "Recursos, Correções & Painéis do Sistema"; Sub = "Recursos opcionais, reparo DISM/SFC/Update, 14 painéis clássicos e OpenSSH" }
         Updates = @{ Title = "Políticas do Windows Update"; Sub = "Controle completo sobre atualizações automáticas, drivers e adiamento" }
@@ -3721,6 +4333,7 @@ function Initialize-StaticHoverHelp {
 
     $entries = @(
         @("navTweaks", "Tweaks & Perfis", "Abre os perfis recomendados (Desktop, Notebook, All), otimizações do sistema e preferências instantâneas.", "Navegação"),
+        @("navHardware", "Hardware (GPU & CPU)", "Otimizações específicas e reversíveis para GPUs NVIDIA/AMD e CPUs AMD/Intel com detecção automática.", "Navegação"),
         @("navInstall", "Catálogo de Softwares", "Instale, desinstale ou atualize 239 programas populares silenciosamente via WinGet ou Chocolatey.", "Navegação"),
         @("navAppx", "AppX & Bloatware", "Remova ou reinstale aplicativos universais pré-instalados da Microsoft Store.", "Navegação"),
         @("navNetwork", "Rede & Diagnóstico", "Diagnóstico de rede em 14 ferramentas, varredura de IPs locais, otimização TCP e Benchmark DNS.", "Navegação"),
@@ -3748,6 +4361,23 @@ function Initialize-StaticHoverHelp {
         @("btnEnableUltPerf", "Plano Desempenho Máximo", "Desbloqueia e ativa o esquema oculto Ultimate Performance (maior resposta de CPU).", "Energia"),
         @("btnDisableUltPerf", "Restaurar Planos de Energia", "Restaura os esquemas de energia padrão de fábrica do Windows.", "Energia"),
         @("btnRunOOSU", "Executar O&O ShutUp10++", "Baixa e abre a ferramenta portátil oficial O&O ShutUp10++ para ajustes extras de privacidade.", "Privacidade"),
+
+        @("btnHwAutoSelect", "Auto-Selecionar Recomendados", "Marca automaticamente apenas as otimizações seguras compatíveis com a GPU e CPU detectadas neste computador.", "Hardware"),
+        @("btnHwApply", "Aplicar Selecionados (Hardware)", "Executa as otimizações de GPU/CPU marcadas abaixo (com Ponto de Restauração automático ou Dry-Run se habilitado).", "Execução"),
+        @("btnHwUndo", "Desfazer Selecionados (Hardware)", "Reverte as otimizações de GPU/CPU marcadas para os padrões do sistema/driver.", "Reverter"),
+        @("btnHwClear", "Limpar Seleção (Hardware)", "Desmarca todas as opções de otimização de GPU e CPU.", "Seleção"),
+        @("btnHwPreview", "Pré-visualizar Alterações (Hardware)", "Mostra as chaves de registro, serviços e comandos powercfg que serão aplicados ou revertidos.", "Simulação"),
+        @("chkHwAutoRestorePoint", "Ponto de Restauração Automático (Hardware)", "Cria automaticamente um Ponto de Restauração antes de aplicar ou desfazer otimizações de hardware.", "Segurança"),
+        @("chkHwDryRun", "Modo Simulação (Dry-Run - Hardware)", "Simula as otimizações de GPU/CPU e ferramentas no console sem alterar nada no sistema.", "Simulação"),
+        @("btnHwToolNvCleanstall", "NVCleanstall", "Instala via WinGet (ou abre o site oficial) o NVCleanstall para instalar drivers NVIDIA sem telemetria/bloat.", "NVIDIA"),
+        @("btnHwToolDdu", "Display Driver Uninstaller (DDU)", "Instala via WinGet (ou abre o site oficial) o DDU para remoção limpa de drivers de vídeo em Modo de Segurança.", "Ferramenta"),
+        @("btnHwToolAfterburner", "MSI Afterburner", "Instala via WinGet (ou abre o site oficial) para controle de curva de fan, monitoramento OSD e ajuste de GPU.", "Ferramenta"),
+        @("btnHwToolGpuZ", "TechPowerUp GPU-Z", "Instala via WinGet (ou abre o site oficial) para inspeção detalhada de GPU, clocks, VRAM e barramento PCIe.", "Diagnóstico"),
+        @("btnHwToolCpuZ", "CPUID CPU-Z", "Instala via WinGet (ou abre o site oficial) para inspeção de CPU, cache, placa-mãe e memória RAM.", "Diagnóstico"),
+        @("btnHwToolHwInfo", "HWiNFO", "Instala via WinGet (ou abre o site oficial) para monitoramento completo de temperaturas, tensões e clocks.", "Diagnóstico"),
+        @("btnHwUrlNvidia", "Drivers Oficiais NVIDIA", "Abre a página oficial de download de drivers NVIDIA GeForce/RTX.", "Driver"),
+        @("btnHwUrlAmd", "Drivers Oficiais AMD", "Abre a página oficial de suporte e drivers AMD Radeon e Chipset Ryzen.", "Driver"),
+        @("btnHwUrlIntel", "Drivers Oficiais Intel", "Abre a página oficial de drivers e Assistente Intel (Arc / UHD / Chipset).", "Driver"),
 
         @("btnInstallApps", "Instalar / Atualizar Selecionados", "Instala ou atualiza todos os programas marcados usando WinGet ou Chocolatey.", "Softwares"),
         @("btnUninstallApps", "Desinstalar Selecionados", "Remove silenciosamente do sistema todos os programas marcados no catálogo.", "Softwares"),
@@ -3965,18 +4595,21 @@ function Start-WinRepairUI {
     $global:WinRepairUi = @{
         Window               = $window
         Views                = @{
-            Install = $window.FindName("viewInstall")
-            Tweaks  = $window.FindName("viewTweaks")
-            Appx    = $window.FindName("viewAppx")
-            Network = $window.FindName("viewNetwork")
-            Config  = $window.FindName("viewConfig")
-            Updates = $window.FindName("viewUpdates")
-            Iso     = $window.FindName("viewIso")
+            Install  = $window.FindName("viewInstall")
+            Tweaks   = $window.FindName("viewTweaks")
+            Hardware = $window.FindName("viewHardware")
+            Appx     = $window.FindName("viewAppx")
+            Network  = $window.FindName("viewNetwork")
+            Config   = $window.FindName("viewConfig")
+            Updates  = $window.FindName("viewUpdates")
+            Iso      = $window.FindName("viewIso")
         }
         AppCheckBoxes        = [ordered]@{}
         AppCategoryExpanders = New-Object System.Collections.Generic.List[object]
         SelectedAppCategory  = "Todas"
         TweakCheckBoxes      = [ordered]@{}
+        HwCheckBoxes         = [ordered]@{}
+        HwProfile            = $null
         ToggleBoxes          = [ordered]@{}
         ComboControls        = [ordered]@{}
         AppxCheckBoxes       = [ordered]@{}
@@ -4289,6 +4922,60 @@ function Start-WinRepairUI {
         }
     }
 
+    # 6. HARDWARE (GPU NVIDIA/AMD & CPU AMD/INTEL)
+    $hwProfile = Get-HardwareOptimizationProfile
+    $global:WinRepairUi.HwProfile = $hwProfile
+    $window.FindName("txtHwDetectedGpu").Text = "GPU: $($hwProfile.PrimaryGpuName)"
+    $window.FindName("txtHwDetectedCpu").Text = "CPU: $($hwProfile.CpuName) ($($hwProfile.CpuCores)C/$($hwProfile.CpuThreads)T)"
+    $window.FindName("txtHwDetectedTips").Text = $hwProfile.SummaryTips
+
+    $badgeConfig = @(
+        @{ Badge = "txtHwNvidiaBadge";   Border = "borderHwNvidia";   Detected = $hwProfile.HasNvidia },
+        @{ Badge = "txtHwAmdGpuBadge";   Border = "borderHwAmdGpu";   Detected = $hwProfile.HasAmdGpu },
+        @{ Badge = "txtHwAmdCpuBadge";   Border = "borderHwAmdCpu";   Detected = ($hwProfile.CpuVendor -eq "AMD") },
+        @{ Badge = "txtHwIntelCpuBadge"; Border = "borderHwIntelCpu"; Detected = ($hwProfile.CpuVendor -eq "Intel") }
+    )
+    foreach ($bc in $badgeConfig) {
+        $bTxt = $window.FindName($bc.Badge)
+        $bBrd = $window.FindName($bc.Border)
+        if ($bc.Detected) {
+            if ($bTxt) {
+                $bTxt.Text = "Detectado"
+                $bTxt.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, "BrushSuccess")
+            }
+            if ($bBrd) {
+                $bBrd.SetResourceReference([System.Windows.Controls.Border]::BorderBrushProperty, "BrushBorderStrong")
+            }
+        } else {
+            if ($bTxt) {
+                $bTxt.Text = "Não detectado"
+                $bTxt.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, "BrushTextMuted")
+            }
+        }
+    }
+
+    $hwGroupPanels = @{
+        GpuGeneral = $window.FindName("panelHwGpuGeneral")
+        GpuNvidia  = $window.FindName("panelHwGpuNvidia")
+        GpuAmd     = $window.FindName("panelHwGpuAmd")
+        CpuGeneral = $window.FindName("panelHwCpuGeneral")
+        CpuAmd     = $window.FindName("panelHwCpuAmd")
+        CpuIntel   = $window.FindName("panelHwCpuIntel")
+    }
+    foreach ($hwItem in (Get-HardwareOptimizationCatalog)) {
+        $targetPanel = $hwGroupPanels[$hwItem.Group]
+        if (-not $targetPanel) { continue }
+        $cb = New-Object System.Windows.Controls.CheckBox
+        $cb.Content = $hwItem.Content
+        $cb.Tag = $hwItem.Key
+        Register-HoverHelp -Control $cb -Title $hwItem.Content -Description $hwItem.Description -Badge $hwItem.Risk
+        $cb.Add_Checked({ Update-HardwareSelectionCounter })
+        $cb.Add_Unchecked({ Update-HardwareSelectionCounter })
+        [void]$targetPanel.Children.Add($cb)
+        $global:WinRepairUi.HwCheckBoxes[$hwItem.Key] = $cb
+    }
+    Update-HardwareSelectionCounter
+
     # Hover help em todos os botões e elementos estáticos
     Initialize-StaticHoverHelp
 
@@ -4298,6 +4985,7 @@ function Start-WinRepairUI {
 
     $window.FindName("navInstall").Add_Checked({ Set-ActiveHudView "Install" })
     $window.FindName("navTweaks").Add_Checked({ Set-ActiveHudView "Tweaks" })
+    $window.FindName("navHardware").Add_Checked({ Set-ActiveHudView "Hardware" })
     $window.FindName("navAppx").Add_Checked({ Set-ActiveHudView "Appx" })
     $window.FindName("navNetwork").Add_Checked({ Set-ActiveHudView "Network" })
     $window.FindName("navConfig").Add_Checked({ Set-ActiveHudView "Config" })
@@ -4328,7 +5016,7 @@ function Start-WinRepairUI {
         $dlg.FileName = "alts_config.json"
         if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
             $keys = New-Object System.Collections.Generic.List[string]
-            foreach ($map in @($global:WinRepairUi.TweakCheckBoxes, $global:WinRepairUi.AppCheckBoxes, $global:WinRepairUi.AppxCheckBoxes, $global:WinRepairUi.FeatureCheckBoxes)) {
+            foreach ($map in @($global:WinRepairUi.TweakCheckBoxes, $global:WinRepairUi.HwCheckBoxes, $global:WinRepairUi.AppCheckBoxes, $global:WinRepairUi.AppxCheckBoxes, $global:WinRepairUi.FeatureCheckBoxes)) {
                 foreach ($k in $map.Keys) {
                     if ($map[$k].IsChecked) { [void]$keys.Add($k) }
                 }
@@ -4356,7 +5044,7 @@ function Start-WinRepairUI {
 
                 $global:WinRepairUi.SuppressPresetReset = $true
                 try {
-                    foreach ($map in @($global:WinRepairUi.TweakCheckBoxes, $global:WinRepairUi.AppCheckBoxes, $global:WinRepairUi.AppxCheckBoxes, $global:WinRepairUi.FeatureCheckBoxes)) {
+                    foreach ($map in @($global:WinRepairUi.TweakCheckBoxes, $global:WinRepairUi.HwCheckBoxes, $global:WinRepairUi.AppCheckBoxes, $global:WinRepairUi.AppxCheckBoxes, $global:WinRepairUi.FeatureCheckBoxes)) {
                         foreach ($k in $map.Keys) { $map[$k].IsChecked = $flat.Contains($k) }
                     }
                 } finally {
@@ -4365,6 +5053,7 @@ function Start-WinRepairUI {
 
                 $global:WinRepairUi.ActivePreset = "Importado"
                 Update-TweaksSelectionPreview
+                Update-HardwareSelectionCounter
                 Update-AppsSelectionCounter
                 Update-AppxSelectionCounter
                 Write-ToolLog "Configuração importada ($($flat.Count) chaves). Revise as seleções antes de aplicar." "SUCCESS"
@@ -4585,6 +5274,118 @@ function Start-WinRepairUI {
     $window.FindName("btnEnableUltPerf").Add_Click({ Start-AsyncAction -Label "Ativando Plano Desempenho Máximo..." -Action { Set-UltimatePowerPlan -Enable } })
     $window.FindName("btnDisableUltPerf").Add_Click({ Start-AsyncAction -Label "Restaurando planos de energia..." -Action { Set-UltimatePowerPlan } })
     $window.FindName("btnRunOOSU").Add_Click({ Start-AsyncAction -Label "Baixando e iniciando O&O ShutUp10++..." -Action { Invoke-OOSU10 } })
+
+    # --- VIEW 8: HARDWARE (GPU & CPU) ---
+    $window.FindName("btnHwAutoSelect").Add_Click({
+        $ui = $global:WinRepairUi
+        $hw = $ui.HwProfile
+        $selectedCount = 0
+        foreach ($item in (Get-HardwareOptimizationCatalog)) {
+            $cb = $ui.HwCheckBoxes[$item.Key]
+            if (-not $cb) { continue }
+            $matchVendor = switch ($item.Vendor) {
+                "All"       { $true }
+                "NVIDIA"    { [bool]$hw.HasNvidia }
+                "AMD_GPU"   { [bool]$hw.HasAmdGpu }
+                "AMD_CPU"   { $hw.CpuVendor -eq "AMD" }
+                "Intel_CPU" { $hw.CpuVendor -eq "Intel" }
+                default     { $false }
+            }
+            $isMatch = ($item.Recommended -eq $true) -and $matchVendor
+            $cb.IsChecked = $isMatch
+            if ($isMatch) { $selectedCount++ }
+        }
+        Update-HardwareSelectionCounter
+        Write-ToolLog "Auto-seleção de Hardware: $selectedCount otimização(ões) recomendadas marcadas para $($hw.PrimaryGpuName) / $($hw.CpuName)." "INFO"
+    })
+
+    $window.FindName("btnHwClear").Add_Click({
+        foreach ($cb in $global:WinRepairUi.HwCheckBoxes.Values) { $cb.IsChecked = $false }
+        Update-HardwareSelectionCounter
+    })
+
+    $window.FindName("btnHwPreview").Add_Click({
+        $ui = $global:WinRepairUi
+        $keys = @(foreach ($k in $ui.HwCheckBoxes.Keys) { if ($ui.HwCheckBoxes[$k].IsChecked) { $k } })
+        if ($keys.Count -eq 0) { Write-ToolLog "Nenhuma otimização de hardware selecionada para pré-visualizar." "WARN"; return }
+        $previewText = Format-HardwareChangesPreviewText -Keys $keys
+        Write-ToolLog "Pré-visualização de hardware gerada para $($keys.Count) item(ns)." "INFO"
+        Show-PreviewDialog -Title "Pré-visualização de Hardware ($($keys.Count))" -Subtitle "Revise os ajustes de GPU e CPU antes de aplicar." -BodyText $previewText
+    })
+
+    $window.FindName("btnHwApply").Add_Click({
+        $ui = $global:WinRepairUi
+        $keys = @(foreach ($k in $ui.HwCheckBoxes.Keys) { if ($ui.HwCheckBoxes[$k].IsChecked) { $k } })
+        if ($keys.Count -eq 0) { Write-ToolLog "Nenhuma otimização de hardware selecionada para aplicar." "WARN"; return }
+
+        $dryRun = [bool]$ui.Window.FindName("chkHwDryRun").IsChecked
+        $autoRestore = [bool]$ui.Window.FindName("chkHwAutoRestorePoint").IsChecked
+        $modeTag = if ($dryRun) { "[DRY-RUN] " } else { "" }
+
+        Start-AsyncAction -Label "${modeTag}Aplicando $($keys.Count) otimização(ões) de hardware..." -Vars @{ keys = $keys; dryRun = $dryRun; autoRestore = $autoRestore } -Action {
+            $prefix = if ($dryRun) { "[DRY-RUN] " } else { "" }
+            Write-ToolLog "=== ${prefix}INICIANDO OTIMIZAÇÕES DE HARDWARE ($($keys.Count)) ===" "INFO"
+            if ($autoRestore) {
+                $null = Set-RestorePoint -Description "Alts_PreHardware" -DryRun:$dryRun
+            }
+            foreach ($k in $keys) {
+                Invoke-HardwareOptimization -Key $k -Undo:$false -DryRun:$dryRun
+            }
+            if ($dryRun) {
+                Write-ToolLog "=== [DRY-RUN] SIMULAÇÃO DE HARDWARE CONCLUÍDA! ===" "SUCCESS"
+            } else {
+                Write-ToolLog "=== OTIMIZAÇÕES DE HARDWARE APLICADAS! Alguns ajustes exigem reinício. ===" "SUCCESS"
+            }
+        }
+    })
+
+    $window.FindName("btnHwUndo").Add_Click({
+        $ui = $global:WinRepairUi
+        $keys = @(foreach ($k in $ui.HwCheckBoxes.Keys) { if ($ui.HwCheckBoxes[$k].IsChecked) { $k } })
+        if ($keys.Count -eq 0) { Write-ToolLog "Nenhuma otimização de hardware selecionada para desfazer." "WARN"; return }
+
+        $dryRun = [bool]$ui.Window.FindName("chkHwDryRun").IsChecked
+        $autoRestore = [bool]$ui.Window.FindName("chkHwAutoRestorePoint").IsChecked
+        $modeTag = if ($dryRun) { "[DRY-RUN] " } else { "" }
+
+        Start-AsyncAction -Label "${modeTag}Desfazendo $($keys.Count) otimização(ões) de hardware..." -Vars @{ keys = $keys; dryRun = $dryRun; autoRestore = $autoRestore } -Action {
+            $prefix = if ($dryRun) { "[DRY-RUN] " } else { "" }
+            Write-ToolLog "=== ${prefix}REVERTENDO OTIMIZAÇÕES DE HARDWARE ($($keys.Count)) ===" "INFO"
+            if ($autoRestore) {
+                $null = Set-RestorePoint -Description "Alts_PreUndoHardware" -DryRun:$dryRun
+            }
+            foreach ($k in $keys) {
+                Invoke-HardwareOptimization -Key $k -Undo:$true -DryRun:$dryRun
+            }
+            Write-ToolLog "=== ${prefix}REVERSÃO DE HARDWARE CONCLUÍDA! ===" "SUCCESS"
+        }
+    })
+
+    $hwToolButtons = @{
+        btnHwToolNvCleanstall = "NVCleanstall"
+        btnHwToolDdu          = "DDU"
+        btnHwToolAfterburner  = "MSIAfterburner"
+        btnHwToolGpuZ         = "GPUZ"
+        btnHwToolCpuZ         = "CPUZ"
+        btnHwToolHwInfo       = "HWiNFO"
+        btnHwUrlNvidia        = "NvidiaDrivers"
+        btnHwUrlAmd           = "AmdDrivers"
+        btnHwUrlIntel         = "IntelDrivers"
+    }
+    foreach ($btnName in $hwToolButtons.Keys) {
+        $btn = $window.FindName($btnName)
+        if ($btn) {
+            $btn.Tag = $hwToolButtons[$btnName]
+            $btn.Add_Click({
+                param($sender, $e)
+                $tKey = [string]$sender.Tag
+                $dryRun = [bool]$global:WinRepairUi.Window.FindName("chkHwDryRun").IsChecked
+                Start-AsyncAction -Label "Ferramenta Hardware: $tKey..." -Vars @{ tKey = $tKey; dryRun = $dryRun } -Action {
+                    Invoke-HardwareExternalTool -ToolKey $tKey -DryRun:$dryRun
+                }
+            })
+        }
+    }
 
     # --- VIEW 3: APPX & BLOATWARE ---
     $window.FindName("btnAppxDefault").Add_Click({
@@ -6228,6 +7029,13 @@ $embeddedXaml = @'
                                 <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" CornerRadius="8" Padding="6,1"><TextBlock Text="73" FontSize="10" Foreground="{DynamicResource BrushAccentHover}"/></Border>
                             </Grid>
                         </RadioButton>
+                        <RadioButton x:Name="navHardware" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="&#x1F3AE;  Hardware (GPU &amp; CPU)"/>
+                                <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" CornerRadius="8" Padding="6,1"><TextBlock Text="16" FontSize="10" Foreground="{DynamicResource BrushAccentHover}"/></Border>
+                            </Grid>
+                        </RadioButton>
                         <RadioButton x:Name="navInstall" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}">
                             <Grid>
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
@@ -6891,6 +7699,166 @@ $embeddedXaml = @'
                         </Border>
                     </StackPanel>
                 </ScrollViewer>
+
+                <!-- ==================================================== -->
+                <!-- VIEW 8: HARDWARE (GPU NVIDIA/AMD & CPU AMD/INTEL)     -->
+                <!-- ==================================================== -->
+                <Grid x:Name="viewHardware" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Resumo de Hardware Detectado + A&#xE7;&#xF5;es -->
+                    <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}" Padding="12,10">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Border Grid.Row="0" Background="{DynamicResource BrushBgSurface}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="10,7" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="txtHwDetectedGpu" Grid.Column="0" Text="GPU: Detectando..." FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource BrushTextPrimary}"/>
+                                        <TextBlock x:Name="txtHwDetectedCpu" Grid.Column="1" Text="CPU: Detectando..." FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource BrushTextPrimary}"/>
+                                    </Grid>
+                                    <TextBlock x:Name="txtHwDetectedTips" Text="Analisando hardware instalado..." FontSize="11" Foreground="{DynamicResource BrushTextMuted}" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <WrapPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <Button x:Name="btnHwAutoSelect" Style="{StaticResource SuccessButtonStyle}" Content="&#x2728; Auto-Selecionar Recomendados"/>
+                                    <Button x:Name="btnHwApply" Style="{StaticResource PrimaryButtonStyle}" Content="&#x1F680; Aplicar Selecionados"/>
+                                    <Button x:Name="btnHwUndo" Content="&#x21A9; Desfazer Selecionados"/>
+                                    <Button x:Name="btnHwClear" Content="&#x2715; Limpar"/>
+                                </WrapPanel>
+                                <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" BorderBrush="{DynamicResource BrushBorderStrong}" BorderThickness="1" CornerRadius="7" Padding="10,5" VerticalAlignment="Center">
+                                    <TextBlock x:Name="txtHwSelectedCount" Text="Selecionados: 0" FontWeight="Bold" Foreground="{DynamicResource BrushAccentHover}" FontSize="12"/>
+                                </Border>
+                            </Grid>
+
+                            <WrapPanel Grid.Row="2" Margin="0,6,0,0" VerticalAlignment="Center">
+                                <Button x:Name="btnHwPreview" Content="&#x1F441; Pr&#xE9;-visualizar Altera&#xE7;&#xF5;es" Padding="10,5"/>
+                                <CheckBox x:Name="chkHwAutoRestorePoint" Content="Criar Ponto de Restaura&#xE7;&#xE3;o autom&#xE1;tico" IsChecked="True" Margin="8,0,6,0" VerticalAlignment="Center"/>
+                                <CheckBox x:Name="chkHwDryRun" Content="Modo Simula&#xE7;&#xE3;o (Dry-Run)" IsChecked="False" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                            </WrapPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Grade de GPU e CPU + Ferramentas Externas -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Coluna Esquerda: GPU -->
+                                <StackPanel Grid.Column="0">
+                                    <Border Style="{StaticResource CardBorderStyle}">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="GPU Geral (NVIDIA &amp; AMD)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}"/>
+                                                <Border Grid.Column="1" Background="{DynamicResource BrushAccentDeep}" CornerRadius="5" Padding="6,2"><TextBlock Text="Universal" FontSize="10" Foreground="{DynamicResource BrushSuccess}"/></Border>
+                                            </Grid>
+                                            <StackPanel x:Name="panelHwGpuGeneral"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border x:Name="borderHwNvidia" Style="{StaticResource CardBorderStyle}">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="GPU NVIDIA (GeForce / RTX)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushSuccess}"/>
+                                                <Border Grid.Column="1" Background="{DynamicResource BrushBgCardAlt}" CornerRadius="5" Padding="6,2"><TextBlock x:Name="txtHwNvidiaBadge" Text="Verificando..." FontSize="10" Foreground="{DynamicResource BrushTextMuted}"/></Border>
+                                            </Grid>
+                                            <StackPanel x:Name="panelHwGpuNvidia"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border x:Name="borderHwAmdGpu" Style="{StaticResource CardBorderStyle}">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="GPU AMD Radeon" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushDanger}"/>
+                                                <Border Grid.Column="1" Background="{DynamicResource BrushBgCardAlt}" CornerRadius="5" Padding="6,2"><TextBlock x:Name="txtHwAmdGpuBadge" Text="Verificando..." FontSize="10" Foreground="{DynamicResource BrushTextMuted}"/></Border>
+                                            </Grid>
+                                            <StackPanel x:Name="panelHwGpuAmd"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- Coluna Direita: CPU -->
+                                <StackPanel Grid.Column="2">
+                                    <Border Style="{StaticResource CardBorderStyle}">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="CPU Geral (Energia &amp; Throttling)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}"/>
+                                                <Border Grid.Column="1" Background="{DynamicResource BrushAccentDeep}" CornerRadius="5" Padding="6,2"><TextBlock Text="Universal" FontSize="10" Foreground="{DynamicResource BrushSuccess}"/></Border>
+                                            </Grid>
+                                            <StackPanel x:Name="panelHwCpuGeneral"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border x:Name="borderHwAmdCpu" Style="{StaticResource CardBorderStyle}">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="CPU AMD (Ryzen / X3D)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushWarning}"/>
+                                                <Border Grid.Column="1" Background="{DynamicResource BrushBgCardAlt}" CornerRadius="5" Padding="6,2"><TextBlock x:Name="txtHwAmdCpuBadge" Text="Verificando..." FontSize="10" Foreground="{DynamicResource BrushTextMuted}"/></Border>
+                                            </Grid>
+                                            <StackPanel x:Name="panelHwCpuAmd"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border x:Name="borderHwIntelCpu" Style="{StaticResource CardBorderStyle}">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="CPU Intel (Core / P-Cores + E-Cores)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccentHover}"/>
+                                                <Border Grid.Column="1" Background="{DynamicResource BrushBgCardAlt}" CornerRadius="5" Padding="6,2"><TextBlock x:Name="txtHwIntelCpuBadge" Text="Verificando..." FontSize="10" Foreground="{DynamicResource BrushTextMuted}"/></Border>
+                                            </Grid>
+                                            <StackPanel x:Name="panelHwCpuIntel"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Ferramentas Externas & Drivers Oficiais -->
+                            <Border Style="{StaticResource CardBorderStyle}">
+                                <StackPanel>
+                                    <TextBlock Text="Ferramentas Externas &amp; Portais Oficiais de Drivers" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
+                                    <WrapPanel>
+                                        <Button x:Name="btnHwToolNvCleanstall" Style="{StaticResource SuccessButtonStyle}" Content="&#x1F4E6; Instalar NVCleanstall"/>
+                                        <Button x:Name="btnHwToolDdu" Style="{StaticResource DangerButtonStyle}" Content="&#x1F9F9; Instalar DDU (Display Driver Uninstaller)"/>
+                                        <Button x:Name="btnHwToolAfterburner" Content="&#x1F3AE; Instalar MSI Afterburner"/>
+                                        <Button x:Name="btnHwToolGpuZ" Content="&#x1F50D; Instalar GPU-Z"/>
+                                        <Button x:Name="btnHwToolCpuZ" Content="&#x1F50D; Instalar CPU-Z"/>
+                                        <Button x:Name="btnHwToolHwInfo" Content="&#x1F4CA; Instalar HWiNFO"/>
+                                        <Button x:Name="btnHwUrlNvidia" Content="&#x1F310; Drivers NVIDIA"/>
+                                        <Button x:Name="btnHwUrlAmd" Content="&#x1F310; Drivers AMD"/>
+                                        <Button x:Name="btnHwUrlIntel" Content="&#x1F310; Drivers Intel"/>
+                                    </WrapPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
             </Grid>
 
             <!-- BARRA DE INSPE&#xC7;&#xC3;O AO VIVO (HOVER INFO INSTANT&#xC2;NEO) -->

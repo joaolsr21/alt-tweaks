@@ -32,6 +32,7 @@ Write-Host "=== Iniciando Validação Local do Alt's ===" -ForegroundColor Cyan
 # Carregar módulos não-UI para testes funcionais
 . (Join-Path $srcDir "core\logger.ps1")
 . (Join-Path $srcDir "modules\tweak_engine.ps1")
+. (Join-Path $srcDir "modules\hardware_optimizer.ps1")
 . (Join-Path $srcDir "modules\tweaks_system.ps1")
 . (Join-Path $srcDir "modules\appx_manager.ps1")
 
@@ -154,6 +155,42 @@ Invoke-Check "Preview e Dry-Run de AppX" {
 
     Remove-SelectedAppxPackages -Entries $entries -DryRun
     Install-SelectedAppxPackages -Entries $entries -DryRun
+}
+
+Invoke-Check "Hardware Optimizer: Detecção, Catálogo, Preview e Dry-Run (GPU & CPU)" {
+    $profile = Get-HardwareOptimizationProfile
+    if (-not $profile -or -not $profile.CpuVendor -or -not $profile.PrimaryGpuName) {
+        throw "Get-HardwareOptimizationProfile retornou perfil incompleto"
+    }
+
+    $catalog = Get-HardwareOptimizationCatalog
+    if ($catalog.Count -ne 16) {
+        throw "Esperado 16 itens no catálogo de hardware, encontrado $($catalog.Count)"
+    }
+    $uniqueKeys = @($catalog | Select-Object -ExpandProperty Key -Unique)
+    if ($uniqueKeys.Count -ne 16) {
+        throw "Chaves duplicadas detectadas no catálogo de hardware"
+    }
+
+    $allKeys = @($catalog | Select-Object -ExpandProperty Key)
+    $prevApply = Get-HardwareChangesPreview -Keys $allKeys
+    $prevUndo  = Get-HardwareChangesPreview -Keys $allKeys -Undo
+    if ($prevApply.Count -ne 16 -or $prevUndo.Count -ne 16) {
+        throw "Preview de hardware retornou contagem inesperada"
+    }
+
+    $txt = Format-HardwareChangesPreviewText -Keys $allKeys
+    if ($txt -notmatch "PRÉ-VISUALIZAÇÃO DE HARDWARE") {
+        throw "Format-HardwareChangesPreviewText retornou formato inválido"
+    }
+
+    foreach ($k in $allKeys) {
+        Invoke-HardwareOptimization -Key $k -DryRun
+        Invoke-HardwareOptimization -Key $k -Undo -DryRun
+    }
+
+    Invoke-HardwareExternalTool -ToolKey "NVCleanstall" -DryRun
+    Invoke-HardwareExternalTool -ToolKey "NvidiaDrivers" -DryRun
 }
 
 Write-Host ""

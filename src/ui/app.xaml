@@ -659,6 +659,13 @@
                                 <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" CornerRadius="8" Padding="6,1"><TextBlock Text="73" FontSize="10" Foreground="{DynamicResource BrushAccentHover}"/></Border>
                             </Grid>
                         </RadioButton>
+                        <RadioButton x:Name="navHardware" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="&#x1F3AE;  Hardware (GPU &amp; CPU)"/>
+                                <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" CornerRadius="8" Padding="6,1"><TextBlock Text="16" FontSize="10" Foreground="{DynamicResource BrushAccentHover}"/></Border>
+                            </Grid>
+                        </RadioButton>
                         <RadioButton x:Name="navInstall" GroupName="SidebarNav" Style="{StaticResource NavRadioButtonStyle}">
                             <Grid>
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
@@ -1322,6 +1329,166 @@
                         </Border>
                     </StackPanel>
                 </ScrollViewer>
+
+                <!-- ==================================================== -->
+                <!-- VIEW 8: HARDWARE (GPU NVIDIA/AMD & CPU AMD/INTEL)     -->
+                <!-- ==================================================== -->
+                <Grid x:Name="viewHardware" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Resumo de Hardware Detectado + Ações -->
+                    <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}" Padding="12,10">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Border Grid.Row="0" Background="{DynamicResource BrushBgSurface}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="10,7" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="txtHwDetectedGpu" Grid.Column="0" Text="GPU: Detectando..." FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource BrushTextPrimary}"/>
+                                        <TextBlock x:Name="txtHwDetectedCpu" Grid.Column="1" Text="CPU: Detectando..." FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource BrushTextPrimary}"/>
+                                    </Grid>
+                                    <TextBlock x:Name="txtHwDetectedTips" Text="Analisando hardware instalado..." FontSize="11" Foreground="{DynamicResource BrushTextMuted}" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <WrapPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <Button x:Name="btnHwAutoSelect" Style="{StaticResource SuccessButtonStyle}" Content="&#x2728; Auto-Selecionar Recomendados"/>
+                                    <Button x:Name="btnHwApply" Style="{StaticResource PrimaryButtonStyle}" Content="&#x1F680; Aplicar Selecionados"/>
+                                    <Button x:Name="btnHwUndo" Content="&#x21A9; Desfazer Selecionados"/>
+                                    <Button x:Name="btnHwClear" Content="&#x2715; Limpar"/>
+                                </WrapPanel>
+                                <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" BorderBrush="{DynamicResource BrushBorderStrong}" BorderThickness="1" CornerRadius="7" Padding="10,5" VerticalAlignment="Center">
+                                    <TextBlock x:Name="txtHwSelectedCount" Text="Selecionados: 0" FontWeight="Bold" Foreground="{DynamicResource BrushAccentHover}" FontSize="12"/>
+                                </Border>
+                            </Grid>
+
+                            <WrapPanel Grid.Row="2" Margin="0,6,0,0" VerticalAlignment="Center">
+                                <Button x:Name="btnHwPreview" Content="&#x1F441; Pré-visualizar Alterações" Padding="10,5"/>
+                                <CheckBox x:Name="chkHwAutoRestorePoint" Content="Criar Ponto de Restauração automático" IsChecked="True" Margin="8,0,6,0" VerticalAlignment="Center"/>
+                                <CheckBox x:Name="chkHwDryRun" Content="Modo Simulação (Dry-Run)" IsChecked="False" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                            </WrapPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Grade de GPU e CPU + Ferramentas Externas -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Coluna Esquerda: GPU -->
+                                <StackPanel Grid.Column="0">
+                                    <Border Style="{StaticResource CardBorderStyle}">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="GPU Geral (NVIDIA &amp; AMD)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}"/>
+                                                <Border Grid.Column="1" Background="{DynamicResource BrushAccentDeep}" CornerRadius="5" Padding="6,2"><TextBlock Text="Universal" FontSize="10" Foreground="{DynamicResource BrushSuccess}"/></Border>
+                                            </Grid>
+                                            <StackPanel x:Name="panelHwGpuGeneral"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border x:Name="borderHwNvidia" Style="{StaticResource CardBorderStyle}">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="GPU NVIDIA (GeForce / RTX)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushSuccess}"/>
+                                                <Border Grid.Column="1" Background="{DynamicResource BrushBgCardAlt}" CornerRadius="5" Padding="6,2"><TextBlock x:Name="txtHwNvidiaBadge" Text="Verificando..." FontSize="10" Foreground="{DynamicResource BrushTextMuted}"/></Border>
+                                            </Grid>
+                                            <StackPanel x:Name="panelHwGpuNvidia"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border x:Name="borderHwAmdGpu" Style="{StaticResource CardBorderStyle}">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="GPU AMD Radeon" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushDanger}"/>
+                                                <Border Grid.Column="1" Background="{DynamicResource BrushBgCardAlt}" CornerRadius="5" Padding="6,2"><TextBlock x:Name="txtHwAmdGpuBadge" Text="Verificando..." FontSize="10" Foreground="{DynamicResource BrushTextMuted}"/></Border>
+                                            </Grid>
+                                            <StackPanel x:Name="panelHwGpuAmd"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- Coluna Direita: CPU -->
+                                <StackPanel Grid.Column="2">
+                                    <Border Style="{StaticResource CardBorderStyle}">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="CPU Geral (Energia &amp; Throttling)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}"/>
+                                                <Border Grid.Column="1" Background="{DynamicResource BrushAccentDeep}" CornerRadius="5" Padding="6,2"><TextBlock Text="Universal" FontSize="10" Foreground="{DynamicResource BrushSuccess}"/></Border>
+                                            </Grid>
+                                            <StackPanel x:Name="panelHwCpuGeneral"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border x:Name="borderHwAmdCpu" Style="{StaticResource CardBorderStyle}">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="CPU AMD (Ryzen / X3D)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushWarning}"/>
+                                                <Border Grid.Column="1" Background="{DynamicResource BrushBgCardAlt}" CornerRadius="5" Padding="6,2"><TextBlock x:Name="txtHwAmdCpuBadge" Text="Verificando..." FontSize="10" Foreground="{DynamicResource BrushTextMuted}"/></Border>
+                                            </Grid>
+                                            <StackPanel x:Name="panelHwCpuAmd"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border x:Name="borderHwIntelCpu" Style="{StaticResource CardBorderStyle}">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="CPU Intel (Core / P-Cores + E-Cores)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushAccentHover}"/>
+                                                <Border Grid.Column="1" Background="{DynamicResource BrushBgCardAlt}" CornerRadius="5" Padding="6,2"><TextBlock x:Name="txtHwIntelCpuBadge" Text="Verificando..." FontSize="10" Foreground="{DynamicResource BrushTextMuted}"/></Border>
+                                            </Grid>
+                                            <StackPanel x:Name="panelHwCpuIntel"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Ferramentas Externas & Drivers Oficiais -->
+                            <Border Style="{StaticResource CardBorderStyle}">
+                                <StackPanel>
+                                    <TextBlock Text="Ferramentas Externas &amp; Portais Oficiais de Drivers" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
+                                    <WrapPanel>
+                                        <Button x:Name="btnHwToolNvCleanstall" Style="{StaticResource SuccessButtonStyle}" Content="&#x1F4E6; Instalar NVCleanstall"/>
+                                        <Button x:Name="btnHwToolDdu" Style="{StaticResource DangerButtonStyle}" Content="&#x1F9F9; Instalar DDU (Display Driver Uninstaller)"/>
+                                        <Button x:Name="btnHwToolAfterburner" Content="&#x1F3AE; Instalar MSI Afterburner"/>
+                                        <Button x:Name="btnHwToolGpuZ" Content="&#x1F50D; Instalar GPU-Z"/>
+                                        <Button x:Name="btnHwToolCpuZ" Content="&#x1F50D; Instalar CPU-Z"/>
+                                        <Button x:Name="btnHwToolHwInfo" Content="&#x1F4CA; Instalar HWiNFO"/>
+                                        <Button x:Name="btnHwUrlNvidia" Content="&#x1F310; Drivers NVIDIA"/>
+                                        <Button x:Name="btnHwUrlAmd" Content="&#x1F310; Drivers AMD"/>
+                                        <Button x:Name="btnHwUrlIntel" Content="&#x1F310; Drivers Intel"/>
+                                    </WrapPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
             </Grid>
 
             <!-- BARRA DE INSPEÇÃO AO VIVO (HOVER INFO INSTANTÂNEO) -->
