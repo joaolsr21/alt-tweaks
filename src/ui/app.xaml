@@ -892,6 +892,7 @@
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             <Grid Grid.Row="0">
                                 <Grid.ColumnDefinitions>
@@ -911,7 +912,12 @@
                                     <Button x:Name="btnClearTweaks" Content="&#x2715; Limpar" Padding="10,7"/>
                                 </WrapPanel>
                             </Grid>
-                            <ScrollViewer Grid.Row="1" MaxHeight="74" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+                            <WrapPanel Grid.Row="1" Margin="0,6,0,0" VerticalAlignment="Center">
+                                <Button x:Name="btnPreviewTweaks" Content="&#x1F441; Pré-visualizar Alterações" Padding="10,5"/>
+                                <CheckBox x:Name="chkAutoRestorePoint" Content="Criar Ponto de Restauração automático" IsChecked="True" Margin="8,0,6,0" VerticalAlignment="Center"/>
+                                <CheckBox x:Name="chkDryRunTweaks" Content="Modo Simulação (Dry-Run)" IsChecked="False" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                            </WrapPanel>
+                            <ScrollViewer Grid.Row="2" MaxHeight="74" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
                                 <WrapPanel x:Name="panelSelectedTweaksChips"/>
                             </ScrollViewer>
                         </Grid>
@@ -986,21 +992,32 @@
 
                     <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}" Padding="10,8">
                         <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <WrapPanel Grid.Column="0" VerticalAlignment="Center">
-                                <Button x:Name="btnAppxDefault" Style="{StaticResource SuccessButtonStyle}" Content="&#x2B50; Marcar Bloatwares Padrão (18)"/>
-                                <Button x:Name="btnAppxSelectAll" Content="&#x2611; Marcar Todos"/>
-                                <Button x:Name="btnAppxClear" Content="&#x2715; Limpar"/>
-                                <Button x:Name="btnAppxDetectInstalled" Content="&#x1F50D; Destacar Instalados"/>
-                                <Button x:Name="btnAppxRemove" Style="{StaticResource DangerButtonStyle}" Content="&#x1F5D1; Remover Selecionados"/>
-                                <Button x:Name="btnAppxInstall" Style="{StaticResource PrimaryButtonStyle}" Content="&#x1F4E5; Reinstalar Selecionados (Store)"/>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <WrapPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <Button x:Name="btnAppxDefault" Style="{StaticResource SuccessButtonStyle}" Content="&#x2B50; Marcar Bloatwares Padrão (18)"/>
+                                    <Button x:Name="btnAppxSelectAll" Content="&#x2611; Marcar Todos"/>
+                                    <Button x:Name="btnAppxClear" Content="&#x2715; Limpar"/>
+                                    <Button x:Name="btnAppxDetectInstalled" Content="&#x1F50D; Destacar Instalados"/>
+                                    <Button x:Name="btnAppxRemove" Style="{StaticResource DangerButtonStyle}" Content="&#x1F5D1; Remover Selecionados"/>
+                                    <Button x:Name="btnAppxInstall" Style="{StaticResource PrimaryButtonStyle}" Content="&#x1F4E5; Reinstalar Selecionados (Store)"/>
+                                </WrapPanel>
+                                <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" BorderBrush="{DynamicResource BrushBorderStrong}" BorderThickness="1" CornerRadius="7" Padding="10,5" VerticalAlignment="Center">
+                                    <TextBlock x:Name="txtAppxSelectedCount" Text="Selecionados: 0" FontWeight="Bold" Foreground="{DynamicResource BrushAccentHover}" FontSize="12"/>
+                                </Border>
+                            </Grid>
+                            <WrapPanel Grid.Row="1" Margin="0,6,0,0" VerticalAlignment="Center">
+                                <Button x:Name="btnAppxPreview" Content="&#x1F441; Pré-visualizar Seleção" Padding="10,5"/>
+                                <CheckBox x:Name="chkAppxAutoRestorePoint" Content="Criar Ponto de Restauração automático" IsChecked="True" Margin="8,0,6,0" VerticalAlignment="Center"/>
+                                <CheckBox x:Name="chkDryRunAppx" Content="Modo Simulação (Dry-Run)" IsChecked="False" Margin="4,0,0,0" VerticalAlignment="Center"/>
                             </WrapPanel>
-                            <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" BorderBrush="{DynamicResource BrushBorderStrong}" BorderThickness="1" CornerRadius="7" Padding="10,5" VerticalAlignment="Center">
-                                <TextBlock x:Name="txtAppxSelectedCount" Text="Selecionados: 0" FontWeight="Bold" Foreground="{DynamicResource BrushAccentHover}" FontSize="12"/>
-                            </Border>
                         </Grid>
                     </Border>
 

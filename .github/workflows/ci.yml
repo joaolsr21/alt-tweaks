@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer and Pester v5
+        shell: powershell
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          if (-not (Get-Module -ListAvailable -Name PSScriptAnalyzer)) {
+              Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -Force
+          }
+          if (-not (Get-Module -ListAvailable -Name Pester | Where-Object { $_.Version -ge [version]'5.0.0' })) {
+              Install-Module -Name Pester -MinimumVersion 5.0.0 -Scope CurrentUser -Force -SkipPublisherCheck
+          }
+
+      - name: Run PSScriptAnalyzer
+        shell: powershell
+        run: |
+          Import-Module PSScriptAnalyzer
+          $results = @()
+          $results += Invoke-ScriptAnalyzer -Path .\build.ps1 -Settings .\PSScriptAnalyzerSettings.psd1
+          $results += Invoke-ScriptAnalyzer -Path .\src -Recurse -Settings .\PSScriptAnalyzerSettings.psd1
+
+          $warnings = @($results | Where-Object { $_.Severity -eq 'Warning' })
+          if ($warnings.Count -gt 0) {
+              Write-Host "=== PSScriptAnalyzer Warnings ($($warnings.Count)) ===" -ForegroundColor Yellow
+              $warnings | Format-Table ScriptName, Line, RuleName, Message -AutoSize | Out-String | Write-Host
+          }
+
+          $errors = @($results | Where-Object { $_.Severity -eq 'Error' })
+          if ($errors.Count -gt 0) {
+              Write-Host "=== PSScriptAnalyzer Errors ($($errors.Count)) ===" -ForegroundColor Red
+              $errors | Format-Table ScriptName, Line, RuleName, Message -AutoSize | Out-String | Write-Host
+              exit 1
+          }
+
+      - name: Build Standalone Bundle
+        shell: powershell
+        run: |
+          .\build.ps1
+
+      - name: Run Local Validation Suite
+        shell: powershell
+        run: |
+          .\tests\Invoke-LocalValidation.ps1
+
+      - name: Run Pester v5 Tests
+        shell: powershell
+        run: |
+          Import-Module Pester -MinimumVersion 5.0.0
+          Invoke-Pester -Path .\tests\Alts.Tests.ps1 -CI

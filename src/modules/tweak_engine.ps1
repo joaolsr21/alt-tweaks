@@ -7,12 +7,29 @@ function Set-RegistryEntry {
         [Parameter(Mandatory=$true)][string]$Path,
         [Parameter(Mandatory=$true)][string]$Name,
         [string]$Type = "DWord",
-        $Value
+        $Value,
+        [switch]$DryRun
     )
 
     try {
         if (-not (Get-PSDrive -Name "HKU" -ErrorAction SilentlyContinue)) {
             New-PSDrive -PSProvider Registry -Name "HKU" -Root "HKEY_USERS" -ErrorAction SilentlyContinue | Out-Null
+        }
+
+        if ($DryRun) {
+            $curText = "(inexistente)"
+            if (Test-Path $Path) {
+                $props = Get-ItemProperty -Path $Path -ErrorAction SilentlyContinue
+                if ($null -ne $props -and ($props.PSObject.Properties.Name -contains $Name)) {
+                    $curText = [string]$props.$Name
+                }
+            }
+            if ($Value -eq "<RemoveEntry>") {
+                Write-ToolLog "[DRY-RUN] Registro: $Path\$Name | Atual: $curText -> Remover propriedade" "INFO"
+            } else {
+                Write-ToolLog "[DRY-RUN] Registro: $Path\$Name | Atual: $curText -> Definir = $Value ($Type)" "INFO"
+            }
+            return
         }
 
         if ($Value -eq "<RemoveEntry>") {
@@ -50,8 +67,22 @@ function Set-RegistryEntry {
 function Set-ServiceStartupSafe {
     param(
         [Parameter(Mandatory=$true)][string]$Name,
-        [Parameter(Mandatory=$true)][string]$StartupType
+        [Parameter(Mandatory=$true)][string]$StartupType,
+        [switch]$DryRun
     )
+
+    if ($DryRun) {
+        $svc = Get-Service -Name $Name -ErrorAction SilentlyContinue
+        $currentDisplay = if ($svc -and ($svc.PSObject.Properties.Name -contains "StartType")) {
+            [string]$svc.StartType
+        } elseif ($svc) {
+            "Desconhecido"
+        } else {
+            "Não encontrado"
+        }
+        Write-ToolLog "[DRY-RUN] Serviço [$Name] | Atual: $currentDisplay -> Novo: $StartupType" "INFO"
+        return
+    }
 
     try {
         $svc = Get-Service -Name $Name -ErrorAction Stop
@@ -240,36 +271,40 @@ function Get-RegistryComboState {
 function Set-RegistryComboState {
     param(
         $Registry,
-        [Parameter(Mandatory=$true)][string]$State
+        [Parameter(Mandatory=$true)][string]$State,
+        [switch]$DryRun
     )
 
     if (-not $Registry) { return }
     foreach ($setting in @($Registry)) {
         $valMap = ConvertFrom-ComboValuesMap $setting.Values
         if ($valMap.Contains($State)) {
-            Set-RegistryEntry -Path $setting.Path -Name $setting.Name -Type $setting.Type -Value $valMap[$State]
+            Set-RegistryEntry -Path $setting.Path -Name $setting.Name -Type $setting.Type -Value $valMap[$State] -DryRun:$DryRun
         }
     }
-    Write-ToolLog "Estado do ajuste aplicado: $State" "SUCCESS"
+    $prefix = if ($DryRun) { "[DRY-RUN] " } else { "" }
+    Write-ToolLog "${prefix}Estado do ajuste aplicado: $State" "SUCCESS"
 }
 
 function Invoke-DeclarativeTweak {
     param(
         [Parameter(Mandatory=$true)][string]$TweakKey,
         [Parameter(Mandatory=$true)]$TweakObj,
-        [switch]$Undo
+        [switch]$Undo,
+        [switch]$DryRun
     )
 
     $label = if ($TweakObj.Content) { $TweakObj.Content } else { $TweakKey }
     $actionText = if ($Undo) { "Desfazendo" } else { "Aplicando" }
-    Write-ToolLog "$actionText [$label]..." "INFO"
+    $prefix = if ($DryRun) { "[DRY-RUN] " } else { "" }
+    Write-ToolLog "${prefix}$actionText [$label]..." "INFO"
 
     # 1. Serviços
     if ($TweakObj.service) {
         foreach ($svcItem in @($TweakObj.service)) {
             $targetType = if ($Undo) { $svcItem.OriginalType } else { $svcItem.StartupType }
             if ($targetType) {
-                Set-ServiceStartupSafe -Name $svcItem.Name -StartupType $targetType
+                Set-ServiceStartupSafe -Name $svcItem.Name -StartupType $targetType -DryRun:$DryRun
             }
         }
     }
@@ -279,16 +314,24 @@ function Invoke-DeclarativeTweak {
         foreach ($regItem in @($TweakObj.registry)) {
             $targetVal = if ($Undo) { $regItem.OriginalValue } else { $regItem.Value }
             if ($null -ne $targetVal) {
-                Set-RegistryEntry -Path $regItem.Path -Name $regItem.Name -Type $regItem.Type -Value $targetVal
+                Set-RegistryEntry -Path $regItem.Path -Name $regItem.Name -Type $regItem.Type -Value $targetVal -DryRun:$DryRun
             }
         }
     }
 
     # 3. Scripts customizados
+    $scriptKind = if ($Undo) { "UndoScript" } else { "InvokeScript" }
     $scripts = if ($Undo) { $TweakObj.UndoScript } else { $TweakObj.InvokeScript }
     if ($scripts) {
         foreach ($scriptText in @($scripts)) {
             if ([string]::IsNullOrWhiteSpace($scriptText)) { continue }
+            if ($DryRun) {
+                $firstLine = ($scriptText -split "`r?`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith("#") } | Select-Object -First 1)
+                if (-not $firstLine) { $firstLine = $scriptText.Trim() }
+                if ($firstLine.Length -gt 120) { $firstLine = $firstLine.Substring(0, 117) + "..." }
+                Write-ToolLog "[DRY-RUN] Executaria script customizado ($scriptKind): $firstLine" "INFO"
+                continue
+            }
             try {
                 $sb = [scriptblock]::Create($scriptText)
                 $out = & $sb *>&1
@@ -310,7 +353,120 @@ function Invoke-DeclarativeTweak {
         }
     }
 
-    Write-ToolLog "Concluído: $label" "SUCCESS"
+    Write-ToolLog "${prefix}Concluído: $label" "SUCCESS"
+}
+
+function Get-TweakChangesPreview {
+    param(
+        [Parameter(Mandatory=$true)][array]$SelectedTweaks,
+        [switch]$Undo
+    )
+
+    $items = New-Object System.Collections.Generic.List[object]
+    foreach ($entry in $SelectedTweaks) {
+        if ($null -eq $entry) { continue }
+        $tKey = [string]$entry.Key
+        $tObj = $entry.Obj
+        if ($null -eq $tObj) { continue }
+
+        $label = if ($tObj.Content) { [string]$tObj.Content } else { $tKey }
+
+        if ($tObj.service) {
+            foreach ($svcItem in @($tObj.service)) {
+                $targetType = if ($Undo) { $svcItem.OriginalType } else { $svcItem.StartupType }
+                if (-not $targetType) { continue }
+                [void]$items.Add([pscustomobject]@{
+                    TweakKey = $tKey
+                    Label    = $label
+                    Kind     = "Serviço"
+                    Target   = [string]$svcItem.Name
+                    Action   = "StartupType -> $targetType"
+                    Detail   = "Serviço [$($svcItem.Name)] => $targetType"
+                })
+            }
+        }
+
+        if ($tObj.registry) {
+            foreach ($regItem in @($tObj.registry)) {
+                $targetVal = if ($Undo) { $regItem.OriginalValue } else { $regItem.Value }
+                if ($null -eq $targetVal) { continue }
+                $actionDesc = if ($targetVal -eq "<RemoveEntry>") {
+                    "Remover entrada"
+                } else {
+                    "Definir $targetVal ($($regItem.Type))"
+                }
+                [void]$items.Add([pscustomobject]@{
+                    TweakKey = $tKey
+                    Label    = $label
+                    Kind     = "Registro"
+                    Target   = "$($regItem.Path)\$($regItem.Name)"
+                    Action   = $actionDesc
+                    Detail   = "$($regItem.Path)\$($regItem.Name) = $actionDesc"
+                })
+            }
+        }
+
+        $scriptKind = if ($Undo) { "UndoScript" } else { "InvokeScript" }
+        $scripts = if ($Undo) { $tObj.UndoScript } else { $tObj.InvokeScript }
+        if ($scripts) {
+            foreach ($scriptText in @($scripts)) {
+                if ([string]::IsNullOrWhiteSpace($scriptText)) { continue }
+                $firstLine = ($scriptText -split "`r?`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith("#") } | Select-Object -First 1)
+                if (-not $firstLine) { $firstLine = $scriptText.Trim() }
+                if ($firstLine.Length -gt 120) { $firstLine = $firstLine.Substring(0, 117) + "..." }
+                [void]$items.Add([pscustomobject]@{
+                    TweakKey = $tKey
+                    Label    = $label
+                    Kind     = "Script"
+                    Target   = $scriptKind
+                    Action   = $firstLine
+                    Detail   = "${scriptKind}: $firstLine"
+                })
+            }
+        }
+    }
+
+    return ,$items.ToArray()
+}
+
+function Format-TweakChangesPreviewText {
+    param(
+        [Parameter(Mandatory=$true)][array]$SelectedTweaks,
+        [switch]$Undo
+    )
+
+    $changes = Get-TweakChangesPreview -SelectedTweaks $SelectedTweaks -Undo:$Undo
+    $modeLabel = if ($Undo) { "REVERSÃO (DESFAZER)" } else { "APLICAÇÃO" }
+    $regCount = @($changes | Where-Object { $_.Kind -eq "Registro" }).Count
+    $svcCount = @($changes | Where-Object { $_.Kind -eq "Serviço" }).Count
+    $scrCount = @($changes | Where-Object { $_.Kind -eq "Script" }).Count
+
+    $sb = New-Object System.Text.StringBuilder
+    [void]$sb.AppendLine("======================================================================")
+    [void]$sb.AppendLine("  PRÉ-VISUALIZAÇÃO DE ALTERAÇÕES - $modeLabel")
+    [void]$sb.AppendLine("  Tweaks selecionados : $($SelectedTweaks.Count)")
+    [void]$sb.AppendLine("  Chaves de Registro  : $regCount")
+    [void]$sb.AppendLine("  Serviços do Windows : $svcCount")
+    [void]$sb.AppendLine("  Scripts Customizados: $scrCount")
+    [void]$sb.AppendLine("======================================================================")
+    [void]$sb.AppendLine("")
+
+    if ($changes.Count -eq 0) {
+        [void]$sb.AppendLine("Nenhuma alteração declarativa encontrada para os itens selecionados.")
+        return $sb.ToString().TrimEnd()
+    }
+
+    $grouped = $changes | Group-Object -Property TweakKey
+    foreach ($grp in $grouped) {
+        $first = $grp.Group[0]
+        [void]$sb.AppendLine("* $($first.Label) [$($first.TweakKey)]")
+        foreach ($c in $grp.Group) {
+            [void]$sb.AppendLine("    [$($c.Kind)] $($c.Detail)")
+        }
+        [void]$sb.AppendLine("")
+    }
+
+    return $sb.ToString().TrimEnd()
 }
 
 function Set-UltimatePowerPlan {

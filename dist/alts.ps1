@@ -891,12 +891,29 @@ function Set-RegistryEntry {
         [Parameter(Mandatory=$true)][string]$Path,
         [Parameter(Mandatory=$true)][string]$Name,
         [string]$Type = "DWord",
-        $Value
+        $Value,
+        [switch]$DryRun
     )
 
     try {
         if (-not (Get-PSDrive -Name "HKU" -ErrorAction SilentlyContinue)) {
             New-PSDrive -PSProvider Registry -Name "HKU" -Root "HKEY_USERS" -ErrorAction SilentlyContinue | Out-Null
+        }
+
+        if ($DryRun) {
+            $curText = "(inexistente)"
+            if (Test-Path $Path) {
+                $props = Get-ItemProperty -Path $Path -ErrorAction SilentlyContinue
+                if ($null -ne $props -and ($props.PSObject.Properties.Name -contains $Name)) {
+                    $curText = [string]$props.$Name
+                }
+            }
+            if ($Value -eq "<RemoveEntry>") {
+                Write-ToolLog "[DRY-RUN] Registro: $Path\$Name | Atual: $curText -> Remover propriedade" "INFO"
+            } else {
+                Write-ToolLog "[DRY-RUN] Registro: $Path\$Name | Atual: $curText -> Definir = $Value ($Type)" "INFO"
+            }
+            return
         }
 
         if ($Value -eq "<RemoveEntry>") {
@@ -934,8 +951,22 @@ function Set-RegistryEntry {
 function Set-ServiceStartupSafe {
     param(
         [Parameter(Mandatory=$true)][string]$Name,
-        [Parameter(Mandatory=$true)][string]$StartupType
+        [Parameter(Mandatory=$true)][string]$StartupType,
+        [switch]$DryRun
     )
+
+    if ($DryRun) {
+        $svc = Get-Service -Name $Name -ErrorAction SilentlyContinue
+        $currentDisplay = if ($svc -and ($svc.PSObject.Properties.Name -contains "StartType")) {
+            [string]$svc.StartType
+        } elseif ($svc) {
+            "Desconhecido"
+        } else {
+            "Não encontrado"
+        }
+        Write-ToolLog "[DRY-RUN] Serviço [$Name] | Atual: $currentDisplay -> Novo: $StartupType" "INFO"
+        return
+    }
 
     try {
         $svc = Get-Service -Name $Name -ErrorAction Stop
@@ -1124,36 +1155,40 @@ function Get-RegistryComboState {
 function Set-RegistryComboState {
     param(
         $Registry,
-        [Parameter(Mandatory=$true)][string]$State
+        [Parameter(Mandatory=$true)][string]$State,
+        [switch]$DryRun
     )
 
     if (-not $Registry) { return }
     foreach ($setting in @($Registry)) {
         $valMap = ConvertFrom-ComboValuesMap $setting.Values
         if ($valMap.Contains($State)) {
-            Set-RegistryEntry -Path $setting.Path -Name $setting.Name -Type $setting.Type -Value $valMap[$State]
+            Set-RegistryEntry -Path $setting.Path -Name $setting.Name -Type $setting.Type -Value $valMap[$State] -DryRun:$DryRun
         }
     }
-    Write-ToolLog "Estado do ajuste aplicado: $State" "SUCCESS"
+    $prefix = if ($DryRun) { "[DRY-RUN] " } else { "" }
+    Write-ToolLog "${prefix}Estado do ajuste aplicado: $State" "SUCCESS"
 }
 
 function Invoke-DeclarativeTweak {
     param(
         [Parameter(Mandatory=$true)][string]$TweakKey,
         [Parameter(Mandatory=$true)]$TweakObj,
-        [switch]$Undo
+        [switch]$Undo,
+        [switch]$DryRun
     )
 
     $label = if ($TweakObj.Content) { $TweakObj.Content } else { $TweakKey }
     $actionText = if ($Undo) { "Desfazendo" } else { "Aplicando" }
-    Write-ToolLog "$actionText [$label]..." "INFO"
+    $prefix = if ($DryRun) { "[DRY-RUN] " } else { "" }
+    Write-ToolLog "${prefix}$actionText [$label]..." "INFO"
 
     # 1. Serviços
     if ($TweakObj.service) {
         foreach ($svcItem in @($TweakObj.service)) {
             $targetType = if ($Undo) { $svcItem.OriginalType } else { $svcItem.StartupType }
             if ($targetType) {
-                Set-ServiceStartupSafe -Name $svcItem.Name -StartupType $targetType
+                Set-ServiceStartupSafe -Name $svcItem.Name -StartupType $targetType -DryRun:$DryRun
             }
         }
     }
@@ -1163,16 +1198,24 @@ function Invoke-DeclarativeTweak {
         foreach ($regItem in @($TweakObj.registry)) {
             $targetVal = if ($Undo) { $regItem.OriginalValue } else { $regItem.Value }
             if ($null -ne $targetVal) {
-                Set-RegistryEntry -Path $regItem.Path -Name $regItem.Name -Type $regItem.Type -Value $targetVal
+                Set-RegistryEntry -Path $regItem.Path -Name $regItem.Name -Type $regItem.Type -Value $targetVal -DryRun:$DryRun
             }
         }
     }
 
     # 3. Scripts customizados
+    $scriptKind = if ($Undo) { "UndoScript" } else { "InvokeScript" }
     $scripts = if ($Undo) { $TweakObj.UndoScript } else { $TweakObj.InvokeScript }
     if ($scripts) {
         foreach ($scriptText in @($scripts)) {
             if ([string]::IsNullOrWhiteSpace($scriptText)) { continue }
+            if ($DryRun) {
+                $firstLine = ($scriptText -split "`r?`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith("#") } | Select-Object -First 1)
+                if (-not $firstLine) { $firstLine = $scriptText.Trim() }
+                if ($firstLine.Length -gt 120) { $firstLine = $firstLine.Substring(0, 117) + "..." }
+                Write-ToolLog "[DRY-RUN] Executaria script customizado ($scriptKind): $firstLine" "INFO"
+                continue
+            }
             try {
                 $sb = [scriptblock]::Create($scriptText)
                 $out = & $sb *>&1
@@ -1194,7 +1237,120 @@ function Invoke-DeclarativeTweak {
         }
     }
 
-    Write-ToolLog "Concluído: $label" "SUCCESS"
+    Write-ToolLog "${prefix}Concluído: $label" "SUCCESS"
+}
+
+function Get-TweakChangesPreview {
+    param(
+        [Parameter(Mandatory=$true)][array]$SelectedTweaks,
+        [switch]$Undo
+    )
+
+    $items = New-Object System.Collections.Generic.List[object]
+    foreach ($entry in $SelectedTweaks) {
+        if ($null -eq $entry) { continue }
+        $tKey = [string]$entry.Key
+        $tObj = $entry.Obj
+        if ($null -eq $tObj) { continue }
+
+        $label = if ($tObj.Content) { [string]$tObj.Content } else { $tKey }
+
+        if ($tObj.service) {
+            foreach ($svcItem in @($tObj.service)) {
+                $targetType = if ($Undo) { $svcItem.OriginalType } else { $svcItem.StartupType }
+                if (-not $targetType) { continue }
+                [void]$items.Add([pscustomobject]@{
+                    TweakKey = $tKey
+                    Label    = $label
+                    Kind     = "Serviço"
+                    Target   = [string]$svcItem.Name
+                    Action   = "StartupType -> $targetType"
+                    Detail   = "Serviço [$($svcItem.Name)] => $targetType"
+                })
+            }
+        }
+
+        if ($tObj.registry) {
+            foreach ($regItem in @($tObj.registry)) {
+                $targetVal = if ($Undo) { $regItem.OriginalValue } else { $regItem.Value }
+                if ($null -eq $targetVal) { continue }
+                $actionDesc = if ($targetVal -eq "<RemoveEntry>") {
+                    "Remover entrada"
+                } else {
+                    "Definir $targetVal ($($regItem.Type))"
+                }
+                [void]$items.Add([pscustomobject]@{
+                    TweakKey = $tKey
+                    Label    = $label
+                    Kind     = "Registro"
+                    Target   = "$($regItem.Path)\$($regItem.Name)"
+                    Action   = $actionDesc
+                    Detail   = "$($regItem.Path)\$($regItem.Name) = $actionDesc"
+                })
+            }
+        }
+
+        $scriptKind = if ($Undo) { "UndoScript" } else { "InvokeScript" }
+        $scripts = if ($Undo) { $tObj.UndoScript } else { $tObj.InvokeScript }
+        if ($scripts) {
+            foreach ($scriptText in @($scripts)) {
+                if ([string]::IsNullOrWhiteSpace($scriptText)) { continue }
+                $firstLine = ($scriptText -split "`r?`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith("#") } | Select-Object -First 1)
+                if (-not $firstLine) { $firstLine = $scriptText.Trim() }
+                if ($firstLine.Length -gt 120) { $firstLine = $firstLine.Substring(0, 117) + "..." }
+                [void]$items.Add([pscustomobject]@{
+                    TweakKey = $tKey
+                    Label    = $label
+                    Kind     = "Script"
+                    Target   = $scriptKind
+                    Action   = $firstLine
+                    Detail   = "${scriptKind}: $firstLine"
+                })
+            }
+        }
+    }
+
+    return ,$items.ToArray()
+}
+
+function Format-TweakChangesPreviewText {
+    param(
+        [Parameter(Mandatory=$true)][array]$SelectedTweaks,
+        [switch]$Undo
+    )
+
+    $changes = Get-TweakChangesPreview -SelectedTweaks $SelectedTweaks -Undo:$Undo
+    $modeLabel = if ($Undo) { "REVERSÃO (DESFAZER)" } else { "APLICAÇÃO" }
+    $regCount = @($changes | Where-Object { $_.Kind -eq "Registro" }).Count
+    $svcCount = @($changes | Where-Object { $_.Kind -eq "Serviço" }).Count
+    $scrCount = @($changes | Where-Object { $_.Kind -eq "Script" }).Count
+
+    $sb = New-Object System.Text.StringBuilder
+    [void]$sb.AppendLine("======================================================================")
+    [void]$sb.AppendLine("  PRÉ-VISUALIZAÇÃO DE ALTERAÇÕES - $modeLabel")
+    [void]$sb.AppendLine("  Tweaks selecionados : $($SelectedTweaks.Count)")
+    [void]$sb.AppendLine("  Chaves de Registro  : $regCount")
+    [void]$sb.AppendLine("  Serviços do Windows : $svcCount")
+    [void]$sb.AppendLine("  Scripts Customizados: $scrCount")
+    [void]$sb.AppendLine("======================================================================")
+    [void]$sb.AppendLine("")
+
+    if ($changes.Count -eq 0) {
+        [void]$sb.AppendLine("Nenhuma alteração declarativa encontrada para os itens selecionados.")
+        return $sb.ToString().TrimEnd()
+    }
+
+    $grouped = $changes | Group-Object -Property TweakKey
+    foreach ($grp in $grouped) {
+        $first = $grp.Group[0]
+        [void]$sb.AppendLine("* $($first.Label) [$($first.TweakKey)]")
+        foreach ($c in $grp.Group) {
+            [void]$sb.AppendLine("    [$($c.Kind)] $($c.Detail)")
+        }
+        [void]$sb.AppendLine("")
+    }
+
+    return $sb.ToString().TrimEnd()
 }
 
 function Set-UltimatePowerPlan {
@@ -1585,14 +1741,25 @@ function Invoke-SystemDebloatAppx {
 # ==============================================================================
 
 function Set-RestorePoint {
-    param([string]$Description = "Alts_RestorePoint")
+    param(
+        [string]$Description = "Alts_RestorePoint",
+        [switch]$DryRun
+    )
+
+    if ($DryRun) {
+        Write-ToolLog "[DRY-RUN] Criaria Ponto de Restauração do Sistema ($Description) via Checkpoint-Computer." "INFO"
+        return $true
+    }
+
     Write-ToolLog "Criando Ponto de Restauração do Sistema ($Description)..." "INFO"
     try {
         Enable-ComputerRestore -Drive "C:\" -ErrorAction SilentlyContinue | Out-Null
         Checkpoint-Computer -Description $Description -RestorePointType "MODIFY_SETTINGS" -ErrorAction Stop
         Write-ToolLog "Ponto de Restauração criado com sucesso!" "SUCCESS"
+        return $true
     } catch {
         Write-ToolLog "Não foi possível criar o Ponto de Restauração: $_ (Verifique se a Proteção do Sistema está ativada)." "WARN"
+        return $false
     }
 }
 
@@ -3028,15 +3195,37 @@ function Get-InstalledAppxPackageIds {
 }
 
 function Remove-SelectedAppxPackages {
-    param([Parameter(Mandatory=$true)][array]$Entries)
+    param(
+        [Parameter(Mandatory=$true)][array]$Entries,
+        [switch]$DryRun
+    )
 
-    Write-ToolLog "Iniciando remoção de $($Entries.Count) pacote(s) AppX..." "INFO"
+    $prefix = if ($DryRun) { "[DRY-RUN] " } else { "" }
+    Write-ToolLog "${prefix}Iniciando remoção de $($Entries.Count) pacote(s) AppX..." "INFO"
     $removedCount = 0
 
     foreach ($entry in $Entries) {
         $pkgId = $entry.PackageId
         $display = $entry.Content
         if (-not $pkgId) { continue }
+
+        if ($DryRun) {
+            $instInfo = ""
+            try {
+                $pkgs = @(Get-AppxPackage -Name "*$pkgId*" -AllUsers -ErrorAction Stop)
+                $prov = @(Get-AppxProvisionedPackage -Online -ErrorAction Stop | Where-Object { $_.DisplayName -like "*$pkgId*" })
+                $instInfo = " - instalado(s): $($pkgs.Count), provisionado(s): $($prov.Count)"
+            } catch {
+                try {
+                    $pkgsUser = @(Get-AppxPackage -Name "*$pkgId*" -ErrorAction SilentlyContinue)
+                    $instInfo = " - instalado(s) no usuário atual: $($pkgsUser.Count)"
+                } catch {
+                    $instInfo = " - consulta detalhada requer Admin"
+                }
+            }
+            Write-ToolLog "[DRY-RUN] Removeria [$display] ($pkgId)$instInfo." "INFO"
+            continue
+        }
 
         Write-ToolLog "Removendo [$display] ($pkgId)..." "INFO"
         try {
@@ -3056,23 +3245,36 @@ function Remove-SelectedAppxPackages {
         }
     }
 
-    Write-ToolLog "Remoção de AppX concluída! ($removedCount instância(s) removidas)." "SUCCESS"
+    if ($DryRun) {
+        Write-ToolLog "[DRY-RUN] Simulação de remoção AppX concluída ($($Entries.Count) pacote(s) analisados)." "SUCCESS"
+    } else {
+        Write-ToolLog "Remoção de AppX concluída! ($removedCount instância(s) removidas)." "SUCCESS"
+    }
 }
 
 function Install-SelectedAppxPackages {
-    param([Parameter(Mandatory=$true)][array]$Entries)
+    param(
+        [Parameter(Mandatory=$true)][array]$Entries,
+        [switch]$DryRun
+    )
 
-    if (-not (Get-Command "winget.exe" -ErrorAction SilentlyContinue)) {
+    if (-not $DryRun -and -not (Get-Command "winget.exe" -ErrorAction SilentlyContinue)) {
         Write-ToolLog "WinGet é necessário para reinstalar pacotes AppX pela Microsoft Store." "ERROR"
         return
     }
 
-    Write-ToolLog "Iniciando reinstalação de $($Entries.Count) pacote(s) AppX via Microsoft Store..." "INFO"
+    $prefix = if ($DryRun) { "[DRY-RUN] " } else { "" }
+    Write-ToolLog "${prefix}Iniciando reinstalação de $($Entries.Count) pacote(s) AppX via Microsoft Store..." "INFO"
     foreach ($entry in $Entries) {
         $storeId = $entry.StoreId
         $display = $entry.Content
         if (-not $storeId) {
             Write-ToolLog "[$display] não possui StoreId configurado (ignorado)." "WARN"
+            continue
+        }
+
+        if ($DryRun) {
+            Write-ToolLog "[DRY-RUN] Reinstalaria [$display] (StoreId: $storeId) via Microsoft Store." "INFO"
             continue
         }
 
@@ -3091,7 +3293,73 @@ function Install-SelectedAppxPackages {
         }
     }
 
-    Write-ToolLog "Processo de reinstalação de AppX finalizado." "SUCCESS"
+    if ($DryRun) {
+        Write-ToolLog "[DRY-RUN] Simulação de reinstalação de AppX finalizada." "SUCCESS"
+    } else {
+        Write-ToolLog "Processo de reinstalação de AppX finalizado." "SUCCESS"
+    }
+}
+
+function Get-AppxChangesPreview {
+    param(
+        [Parameter(Mandatory=$true)][array]$Entries,
+        [ValidateSet("Remove", "Install")][string]$Action = "Remove"
+    )
+
+    $items = New-Object System.Collections.Generic.List[object]
+    foreach ($entry in $Entries) {
+        if ($null -eq $entry) { continue }
+        $display = if ($entry.Content) { [string]$entry.Content } else { [string]$entry.PackageId }
+        $pkgId = [string]$entry.PackageId
+        $storeId = [string]$entry.StoreId
+        $cat = if ($entry.Category) { [string]$entry.Category } else { "Outros" }
+
+        $detail = if ($Action -eq "Remove") {
+            "Remover pacote ($pkgId) para todos os usuários e provisionamento"
+        } elseif ($storeId) {
+            "Reinstalar via Microsoft Store (StoreId: $storeId)"
+        } else {
+            "Ignorado (StoreId ausente)"
+        }
+
+        [void]$items.Add([pscustomobject]@{
+            Content   = $display
+            PackageId = $pkgId
+            StoreId   = $storeId
+            Category  = $cat
+            Action    = $Action
+            Detail    = $detail
+        })
+    }
+    return ,$items.ToArray()
+}
+
+function Format-AppxChangesPreviewText {
+    param(
+        [Parameter(Mandatory=$true)][array]$Entries,
+        [ValidateSet("Remove", "Install")][string]$Action = "Remove"
+    )
+
+    $preview = Get-AppxChangesPreview -Entries $Entries -Action $Action
+    $actionLabel = if ($Action -eq "Remove") { "REMOÇÃO DE PACOTES APPX" } else { "REINSTALAÇÃO DE PACOTES APPX" }
+
+    $sb = New-Object System.Text.StringBuilder
+    [void]$sb.AppendLine("======================================================================")
+    [void]$sb.AppendLine("  PRÉ-VISUALIZAÇÃO: $actionLabel")
+    [void]$sb.AppendLine("  Pacotes selecionados: $($preview.Count)")
+    [void]$sb.AppendLine("======================================================================")
+    [void]$sb.AppendLine("")
+
+    foreach ($item in $preview) {
+        [void]$sb.AppendLine("* [$($item.Category)] $($item.Content)")
+        [void]$sb.AppendLine("    PackageId : $($item.PackageId)")
+        if ($item.StoreId) {
+            [void]$sb.AppendLine("    StoreId   : $($item.StoreId)")
+        }
+        [void]$sb.AppendLine("    Ação      : $($item.Detail)")
+    }
+
+    return $sb.ToString().TrimEnd()
 }
 
 
@@ -3471,6 +3739,9 @@ function Initialize-StaticHoverHelp {
         @("btnPresetNotebook", "Perfil Notebook (Pré-Seleção)", "Marca 19 otimizações seguras para laptops, preservando hibernação e economia de energia Wi-Fi. Não executa sozinho.", "Perfil"),
         @("btnPresetAll", "Perfil All (Marcar Tudo)", "Marca todas as 48 opções de Tweaks Essenciais e Avançados no painel para revisão antes de executar.", "Perfil"),
         @("btnCreateRestorePoint", "Criar Ponto de Restauração", "Cria um ponto de segurança nativo do Windows para reverter alterações caso precise.", "Segurança"),
+        @("btnPreviewTweaks", "Pré-visualizar Alterações", "Exibe todas as chaves de registro, serviços e scripts que serão alterados pelos tweaks marcados.", "Simulação"),
+        @("chkAutoRestorePoint", "Ponto de Restauração Automático", "Cria automaticamente um Ponto de Restauração do Windows antes de aplicar ou desfazer tweaks.", "Segurança"),
+        @("chkDryRunTweaks", "Modo Simulação (Dry-Run)", "Simula a execução no console sem modificar o registro, serviços ou arquivos do sistema.", "Simulação"),
         @("btnApplyTweaks", "Aplicar Tweaks Selecionados", "Executa em segundo plano apenas as opções marcadas na lista abaixo.", "Execução"),
         @("btnUndoTweaks", "Desfazer Selecionados", "Reverte as modificações de registro/serviços das opções marcadas atualmente.", "Reverter"),
         @("btnClearTweaks", "Limpar Seleção", "Desmarca todas as caixas de Tweaks e limpa a lista de pré-visualização.", "Seleção"),
@@ -3488,6 +3759,9 @@ function Initialize-StaticHoverHelp {
         @("btnAppxSelectAll", "Marcar Todos AppX", "Marca todos os 34 pacotes AppX listados abaixo.", "AppX"),
         @("btnAppxClear", "Limpar Seleção AppX", "Desmarca todos os checkboxes de AppX.", "AppX"),
         @("btnAppxDetectInstalled", "Destacar AppX Instalados", "Verifica no sistema e destaca em destaque os AppX atualmente instalados.", "AppX"),
+        @("btnAppxPreview", "Pré-visualizar Seleção AppX", "Lista todos os pacotes AppX selecionados e seus PackageId/StoreId antes de remover.", "Simulação"),
+        @("chkAppxAutoRestorePoint", "Ponto de Restauração Automático (AppX)", "Cria automaticamente um Ponto de Restauração antes de remover aplicativos nativos AppX.", "Segurança"),
+        @("chkDryRunAppx", "Modo Simulação AppX (Dry-Run)", "Simula remoção ou reinstalação de AppX sem modificar nenhum pacote no sistema.", "Simulação"),
         @("btnAppxRemove", "Remover Selecionados", "Remove os pacotes AppX selecionados para todos os usuários e da imagem provisionada.", "Cuidado"),
         @("btnAppxInstall", "Reinstalar Selecionados (Store)", "Baixa e reinstala os pacotes selecionados diretamente da Microsoft Store via WinGet.", "Restaurar"),
 
@@ -3549,6 +3823,113 @@ function Initialize-StaticHoverHelp {
             Register-HoverHelp -Control $ctrl -Title $item[1] -Description $item[2] -Badge $item[3] -NoToolTip:$noTip
         }
     }
+}
+
+function Show-PreviewDialog {
+    param(
+        [string]$Title = "Pré-visualização de Alterações",
+        [string]$Subtitle = "",
+        [string]$BodyText = ""
+    )
+
+    $ui = $global:WinRepairUi
+    $owner = if ($ui -and $ui.Window) { $ui.Window } else { $null }
+
+    $dlg = New-Object System.Windows.Window
+    $dlg.Title = $Title
+    $dlg.Width = 780
+    $dlg.Height = 540
+    $dlg.MinWidth = 560
+    $dlg.MinHeight = 380
+    $dlg.WindowStartupLocation = if ($owner) { [System.Windows.WindowStartupLocation]::CenterOwner } else { [System.Windows.WindowStartupLocation]::CenterScreen }
+    if ($owner) {
+        $dlg.Owner = $owner
+        foreach ($resKey in @("BrushBgApp", "BrushBgSurface", "BrushBgCardAlt", "BrushBorder", "BrushBorderStrong", "BrushTextPrimary", "BrushTextSecondary", "BrushTextMuted", "BrushAccent", "BrushAccentHover", "BrushAccentText", "BrushConsoleBg", "BrushConsoleFg")) {
+            if ($owner.Resources.Contains($resKey)) {
+                $dlg.Resources[$resKey] = $owner.Resources[$resKey]
+            }
+        }
+    }
+    $dlg.SetResourceReference([System.Windows.Window]::BackgroundProperty, "BrushBgApp")
+    $dlg.SetResourceReference([System.Windows.Window]::ForegroundProperty, "BrushTextPrimary")
+
+    $root = New-Object System.Windows.Controls.Grid
+    $root.Margin = New-Object System.Windows.Thickness(14)
+    $r0 = New-Object System.Windows.Controls.RowDefinition; $r0.Height = [System.Windows.GridLength]::Auto
+    $r1 = New-Object System.Windows.Controls.RowDefinition; $r1.Height = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+    $r2 = New-Object System.Windows.Controls.RowDefinition; $r2.Height = [System.Windows.GridLength]::Auto
+    [void]$root.RowDefinitions.Add($r0)
+    [void]$root.RowDefinitions.Add($r1)
+    [void]$root.RowDefinitions.Add($r2)
+
+    $hdr = New-Object System.Windows.Controls.StackPanel
+    $hdr.Margin = New-Object System.Windows.Thickness(0, 0, 0, 10)
+    $tTitle = New-Object System.Windows.Controls.TextBlock
+    $tTitle.Text = $Title
+    $tTitle.FontSize = 15.5
+    $tTitle.FontWeight = [System.Windows.FontWeights]::Bold
+    $tTitle.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, "BrushTextSecondary")
+    [void]$hdr.Children.Add($tTitle)
+
+    if (-not [string]::IsNullOrWhiteSpace($Subtitle)) {
+        $tSub = New-Object System.Windows.Controls.TextBlock
+        $tSub.Text = $Subtitle
+        $tSub.FontSize = 11.5
+        $tSub.Margin = New-Object System.Windows.Thickness(0, 2, 0, 0)
+        $tSub.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, "BrushTextMuted")
+        [void]$hdr.Children.Add($tSub)
+    }
+    [System.Windows.Controls.Grid]::SetRow($hdr, 0)
+    [void]$root.Children.Add($hdr)
+
+    $border = New-Object System.Windows.Controls.Border
+    $border.CornerRadius = New-Object System.Windows.CornerRadius(8)
+    $border.BorderThickness = New-Object System.Windows.Thickness(1)
+    $border.SetResourceReference([System.Windows.Controls.Border]::BackgroundProperty, "BrushConsoleBg")
+    $border.SetResourceReference([System.Windows.Controls.Border]::BorderProperty, "BrushBorderStrong")
+
+    $tb = New-Object System.Windows.Controls.TextBox
+    $tb.Text = $BodyText
+    $tb.IsReadOnly = $true
+    $tb.AcceptsReturn = $true
+    $tb.TextWrapping = [System.Windows.TextWrapping]::NoWrap
+    $tb.VerticalScrollBarVisibility = [System.Windows.Controls.ScrollBarVisibility]::Auto
+    $tb.HorizontalScrollBarVisibility = [System.Windows.Controls.ScrollBarVisibility]::Auto
+    $tb.FontFamily = New-Object System.Windows.Media.FontFamily("Consolas, Courier New")
+    $tb.FontSize = 12
+    $tb.Padding = New-Object System.Windows.Thickness(10)
+    $tb.BorderThickness = New-Object System.Windows.Thickness(0)
+    $tb.SetResourceReference([System.Windows.Controls.TextBox]::BackgroundProperty, "BrushConsoleBg")
+    $tb.SetResourceReference([System.Windows.Controls.TextBox]::ForegroundProperty, "BrushConsoleFg")
+    $border.Child = $tb
+    [System.Windows.Controls.Grid]::SetRow($border, 1)
+    [void]$root.Children.Add($border)
+
+    $btnPanel = New-Object System.Windows.Controls.StackPanel
+    $btnPanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    $btnPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $btnPanel.Margin = New-Object System.Windows.Thickness(0, 10, 0, 0)
+
+    $btnCopy = New-Object System.Windows.Controls.Button
+    $btnCopy.Content = "Copiar"
+    $btnCopy.Padding = New-Object System.Windows.Thickness(14, 6, 14, 6)
+    $btnCopy.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
+    $btnCopy.Add_Click({
+        if ($tb.Text) { [System.Windows.Clipboard]::SetText($tb.Text) }
+    })
+
+    $btnClose = New-Object System.Windows.Controls.Button
+    $btnClose.Content = "Fechar"
+    $btnClose.Padding = New-Object System.Windows.Thickness(16, 6, 16, 6)
+    $btnClose.Add_Click({ $dlg.Close() })
+
+    [void]$btnPanel.Children.Add($btnCopy)
+    [void]$btnPanel.Children.Add($btnClose)
+    [System.Windows.Controls.Grid]::SetRow($btnPanel, 2)
+    [void]$root.Children.Add($btnPanel)
+
+    $dlg.Content = $root
+    $dlg.ShowDialog() | Out-Null
 }
 
 function Start-WinRepairUI {
@@ -4122,6 +4503,19 @@ function Start-WinRepairUI {
         Update-TweaksSelectionPreview
     })
 
+    $window.FindName("btnPreviewTweaks").Add_Click({
+        $ui = $global:WinRepairUi
+        $selected = @(foreach ($k in $ui.TweakCheckBoxes.Keys) {
+            if ($ui.TweakCheckBoxes[$k].IsChecked) {
+                [pscustomobject]@{ Key = $k; Obj = $global:WinRepairSync.Configs.Tweaks.$k }
+            }
+        })
+        if ($selected.Count -eq 0) { Write-ToolLog "Nenhuma opção marcada para pré-visualizar." "WARN"; return }
+        $previewText = Format-TweakChangesPreviewText -SelectedTweaks $selected
+        Write-ToolLog "Pré-visualização gerada para $($selected.Count) tweak(s) selecionado(s)." "INFO"
+        Show-PreviewDialog -Title "Pré-visualização de Tweaks ($($selected.Count))" -Subtitle "Revise abaixo as chaves de registro, serviços e scripts antes de aplicar." -BodyText $previewText
+    })
+
     $window.FindName("btnApplyTweaks").Add_Click({
         $ui = $global:WinRepairUi
         $selected = @(foreach ($k in $ui.TweakCheckBoxes.Keys) {
@@ -4130,12 +4524,30 @@ function Start-WinRepairUI {
             }
         })
         if ($selected.Count -eq 0) { Write-ToolLog "Nenhuma opção marcada para aplicar." "WARN"; return }
-        Start-AsyncAction -Label "Aplicando $($selected.Count) tweak(s)..." -Vars @{ selected = $selected } -Action {
-            Write-ToolLog "=== INICIANDO APLICAÇÃO DE $($selected.Count) TWEAK(S) SELECIONADO(S) ===" "INFO"
-            foreach ($s in $selected) {
-                Invoke-DeclarativeTweak -TweakKey $s.Key -TweakObj $s.Obj -Undo:$false
+
+        $dryRun = [bool]$ui.Window.FindName("chkDryRunTweaks").IsChecked
+        $autoRestore = [bool]$ui.Window.FindName("chkAutoRestorePoint").IsChecked
+        $modeTag = if ($dryRun) { "[DRY-RUN] " } else { "" }
+
+        Start-AsyncAction -Label "${modeTag}Aplicando $($selected.Count) tweak(s)..." -Vars @{ selected = $selected; dryRun = $dryRun; autoRestore = $autoRestore } -Action {
+            $prefix = if ($dryRun) { "[DRY-RUN] " } else { "" }
+            Write-ToolLog "=== ${prefix}INICIANDO APLICAÇÃO DE $($selected.Count) TWEAK(S) SELECIONADO(S) ===" "INFO"
+            if ($autoRestore) {
+                $hasRestoreTweak = @($selected | Where-Object { $_.Key -eq "WPFTweaksRestorePoint" }).Count -gt 0
+                if ($hasRestoreTweak) {
+                    Write-ToolLog "${prefix}Ponto de Restauração já incluído na seleção atual." "INFO"
+                } else {
+                    $null = Set-RestorePoint -Description "Alts_PreTweaks" -DryRun:$dryRun
+                }
             }
-            Write-ToolLog "=== TODOS OS TWEAKS SELECIONADOS FORAM APLICADOS! ===" "SUCCESS"
+            foreach ($s in $selected) {
+                Invoke-DeclarativeTweak -TweakKey $s.Key -TweakObj $s.Obj -Undo:$false -DryRun:$dryRun
+            }
+            if ($dryRun) {
+                Write-ToolLog "=== [DRY-RUN] SIMULAÇÃO CONCLUÍDA! Nenhuma alteração foi feita no sistema. ===" "SUCCESS"
+            } else {
+                Write-ToolLog "=== TODOS OS TWEAKS SELECIONADOS FORAM APLICADOS! ===" "SUCCESS"
+            }
         }
     })
 
@@ -4147,12 +4559,25 @@ function Start-WinRepairUI {
             }
         })
         if ($selected.Count -eq 0) { Write-ToolLog "Nenhuma opção marcada para desfazer." "WARN"; return }
-        Start-AsyncAction -Label "Desfazendo $($selected.Count) tweak(s)..." -Vars @{ selected = $selected } -Action {
-            Write-ToolLog "=== DESFAZENDO $($selected.Count) TWEAK(S) SELECIONADO(S) ===" "INFO"
-            foreach ($s in $selected) {
-                Invoke-DeclarativeTweak -TweakKey $s.Key -TweakObj $s.Obj -Undo:$true
+
+        $dryRun = [bool]$ui.Window.FindName("chkDryRunTweaks").IsChecked
+        $autoRestore = [bool]$ui.Window.FindName("chkAutoRestorePoint").IsChecked
+        $modeTag = if ($dryRun) { "[DRY-RUN] " } else { "" }
+
+        Start-AsyncAction -Label "${modeTag}Desfazendo $($selected.Count) tweak(s)..." -Vars @{ selected = $selected; dryRun = $dryRun; autoRestore = $autoRestore } -Action {
+            $prefix = if ($dryRun) { "[DRY-RUN] " } else { "" }
+            Write-ToolLog "=== ${prefix}DESFAZENDO $($selected.Count) TWEAK(S) SELECIONADO(S) ===" "INFO"
+            if ($autoRestore) {
+                $null = Set-RestorePoint -Description "Alts_PreUndoTweaks" -DryRun:$dryRun
             }
-            Write-ToolLog "=== REVERSÃO CONCLUÍDA! ===" "SUCCESS"
+            foreach ($s in $selected) {
+                Invoke-DeclarativeTweak -TweakKey $s.Key -TweakObj $s.Obj -Undo:$true -DryRun:$dryRun
+            }
+            if ($dryRun) {
+                Write-ToolLog "=== [DRY-RUN] SIMULAÇÃO DE REVERSÃO CONCLUÍDA! ===" "SUCCESS"
+            } else {
+                Write-ToolLog "=== REVERSÃO CONCLUÍDA! ===" "SUCCESS"
+            }
         }
     })
 
@@ -4200,14 +4625,30 @@ function Start-WinRepairUI {
             Write-ToolLog "$found pacote(s) AppX do catálogo estão instalados atualmente (destacados)." "SUCCESS"
         }
     })
+    $window.FindName("btnAppxPreview").Add_Click({
+        $ui = $global:WinRepairUi
+        $entries = @(foreach ($k in $ui.AppxCheckBoxes.Keys) {
+            if ($ui.AppxCheckBoxes[$k].IsChecked) { $global:WinRepairSync.Configs.Appx.$k }
+        })
+        if ($entries.Count -eq 0) { Write-ToolLog "Nenhum pacote AppX selecionado para pré-visualizar." "WARN"; return }
+        $previewText = Format-AppxChangesPreviewText -Entries $entries -Action "Remove"
+        Write-ToolLog "Pré-visualização gerada para $($entries.Count) pacote(s) AppX." "INFO"
+        Show-PreviewDialog -Title "Pré-visualização de AppX ($($entries.Count))" -Subtitle "Confira os pacotes que serão afetados antes de remover ou reinstalar." -BodyText $previewText
+    })
     $window.FindName("btnAppxRemove").Add_Click({
         $ui = $global:WinRepairUi
         $entries = @(foreach ($k in $ui.AppxCheckBoxes.Keys) {
             if ($ui.AppxCheckBoxes[$k].IsChecked) { $global:WinRepairSync.Configs.Appx.$k }
         })
         if ($entries.Count -eq 0) { Write-ToolLog "Nenhum pacote AppX selecionado para remover." "WARN"; return }
-        Start-AsyncAction -Label "Removendo $($entries.Count) AppX..." -Vars @{ entries = $entries } -Action {
-            Remove-SelectedAppxPackages -Entries $entries
+        $dryRun = [bool]$ui.Window.FindName("chkDryRunAppx").IsChecked
+        $autoRestore = [bool]$ui.Window.FindName("chkAppxAutoRestorePoint").IsChecked
+        $modeTag = if ($dryRun) { "[DRY-RUN] " } else { "" }
+        Start-AsyncAction -Label "${modeTag}Removendo $($entries.Count) AppX..." -Vars @{ entries = $entries; dryRun = $dryRun; autoRestore = $autoRestore } -Action {
+            if ($autoRestore) {
+                $null = Set-RestorePoint -Description "Alts_PreAppxRemove" -DryRun:$dryRun
+            }
+            Remove-SelectedAppxPackages -Entries $entries -DryRun:$dryRun
         }
     })
     $window.FindName("btnAppxInstall").Add_Click({
@@ -4216,8 +4657,10 @@ function Start-WinRepairUI {
             if ($ui.AppxCheckBoxes[$k].IsChecked) { $global:WinRepairSync.Configs.Appx.$k }
         })
         if ($entries.Count -eq 0) { Write-ToolLog "Nenhum pacote AppX selecionado para reinstalar." "WARN"; return }
-        Start-AsyncAction -Label "Reinstalando $($entries.Count) AppX via Store..." -Vars @{ entries = $entries } -Action {
-            Install-SelectedAppxPackages -Entries $entries
+        $dryRun = [bool]$ui.Window.FindName("chkDryRunAppx").IsChecked
+        $modeTag = if ($dryRun) { "[DRY-RUN] " } else { "" }
+        Start-AsyncAction -Label "${modeTag}Reinstalando $($entries.Count) AppX via Store..." -Vars @{ entries = $entries; dryRun = $dryRun } -Action {
+            Install-SelectedAppxPackages -Entries $entries -DryRun:$dryRun
         }
     })
 
@@ -6018,6 +6461,7 @@ $embeddedXaml = @'
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             <Grid Grid.Row="0">
                                 <Grid.ColumnDefinitions>
@@ -6037,7 +6481,12 @@ $embeddedXaml = @'
                                     <Button x:Name="btnClearTweaks" Content="&#x2715; Limpar" Padding="10,7"/>
                                 </WrapPanel>
                             </Grid>
-                            <ScrollViewer Grid.Row="1" MaxHeight="74" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+                            <WrapPanel Grid.Row="1" Margin="0,6,0,0" VerticalAlignment="Center">
+                                <Button x:Name="btnPreviewTweaks" Content="&#x1F441; Pr&#xE9;-visualizar Altera&#xE7;&#xF5;es" Padding="10,5"/>
+                                <CheckBox x:Name="chkAutoRestorePoint" Content="Criar Ponto de Restaura&#xE7;&#xE3;o autom&#xE1;tico" IsChecked="True" Margin="8,0,6,0" VerticalAlignment="Center"/>
+                                <CheckBox x:Name="chkDryRunTweaks" Content="Modo Simula&#xE7;&#xE3;o (Dry-Run)" IsChecked="False" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                            </WrapPanel>
+                            <ScrollViewer Grid.Row="2" MaxHeight="74" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
                                 <WrapPanel x:Name="panelSelectedTweaksChips"/>
                             </ScrollViewer>
                         </Grid>
@@ -6112,21 +6561,32 @@ $embeddedXaml = @'
 
                     <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}" Padding="10,8">
                         <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <WrapPanel Grid.Column="0" VerticalAlignment="Center">
-                                <Button x:Name="btnAppxDefault" Style="{StaticResource SuccessButtonStyle}" Content="&#x2B50; Marcar Bloatwares Padr&#xE3;o (18)"/>
-                                <Button x:Name="btnAppxSelectAll" Content="&#x2611; Marcar Todos"/>
-                                <Button x:Name="btnAppxClear" Content="&#x2715; Limpar"/>
-                                <Button x:Name="btnAppxDetectInstalled" Content="&#x1F50D; Destacar Instalados"/>
-                                <Button x:Name="btnAppxRemove" Style="{StaticResource DangerButtonStyle}" Content="&#x1F5D1; Remover Selecionados"/>
-                                <Button x:Name="btnAppxInstall" Style="{StaticResource PrimaryButtonStyle}" Content="&#x1F4E5; Reinstalar Selecionados (Store)"/>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <WrapPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <Button x:Name="btnAppxDefault" Style="{StaticResource SuccessButtonStyle}" Content="&#x2B50; Marcar Bloatwares Padr&#xE3;o (18)"/>
+                                    <Button x:Name="btnAppxSelectAll" Content="&#x2611; Marcar Todos"/>
+                                    <Button x:Name="btnAppxClear" Content="&#x2715; Limpar"/>
+                                    <Button x:Name="btnAppxDetectInstalled" Content="&#x1F50D; Destacar Instalados"/>
+                                    <Button x:Name="btnAppxRemove" Style="{StaticResource DangerButtonStyle}" Content="&#x1F5D1; Remover Selecionados"/>
+                                    <Button x:Name="btnAppxInstall" Style="{StaticResource PrimaryButtonStyle}" Content="&#x1F4E5; Reinstalar Selecionados (Store)"/>
+                                </WrapPanel>
+                                <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" BorderBrush="{DynamicResource BrushBorderStrong}" BorderThickness="1" CornerRadius="7" Padding="10,5" VerticalAlignment="Center">
+                                    <TextBlock x:Name="txtAppxSelectedCount" Text="Selecionados: 0" FontWeight="Bold" Foreground="{DynamicResource BrushAccentHover}" FontSize="12"/>
+                                </Border>
+                            </Grid>
+                            <WrapPanel Grid.Row="1" Margin="0,6,0,0" VerticalAlignment="Center">
+                                <Button x:Name="btnAppxPreview" Content="&#x1F441; Pr&#xE9;-visualizar Sele&#xE7;&#xE3;o" Padding="10,5"/>
+                                <CheckBox x:Name="chkAppxAutoRestorePoint" Content="Criar Ponto de Restaura&#xE7;&#xE3;o autom&#xE1;tico" IsChecked="True" Margin="8,0,6,0" VerticalAlignment="Center"/>
+                                <CheckBox x:Name="chkDryRunAppx" Content="Modo Simula&#xE7;&#xE3;o (Dry-Run)" IsChecked="False" Margin="4,0,0,0" VerticalAlignment="Center"/>
                             </WrapPanel>
-                            <Border Grid.Column="1" Background="{DynamicResource BrushBgInput}" BorderBrush="{DynamicResource BrushBorderStrong}" BorderThickness="1" CornerRadius="7" Padding="10,5" VerticalAlignment="Center">
-                                <TextBlock x:Name="txtAppxSelectedCount" Text="Selecionados: 0" FontWeight="Bold" Foreground="{DynamicResource BrushAccentHover}" FontSize="12"/>
-                            </Border>
                         </Grid>
                     </Border>
 

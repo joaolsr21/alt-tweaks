@@ -39,6 +39,17 @@ function ConvertTo-AsciiJson([string]$rawJson) {
     })
 }
 
+function Assert-SafeHereString {
+    param(
+        [Parameter(Mandatory=$true)][AllowEmptyString()][string]$Content,
+        [Parameter(Mandatory=$true)][string]$Label
+    )
+
+    if ([regex]::IsMatch($Content, "(?m)^'@")) {
+        throw "O conteúdo embutido [$Label] contém uma linha iniciando com '@, o que quebraria o bloco here-string no bundle."
+    }
+}
+
 $banner = @"
 # ==============================================================================
 # Alt's v3.1 (Standalone All-in-One)
@@ -93,9 +104,29 @@ $presetsJson  = ConvertTo-AsciiJson ([System.IO.File]::ReadAllText((Join-Path $c
 $tweaksJson   = ConvertTo-AsciiJson ([System.IO.File]::ReadAllText((Join-Path $cfgDir "tweaks.json"), [System.Text.Encoding]::UTF8))
 
 # Converter XAML e autounattend.xml em entidades XML puras (ASCII-safe)
-Write-Host " -> Embutindo XAML e autounattend.xml..." -ForegroundColor Gray
-$xamlContent     = ConvertTo-AsciiXml ([System.IO.File]::ReadAllText("$PSScriptRoot\src\ui\app.xaml", [System.Text.Encoding]::UTF8))
-$unattendContent = ConvertTo-AsciiXml ([System.IO.File]::ReadAllText((Join-Path $cfgDir "autounattend.xml"), [System.Text.Encoding]::UTF8))
+Write-Host " -> Validando e embutindo XAML e autounattend.xml..." -ForegroundColor Gray
+$rawXaml = [System.IO.File]::ReadAllText("$PSScriptRoot\src\ui\app.xaml", [System.Text.Encoding]::UTF8)
+[void][xml]$rawXaml
+$rawUnattend = [System.IO.File]::ReadAllText((Join-Path $cfgDir "autounattend.xml"), [System.Text.Encoding]::UTF8)
+[void][xml]$rawUnattend
+
+$xamlContent     = ConvertTo-AsciiXml $rawXaml
+$unattendContent = ConvertTo-AsciiXml $rawUnattend
+
+# Garantir que nenhum bloco embutido contenha '@ no início da linha (quebraria here-strings)
+$embeddedChecks = @{
+    "applications.json" = $appsJson
+    "appx.json"         = $appxJson
+    "dns.json"          = $dnsJson
+    "features.json"     = $featuresJson
+    "presets.json"      = $presetsJson
+    "tweaks.json"       = $tweaksJson
+    "app.xaml"          = $xamlContent
+    "autounattend.xml"  = $unattendContent
+}
+foreach ($label in $embeddedChecks.Keys) {
+    Assert-SafeHereString -Content $embeddedChecks[$label] -Label $label
+}
 
 $runtimeScript = @"
 # 1. Garantir privilégios de Administrador
@@ -144,4 +175,17 @@ Start-WinRepairUI -XamlText `$embeddedXaml -Configs `$embeddedConfigs -AutoUnatt
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($destination, $sb.ToString(), $utf8NoBom)
 
-Write-Host "[+] Compilação concluída com sucesso (UTF-8 sem BOM): $destination" -ForegroundColor Green
+# Validação de sintaxe pós-build do bundle gerado
+Write-Host " -> Validando sintaxe PowerShell do bundle gerado..." -ForegroundColor Gray
+$tokens = $null
+$parseErrors = $null
+[void][System.Management.Automation.Language.Parser]::ParseFile($destination, [ref]$tokens, [ref]$parseErrors)
+if ($parseErrors -and $parseErrors.Count -gt 0) {
+    foreach ($err in $parseErrors) {
+        Write-Host (" [ERRO DE SINTAXE] Linha {0}, Coluna {1}: {2}" -f $err.Extent.StartLineNumber, $err.Extent.StartColumnNumber, $err.Message) -ForegroundColor Red
+    }
+    throw "Validação de sintaxe pós-build falhou com $($parseErrors.Count) erro(s) em $destination"
+}
+
+$sizeKb = [math]::Round((Get-Item $destination).Length / 1KB, 1)
+Write-Host "[+] Compilação concluída com sucesso (UTF-8 sem BOM, $sizeKb KB, $($tokens.Count) tokens, 0 erros de sintaxe): $destination" -ForegroundColor Green

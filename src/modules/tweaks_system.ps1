@@ -3,14 +3,25 @@
 # ==============================================================================
 
 function Set-RestorePoint {
-    param([string]$Description = "Alts_RestorePoint")
+    param(
+        [string]$Description = "Alts_RestorePoint",
+        [switch]$DryRun
+    )
+
+    if ($DryRun) {
+        Write-ToolLog "[DRY-RUN] Criaria Ponto de Restauração do Sistema ($Description) via Checkpoint-Computer." "INFO"
+        return $true
+    }
+
     Write-ToolLog "Criando Ponto de Restauração do Sistema ($Description)..." "INFO"
     try {
         Enable-ComputerRestore -Drive "C:\" -ErrorAction SilentlyContinue | Out-Null
         Checkpoint-Computer -Description $Description -RestorePointType "MODIFY_SETTINGS" -ErrorAction Stop
         Write-ToolLog "Ponto de Restauração criado com sucesso!" "SUCCESS"
+        return $true
     } catch {
         Write-ToolLog "Não foi possível criar o Ponto de Restauração: $_ (Verifique se a Proteção do Sistema está ativada)." "WARN"
+        return $false
     }
 }
 
