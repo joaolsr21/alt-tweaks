@@ -1044,7 +1044,7 @@ function Start-WinRepairUI {
     $window.FindName("btnExportConfig").Add_Click({
         $dlg = New-Object System.Windows.Forms.SaveFileDialog
         $dlg.Filter = "Configuração JSON (*.json)|*.json"
-        $dlg.FileName = "alts_config.json"
+        $dlg.FileName = "alt_tweaks_config.json"
         if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
             $keys = New-Object System.Collections.Generic.List[string]
             foreach ($map in @($global:WinRepairUi.TweakCheckBoxes, $global:WinRepairUi.HwCheckBoxes, $global:WinRepairUi.AppCheckBoxes, $global:WinRepairUi.AppxCheckBoxes, $global:WinRepairUi.FeatureCheckBoxes)) {
@@ -1123,7 +1123,7 @@ function Start-WinRepairUI {
     $window.FindName("btnSaveLogs").Add_Click({
         $dlg = New-Object System.Windows.Forms.SaveFileDialog
         $dlg.Filter = "Arquivo de Texto (*.txt)|*.txt|Log (*.log)|*.log"
-        $dlg.FileName = "alts_logs_$((Get-Date).ToString('yyyyMMdd_HHmmss')).txt"
+        $dlg.FileName = "alt_tweaks_logs_$((Get-Date).ToString('yyyyMMdd_HHmmss')).txt"
         if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
             [System.IO.File]::WriteAllText($dlg.FileName, $global:txtLogControl.Text, (New-Object System.Text.UTF8Encoding($false)))
             Write-ToolLog "Logs salvos em: $($dlg.FileName)" "SUCCESS"
@@ -1257,7 +1257,7 @@ function Start-WinRepairUI {
                 if ($hasRestoreTweak) {
                     Write-ToolLog "${prefix}Ponto de Restauração já incluído na seleção atual." "INFO"
                 } else {
-                    $null = Set-RestorePoint -Description "Alts_PreTweaks" -DryRun:$dryRun
+                    $null = Set-RestorePoint -Description "AltTweaks_PreTweaks" -DryRun:$dryRun
                 }
             }
             foreach ($s in $selected) {
@@ -1288,7 +1288,7 @@ function Start-WinRepairUI {
             $prefix = if ($dryRun) { "[DRY-RUN] " } else { "" }
             Write-ToolLog "=== ${prefix}DESFAZENDO $($selected.Count) TWEAK(S) SELECIONADO(S) ===" "INFO"
             if ($autoRestore) {
-                $null = Set-RestorePoint -Description "Alts_PreUndoTweaks" -DryRun:$dryRun
+                $null = Set-RestorePoint -Description "AltTweaks_PreUndoTweaks" -DryRun:$dryRun
             }
             foreach ($s in $selected) {
                 Invoke-DeclarativeTweak -TweakKey $s.Key -TweakObj $s.Obj -Undo:$true -DryRun:$dryRun
@@ -1357,7 +1357,7 @@ function Start-WinRepairUI {
             $prefix = if ($dryRun) { "[DRY-RUN] " } else { "" }
             Write-ToolLog "=== ${prefix}INICIANDO OTIMIZAÇÕES DE HARDWARE ($($keys.Count)) ===" "INFO"
             if ($autoRestore) {
-                $null = Set-RestorePoint -Description "Alts_PreHardware" -DryRun:$dryRun
+                $null = Set-RestorePoint -Description "AltTweaks_PreHardware" -DryRun:$dryRun
             }
             foreach ($k in $keys) {
                 Invoke-HardwareOptimization -Key $k -Undo:$false -DryRun:$dryRun
@@ -1383,7 +1383,7 @@ function Start-WinRepairUI {
             $prefix = if ($dryRun) { "[DRY-RUN] " } else { "" }
             Write-ToolLog "=== ${prefix}REVERTENDO OTIMIZAÇÕES DE HARDWARE ($($keys.Count)) ===" "INFO"
             if ($autoRestore) {
-                $null = Set-RestorePoint -Description "Alts_PreUndoHardware" -DryRun:$dryRun
+                $null = Set-RestorePoint -Description "AltTweaks_PreUndoHardware" -DryRun:$dryRun
             }
             foreach ($k in $keys) {
                 Invoke-HardwareOptimization -Key $k -Undo:$true -DryRun:$dryRun
@@ -1478,7 +1478,7 @@ function Start-WinRepairUI {
         $modeTag = if ($dryRun) { "[DRY-RUN] " } else { "" }
         Start-AsyncAction -Label "${modeTag}Removendo $($entries.Count) AppX..." -Vars @{ entries = $entries; dryRun = $dryRun; autoRestore = $autoRestore } -Action {
             if ($autoRestore) {
-                $null = Set-RestorePoint -Description "Alts_PreAppxRemove" -DryRun:$dryRun
+                $null = Set-RestorePoint -Description "AltTweaks_PreAppxRemove" -DryRun:$dryRun
             }
             Remove-SelectedAppxPackages -Entries $entries -DryRun:$dryRun
         }
@@ -1786,7 +1786,7 @@ function Start-WinRepairUI {
 
     $global:WinRepairUi.Initializing = $false
 
-    Write-ToolLog "Alt's v3.1 carregado com sucesso!" "SUCCESS"
+    Write-ToolLog "Alt Tweaks v3.1 carregado com sucesso!" "SUCCESS"
     Write-ToolLog "Passe o mouse em qualquer opção para ler o resumo instantâneo antes de executar." "INFO"
 
     $window.Add_Closed({ $uiTimer.Stop() })

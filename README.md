@@ -1,4 +1,4 @@
-# Alt's v3.1
+# Alt Tweaks v3.1
 
 Utilitário gráfico (WPF) em PowerShell para otimização, manutenção, diagnóstico de rede, gerenciamento de aplicativos e criação de mídia bootável do Windows 10 e Windows 11.
 

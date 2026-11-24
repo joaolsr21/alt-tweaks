@@ -407,7 +407,7 @@ $scripts = @(
 } *&gt;&amp;1 | Out-String -Width 1KB -Stream &gt;&gt; "$env:TEMP\UserOnce.log";
 
 # RunOnce and FirstLogonCommands can overlap. Publish completion after the log is flushed.
-$completionDir = Join-Path $env:LOCALAPPDATA 'Alt's';
+$completionDir = Join-Path $env:LOCALAPPDATA 'Alt Tweaks';
 [System.IO.Directory]::CreateDirectory($completionDir) | Out-Null;
 [System.IO.File]::WriteAllText((Join-Path $completionDir 'UserOnce.complete'), '');
         </File>
@@ -552,19 +552,19 @@ $scripts = @(
 } *&gt;&amp;1 | Out-String -Width 1KB -Stream &gt;&gt; "C:\Windows\Setup\Scripts\FirstLogon.log";
 
 # UserOnce may finish first, so keep any completion flag it has already written.
-$completionPath = Join-Path $env:LOCALAPPDATA 'Alt's\UserOnce.complete';
+$completionPath = Join-Path $env:LOCALAPPDATA 'Alt Tweaks\UserOnce.complete';
 $deadline = (Get-Date).AddMinutes(5);
-'Alt's: Waiting for user configuration to finish before restarting (up to 5 minutes).' | Out-File -LiteralPath 'C:\Windows\Setup\Scripts\FirstLogon.log' -Append -ErrorAction Stop;
+'Alt Tweaks: Waiting for user configuration to finish before restarting (up to 5 minutes).' | Out-File -LiteralPath 'C:\Windows\Setup\Scripts\FirstLogon.log' -Append -ErrorAction Stop;
 while( -not (Test-Path -LiteralPath $completionPath -PathType Leaf) ) {
     if( (Get-Date) -ge $deadline ) {
-        $message = 'Alt's: Timed out waiting for user configuration. Automatic restart skipped. Check %TEMP%\UserOnce.log.';
+        $message = 'Alt Tweaks: Timed out waiting for user configuration. Automatic restart skipped. Check %TEMP%\UserOnce.log.';
         $message | Out-File -LiteralPath 'C:\Windows\Setup\Scripts\FirstLogon.log' -Append -ErrorAction Stop;
         return;
     }
     Start-Sleep -Seconds 1;
 }
 
-$message = 'Alt's: First-logon customization complete. Restarting the computer.';
+$message = 'Alt Tweaks: First-logon customization complete. Restarting the computer.';
 $message | Out-File -LiteralPath 'C:\Windows\Setup\Scripts\FirstLogon.log' -Append -ErrorAction Stop;
 Restart-Computer -Force;
         </File>

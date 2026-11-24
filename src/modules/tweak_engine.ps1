@@ -522,7 +522,7 @@ function Export-EnvironmentReport {
     try {
         $sb = New-Object System.Text.StringBuilder
         [void]$sb.AppendLine("======================================================================")
-        [void]$sb.AppendLine("  RELAT$([char]0xD3)RIO DO AMBIENTE - ALT'S")
+        [void]$sb.AppendLine("  RELAT$([char]0xD3)RIO DO AMBIENTE - ALT TWEAKS")
         [void]$sb.AppendLine("  Data: $((Get-Date).ToString('dd/MM/yyyy HH:mm:ss')) | Host: $($env:COMPUTERNAME)")
         [void]$sb.AppendLine("======================================================================")
         [void]$sb.AppendLine("")

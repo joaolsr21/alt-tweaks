@@ -1,5 +1,5 @@
 ﻿# ==============================================================================
-# Script Principal: Alt's
+# Script Principal: Alt Tweaks
 # ==============================================================================
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8

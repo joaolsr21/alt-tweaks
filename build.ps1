@@ -6,7 +6,7 @@ param(
     [string]$OutputFile = "alts.ps1"
 )
 
-Write-Host "[*] Iniciando compilação do Alt's v3.1..." -ForegroundColor Cyan
+Write-Host "[*] Iniciando compilação do Alt Tweaks v3.1..." -ForegroundColor Cyan
 
 if (-not (Test-Path $OutputDir)) {
     New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
@@ -52,7 +52,7 @@ function Assert-SafeHereString {
 
 $banner = @"
 # ==============================================================================
-# Alt's v3.1 (Standalone All-in-One)
+# Alt Tweaks v3.1 (Standalone All-in-One)
 # Utilitário Completo: Tweaks, Softwares, AppX, Rede (14 Ferramentas), ISO & USB
 # Execução direta via: irm <URL> | iex
 # ==============================================================================

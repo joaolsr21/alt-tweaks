@@ -4,7 +4,7 @@
 
 function Set-RestorePoint {
     param(
-        [string]$Description = "Alts_RestorePoint",
+        [string]$Description = "AltTweaks_RestorePoint",
         [switch]$DryRun
     )
 

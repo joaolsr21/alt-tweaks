@@ -27,7 +27,7 @@ function Invoke-Check {
     }
 }
 
-Write-Host "=== Iniciando Validação Local do Alt's ===" -ForegroundColor Cyan
+Write-Host "=== Iniciando Validação Local do Alt Tweaks ===" -ForegroundColor Cyan
 
 # Carregar módulos não-UI para testes funcionais
 . (Join-Path $srcDir "core\logger.ps1")

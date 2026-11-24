@@ -151,7 +151,7 @@ function Install-EnhancedPowerShellProfile {
         }
 
         $profileContent = @'
-# Perfil Aprimorado Alt's - PowerShell 7+
+# Perfil Aprimorado Alt Tweaks - PowerShell 7+
 if (Get-Module -ListAvailable -Name PSReadLine) {
     Import-Module PSReadLine
     Set-PSReadLineOption -PredictionSource History
