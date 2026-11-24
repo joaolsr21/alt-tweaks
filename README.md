@@ -7,7 +7,7 @@ Utilitário gráfico (WPF) em PowerShell para otimização, manutenção, diagn�
 Abra o PowerShell como **Administrador** e execute:
 
 ```powershell
-irm https://raw.githubusercontent.com/joaolsr21/alts/main/dist/alts.ps1 | iex
+irm https://raw.githubusercontent.com/joaolsr21/alt-tweaks/main/dist/alt-tweaks.ps1 | iex
 ```
 
 ## Funcionalidades
@@ -41,7 +41,7 @@ irm https://raw.githubusercontent.com/joaolsr21/alts/main/dist/alts.ps1 | iex
 powershell -NoProfile -ExecutionPolicy Bypass -File .\src\main.ps1
 ```
 
-### Compilar o bundle standalone (`dist/alts.ps1`)
+### Compilar o bundle standalone (`dist/alt-tweaks.ps1`)
 
 O script [build.ps1](build.ps1) valida os XMLs (`app.xaml` e `autounattend.xml`), protege os blocos *here-string* de configurações JSON/XML, gera o arquivo único em UTF-8 sem BOM e valida a sintaxe PowerShell do bundle resultante:
 
@@ -68,7 +68,7 @@ Invoke-Pester -Path .\tests\Alts.Tests.ps1 -CI
 ```text
 ├── .github/workflows/ci.yml        # Pipeline CI (PSScriptAnalyzer, build e testes)
 ├── build.ps1                       # Empacotador standalone + validação pós-build
-├── dist/alts.ps1                   # Script único compilado para execução via irm | iex
+├── dist/alt-tweaks.ps1             # Script único compilado para execução via irm | iex
 ├── PSScriptAnalyzerSettings.psd1   # Regras de lint do PowerShell
 ├── src/
 │   ├── main.ps1                    # Ponto de entrada local

@@ -67,8 +67,8 @@ Describe "Empacotamento Standalone (build.ps1)" {
     It "Compila bundle válido em UTF-8 sem BOM e com 0 erros de sintaxe" {
         $tempOut = Join-Path $env:TEMP ("alts_pester_build_" + [guid]::NewGuid().ToString("N"))
         try {
-            & $script:BuildPs1 -OutputDir $tempOut -OutputFile "alts.ps1"
-            $bundlePath = Join-Path $tempOut "alts.ps1"
+            & $script:BuildPs1 -OutputDir $tempOut -OutputFile "alt-tweaks.ps1"
+            $bundlePath = Join-Path $tempOut "alt-tweaks.ps1"
             (Test-Path $bundlePath) | Should -BeTrue
 
             $bytes = [System.IO.File]::ReadAllBytes($bundlePath)

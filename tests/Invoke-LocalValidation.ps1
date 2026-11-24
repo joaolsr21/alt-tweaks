@@ -88,8 +88,8 @@ Invoke-Check "Validade XML (app.xaml e autounattend.xml) e vínculos FindName" {
 Invoke-Check "Build standalone em diretório temporário (UTF-8 sem BOM + 0 erros)" {
     $tempOut = Join-Path $env:TEMP ("alts_val_build_" + [guid]::NewGuid().ToString("N"))
     try {
-        & $buildPs1 -OutputDir $tempOut -OutputFile "alts.ps1" | Out-Null
-        $bundlePath = Join-Path $tempOut "alts.ps1"
+        & $buildPs1 -OutputDir $tempOut -OutputFile "alt-tweaks.ps1" | Out-Null
+        $bundlePath = Join-Path $tempOut "alt-tweaks.ps1"
         if (-not (Test-Path $bundlePath)) { throw "Bundle não gerado em $bundlePath" }
 
         $bytes = [System.IO.File]::ReadAllBytes($bundlePath)

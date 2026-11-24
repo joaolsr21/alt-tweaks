@@ -3,7 +3,7 @@
 # ==============================================================================
 param(
     [string]$OutputDir = "$PSScriptRoot\dist",
-    [string]$OutputFile = "alts.ps1"
+    [string]$OutputFile = "alt-tweaks.ps1"
 )
 
 Write-Host "[*] Iniciando compilação do Alt Tweaks v3.1..." -ForegroundColor Cyan

@@ -36,10 +36,10 @@ function Ensure-AdminPrivileges {
         } else {
             # Se executado diretamente em memória via irm | iex:
             # Salva um inicializador limpo em arquivo temporário para evitar falsos positivos de heurística de linha de comando
-            $tempLauncher = Join-Path $env:TEMP "alts_launcher.ps1"
+            $tempLauncher = Join-Path $env:TEMP "alt_tweaks_launcher.ps1"
             $launcherCode = @'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
-irm https://raw.githubusercontent.com/joaolsr21/alts/main/dist/alts.ps1 | iex
+irm https://raw.githubusercontent.com/joaolsr21/alt-tweaks/main/dist/alt-tweaks.ps1 | iex
 '@
             [System.IO.File]::WriteAllText($tempLauncher, $launcherCode, [System.Text.Encoding]::UTF8)
             Start-Process powershell.exe -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$tempLauncher`""
